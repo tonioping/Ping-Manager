@@ -1,20 +1,18 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const API_KEY = process.env.API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
 
 if (!API_KEY) {
   throw new Error("API_KEY environment variable not set");
 }
 
-const client = new GoogleGenerativeAI({ apiKey: API_KEY });
+const client = new GoogleGenerativeAI(API_KEY);
 
 // Helper to clean Markdown code blocks from JSON response
 const cleanJSON = (text: string) => {
   let cleaned = text.trim();
-  // Remove markdown code blocks indicators
   cleaned = cleaned.replace(/```json\n/g, "").replace(/```\n/g, "").replace(/```/g, "");
 
-  // Find first { or [
   const firstBrace = cleaned.indexOf("{");
   const firstBracket = cleaned.indexOf("[");
   let start = -1;
@@ -33,27 +31,46 @@ const cleanJSON = (text: string) => {
   return cleaned;
 };
 
-export const generatePingAnalysis = async (
-  hostnames: string[],
-  requirements: string
-): Promise<any> => {
+export interface SuggestedExercise {
+  name: string;
+  description: string;
+  duration: number;
+  theme?: string;
+  phase?: string;
+}
+
+export const refineExerciseDescription = async (description: string): Promise<string> => {
   const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const prompt = `You are a networking expert. Analyze these ping results and requirements, then respond with a JSON object.
+  const prompt = `Tu es un coach d'entraînement expert. Améliore cette description d'exercice en la rendant plus claire, précise et motivante. Garde-la concise (2-3 phrases max).
 
-Ping Results:
-${hostnames.join(", ")}
+Description actuelle: "${description}"
 
-Requirements:
-${requirements}
+Réponds UNIQUEMENT avec la description améliorée, sans guillemets ni explications.`;
 
-Respond with ONLY a valid JSON object (no markdown, no extra text) with this structure:
-{
-  "summary": "Brief analysis summary",
-  "performanceRating": "excellent|good|fair|poor",
-  "recommendations": ["recommendation 1", "recommendation 2"],
-  "requirementsMet": true|false
-}`;
+  const response = await model.generateContent(prompt);
+  const text = response.response.text();
+  return text.trim();
+};
+
+export const suggestExercises = async (sessionName: string, existingExerciseNames: string[]): Promise<SuggestedExercise[]> => {
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const prompt = `Tu es un coach d'entraînement expert. Suggère 3 exercices complémentaires pour cette séance.
+
+Nom de la séance: "${sessionName}"
+Exercices déjà présents: ${existingExerciseNames.join(", ") || "aucun"}
+
+Réponds avec UNIQUEMENT un JSON valide (pas de markdown, pas d'explications) avec cette structure:
+[
+  {
+    "name": "Nom de l'exercice",
+    "description": "Description courte",
+    "duration": 15,
+    "theme": "Catégorie"
+  }
+]
+`;
 
   const response = await model.generateContent(prompt);
   const text = response.response.text();
@@ -62,12 +79,40 @@ Respond with ONLY a valid JSON object (no markdown, no extra text) with this str
   try {
     return JSON.parse(cleaned);
   } catch (e) {
-    console.error("Failed to parse response:", cleaned);
-    return {
-      summary: text,
-      performanceRating: "unknown",
-      recommendations: [],
-      requirementsMet: false,
-    };
+    console.error("Failed to parse suggestions:", cleaned);
+    return [];
+  }
+};
+
+export const generateCyclePlan = async (cycleObjective: string, numberOfWeeks: number): Promise<{ weeks: any[] }> => {
+  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  const prompt = `Tu es un coach d'entraînement expert. Crée un plan d'entraînement structuré avec une progression logique.
+
+Objectif: "${cycleObjective}"
+Nombre de semaines: ${numberOfWeeks}
+
+Réponds avec UNIQUEMENT un JSON valide (pas de markdown, pas d'explications) avec cette structure:
+{
+  "weeks": [
+    {
+      "weekNumber": 1,
+      "theme": "Focus technique ou capacité (ex: Endurance, Force, Technique)",
+      "notes": "Conseils d'entraînement pour cette semaine"
+    }
+  ]
+}
+
+Génère exactement ${numberOfWeeks} semaines avec une progression cohérente.`;
+
+  const response = await model.generateContent(prompt);
+  const text = response.response.text();
+  const cleaned = cleanJSON(text);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("Failed to parse cycle plan:", cleaned);
+    return { weeks: [] };
   }
 };
