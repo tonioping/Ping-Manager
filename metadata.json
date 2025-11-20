@@ -1,0 +1,5 @@
+{
+  "name": "Ping-Manager",
+  "description": "Un planificateur avancé de sessions d'entraînement de tennis de table. Créez, gérez et optimisez des sessions d'entraînement et des cycles à long terme avec une riche bibliothèque d'exercices et des suggestions alimentées par l'IA de Gemini pour améliorer votre coaching.",
+  "requestFramePermissions": []
+}
