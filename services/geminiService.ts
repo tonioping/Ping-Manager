@@ -96,23 +96,20 @@ const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) 
   const apiKey = config.apiKey || process.env.API_KEY;
   if (!apiKey) throw new Error("Clé API Google manquante");
 
-  const ai = new GoogleGenerativeAI({ apiKey });
-    const model = config.model || DEFAULT_GOOGLE_MODEL;
-
+  const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: config.model || DEFAULT_GOOGLE_MODEL });
   const generateConfig: any = {};
   if (schemaConfig) {
     generateConfig.responseMimeType = "application/json";
     generateConfig.responseSchema = schemaConfig;
   }
 
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: prompt,
-    config: generateConfig
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: generateConfig
   });
 
-  return response.text;
-};
+  return result.response.text();};
 
 // --- EXPORTED FUNCTIONS ---
 
