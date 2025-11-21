@@ -1,6 +1,6 @@
 
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { AIConfig } from "../types"
+import { GoogleGenAI, Type } from "@google/genai";
+import { AIConfig } from "../types";
 
 // Default configuration values
 const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
@@ -96,20 +96,23 @@ const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) 
   const apiKey = config.apiKey || process.env.API_KEY;
   if (!apiKey) throw new Error("Clé API Google manquante");
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: config.model || DEFAULT_GOOGLE_MODEL });
+  const ai = new GoogleGenAI({ apiKey });
+  const model = config.model || DEFAULT_GOOGLE_MODEL;
+
   const generateConfig: any = {};
   if (schemaConfig) {
     generateConfig.responseMimeType = "application/json";
     generateConfig.responseSchema = schemaConfig;
   }
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: generateConfig
+  const response = await ai.models.generateContent({
+    model: model,
+    contents: prompt,
+    config: generateConfig
   });
 
-  return result.response.text();};
+  return response.text;
+};
 
 // --- EXPORTED FUNCTIONS ---
 
@@ -155,15 +158,15 @@ export const suggestExercises = async (sessionName: string, existingExercises: s
     } else {
       // Google Schema
       const schema = {
-        type: SchemaType.ARRAY,
+        type: Type.ARRAY,
         items: {
-          type: SchemaType.OBJECT,
+          type: Type.OBJECT,
           properties: {
-            name: { type: SchemaType.STRING },
-            duration: { type: SchemaType.INTEGER },
-            description: { type: SchemaType.STRING },
-            material: { type: SchemaType.STRING },
-            theme: { type: SchemaType.STRING },
+            name: { type: Type.STRING },
+            duration: { type: Type.INTEGER },
+            description: { type: Type.STRING },
+            material: { type: Type.STRING },
+            theme: { type: Type.STRING },
           }
         }
       };
@@ -194,16 +197,16 @@ export const generateCyclePlan = async (promptText: string, numWeeks: number): P
         text = await callOpenRouter(config, prompt, true);
     } else {
         const schema = {
-            type: SchemaType.OBJECT,
+            type: Type.OBJECT,
             properties: {
                 weeks: {
-                    type: SchemaType.ARRAY,
+                    type: Type.ARRAY,
                     items: {
-                        type: SchemaType.OBJECT,
+                        type: Type.OBJECT,
                         properties: {
-                            weekNumber: { type: SchemaType.INTEGER },
-                            theme: { type: SchemaType.STRING },
-                            notes: { type: SchemaType.STRING }
+                            weekNumber: { type: Type.INTEGER },
+                            theme: { type: Type.STRING },
+                            notes: { type: Type.STRING }
                         }
                     }
                 }
