@@ -1,120 +1,224 @@
-/// <reference types="vite/client" />
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI, Type } from "@google/genai";
+import { AIConfig } from "../types";
 
-const API_KEY = (import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY) as string;
+// Default configuration values
+const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
+const DEFAULT_OPENROUTER_MODEL = 'mistralai/mistral-7b-instruct:free'; // Example free model
 
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable not set");
-}
-
-const client = new GoogleGenerativeAI(API_KEY);
+// Helper to get config from LocalStorage or Environment
+const getAIConfig = (): AIConfig => {
+  try {
+    const stored = localStorage.getItem('pingmanager_ai_config');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error("Error reading AI config", e);
+  }
+  
+  // Fallback to Env API Key (Gemini default)
+  return {
+    provider: 'google',
+    apiKey: process.env.API_KEY || '',
+    model: DEFAULT_GOOGLE_MODEL
+  };
+};
 
 // Helper to clean Markdown code blocks from JSON response
 const cleanJSON = (text: string) => {
   let cleaned = text.trim();
-  cleaned = cleaned.replace(/```json\n/g, "").replace(/```\n/g, "").replace(/```/g, "");
-
-  const firstBrace = cleaned.indexOf("{");
-  const firstBracket = cleaned.indexOf("[");
+  cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '');
+  
+  const firstBrace = cleaned.indexOf('{');
+  const firstBracket = cleaned.indexOf('[');
+  
   let start = -1;
   if (firstBrace !== -1 && firstBracket !== -1) {
-    start = Math.min(firstBrace, firstBracket);
+      start = Math.min(firstBrace, firstBracket);
   } else if (firstBrace !== -1) {
-    start = firstBrace;
+      start = firstBrace;
   } else if (firstBracket !== -1) {
-    start = firstBracket;
+      start = firstBracket;
   }
 
   if (start !== -1) {
-    cleaned = cleaned.substring(start);
+      cleaned = cleaned.substring(start);
+      const lastBrace = cleaned.lastIndexOf('}');
+      const lastBracket = cleaned.lastIndexOf(']');
+      const end = Math.max(lastBrace, lastBracket);
+      if (end !== -1) {
+          cleaned = cleaned.substring(0, end + 1);
+      }
   }
-
+  
   return cleaned;
 };
 
-export interface SuggestedExercise {
-  name: string;
-  description: string;
-  duration: number;
-  theme?: string;
-  phase?: string;
-}
+// --- OPENROUTER API CALLER ---
+const callOpenRouter = async (config: AIConfig, prompt: string, responseSchema?: any) => {
+  if (!config.apiKey) throw new Error("Clé API OpenRouter manquante");
 
-export const refineExerciseDescription = async (description: string): Promise<string> => {
-  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+  let finalPrompt = prompt;
+  // OpenRouter doesn't enforce strict schema via SDK, so we prompt-engineer it slightly for JSON
+  if (responseSchema) {
+    finalPrompt += "\n\nIMPORTANT: Réponds UNIQUEMENT avec un JSON valide correspondant à la structure demandée. Pas de texte avant ou après.";
+  }
 
-  const prompt = `Tu es un coach d'entraînement expert. Améliore cette description d'exercice en la rendant plus claire, précise et motivante. Garde-la concise (2-3 phrases max).
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://pingmanager.app", // Optional
+      "X-Title": "PingManager" // Optional
+    },
+    body: JSON.stringify({
+      model: config.model || DEFAULT_OPENROUTER_MODEL,
+      messages: [
+        { role: "user", content: finalPrompt }
+      ],
+      temperature: 0.7,
+    })
+  });
 
-Description actuelle: "${description}"
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || "Erreur OpenRouter");
+  }
 
-Réponds UNIQUEMENT avec la description améliorée, sans guillemets ni explications.`;
-
-  const response = await model.generateContent(prompt);
-  const text = response.response.text();
-  return text.trim();
+  const data = await response.json();
+  return data.choices[0]?.message?.content || "";
 };
 
-export const suggestExercises = async (sessionName: string, existingExerciseNames: string[]): Promise<SuggestedExercise[]> => {
-  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+// --- GOOGLE API CALLER ---
+const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) => {
+  const apiKey = config.apiKey || process.env.API_KEY;
+  if (!apiKey) throw new Error("Clé API Google manquante");
 
-  const prompt = `Tu es un coach d'entraînement expert. Suggère 3 exercices complémentaires pour cette séance.
+  const ai = new GoogleGenAI({ apiKey });
+  const model = config.model || DEFAULT_GOOGLE_MODEL;
 
-Nom de la séance: "${sessionName}"
-Exercices déjà présents: ${existingExerciseNames.join(", ") || "aucun"}
-
-Réponds avec UNIQUEMENT un JSON valide (pas de markdown, pas d'explications) avec cette structure:
-[
-  {
-    "name": "Nom de l'exercice",
-    "description": "Description courte",
-    "duration": 15,
-    "theme": "Catégorie"
+  const generateConfig: any = {};
+  if (schemaConfig) {
+    generateConfig.responseMimeType = "application/json";
+    generateConfig.responseSchema = schemaConfig;
   }
-]
-`;
 
-  const response = await model.generateContent(prompt);
-  const text = response.response.text();
-  const cleaned = cleanJSON(text);
+  const response = await ai.models.generateContent({
+    model: model,
+    contents: prompt,
+    config: generateConfig
+  });
+
+  return response.text;
+};
+
+// --- EXPORTED FUNCTIONS ---
+
+export const refineExerciseDescription = async (currentDescription: string): Promise<string> => {
+  const config = getAIConfig();
+  const prompt = `Réécris et améliore cette description d'exercice de tennis de table pour un entraîneur. Rends-la plus claire, plus engageante et ajoute un ou deux points de coaching clés. Reste concis. Description : "${currentDescription}"`;
 
   try {
-    return JSON.parse(cleaned);
-  } catch (e) {
-    console.error("Failed to parse suggestions:", cleaned);
+    let text = "";
+    if (config.provider === 'openrouter') {
+      text = await callOpenRouter(config, prompt);
+    } else {
+      text = await callGoogle(config, prompt);
+    }
+    return text.trim();
+  } catch (error) {
+    console.error("Error refining description:", error);
+    return "Erreur lors de la génération (vérifiez vos paramètres IA).";
+  }
+};
+
+export type SuggestedExercise = {
+  name: string;
+  duration: number;
+  description: string;
+  material: string;
+  theme: string;
+};
+
+export const suggestExercises = async (sessionName: string, existingExercises: string[]): Promise<SuggestedExercise[]> => {
+  const config = getAIConfig();
+  const prompt = `
+    En te basant sur le titre de la séance d'entraînement "${sessionName}" et les exercices déjà inclus (${existingExercises.join(', ')}), suggère 3 nouveaux exercices de tennis de table créatifs. 
+    Retourne la réponse sous forme de tableau JSON. Chaque objet du tableau doit avoir : "name" (chaîne), "duration" (nombre en minutes), "description" (chaîne), "material" (chaîne), et "theme" (chaîne parmi : 'Coup Droit (CD)', 'Revers (RV)', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes').
+    Ne suggère pas d'exercices déjà dans la liste.
+    Exemple d'un objet : {"name": "Topspin enchaîné sur pivot", "duration": 15, "description": "L'entraîneur envoie une balle courte en RV, le joueur fait une poussette, puis une balle longue en CD que le joueur attaque en topspin après un pivot.", "material": "Panier de balles", "theme": "Topspin"}
+    `;
+
+  try {
+    let text = "";
+    if (config.provider === 'openrouter') {
+      text = await callOpenRouter(config, prompt, true);
+    } else {
+      // Google Schema
+      const schema = {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            name: { type: Type.STRING },
+            duration: { type: Type.INTEGER },
+            description: { type: Type.STRING },
+            material: { type: Type.STRING },
+            theme: { type: Type.STRING },
+          }
+        }
+      };
+      text = await callGoogle(config, prompt, schema);
+    }
+
+    const jsonString = cleanJSON(text);
+    return JSON.parse(jsonString) as SuggestedExercise[];
+  } catch (error) {
+    console.error("Error suggesting exercises:", error);
     return [];
   }
 };
 
-export const generateCyclePlan = async (cycleObjective: string, numberOfWeeks: number): Promise<{ weeks: any[] }> => {
-  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+export type CyclePlan = { weeks: { weekNumber: number; theme: string; notes: string }[] };
 
-  const prompt = `Tu es un coach d'entraînement expert. Crée un plan d'entraînement structuré avec une progression logique.
-
-Objectif: "${cycleObjective}"
-Nombre de semaines: ${numberOfWeeks}
-
-Réponds avec UNIQUEMENT un JSON valide (pas de markdown, pas d'explications) avec cette structure:
-{
-  "weeks": [
-    {
-      "weekNumber": 1,
-      "theme": "Focus technique ou capacité (ex: Endurance, Force, Technique)",
-      "notes": "Conseils d'entraînement pour cette semaine"
-    }
-  ]
-}
-
-Génère exactement ${numberOfWeeks} semaines avec une progression cohérente.`;
-
-  const response = await model.generateContent(prompt);
-  const text = response.response.text();
-  const cleaned = cleanJSON(text);
+export const generateCyclePlan = async (promptText: string, numWeeks: number): Promise<CyclePlan> => {
+  const config = getAIConfig();
+  const prompt = `
+        En te basant sur l'objectif suivant pour un cycle d'entraînement de tennis de table : "${promptText}", crée un plan structuré pour ${numWeeks} semaines.
+        Pour chaque semaine, fournis un "theme" principal (un focus technique ou tactique) et de brèves "notes" (points clés ou objectifs pour cette semaine).
+        Retourne le résultat sous forme d'objet JSON avec une seule clé "weeks", qui est un tableau d'objets. Chaque objet doit avoir "weekNumber", "theme", et "notes".
+    `;
 
   try {
-    return JSON.parse(cleaned);
-  } catch (e) {
-    console.error("Failed to parse cycle plan:", cleaned);
+    let text = "";
+    if (config.provider === 'openrouter') {
+        text = await callOpenRouter(config, prompt, true);
+    } else {
+        const schema = {
+            type: Type.OBJECT,
+            properties: {
+                weeks: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            weekNumber: { type: Type.INTEGER },
+                            theme: { type: Type.STRING },
+                            notes: { type: Type.STRING }
+                        }
+                    }
+                }
+            }
+        };
+        text = await callGoogle(config, prompt, schema);
+    }
+    
+    const jsonString = cleanJSON(text);
+    return JSON.parse(jsonString) as CyclePlan;
+  } catch (error) {
+    console.error("Error generating cycle plan:", error);
     return { weeks: [] };
   }
 };

@@ -39,4 +39,12 @@ export interface Cycle {
   weeks: CycleWeek[];
 }
 
-export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar';
+export type AIProvider = 'google' | 'openrouter';
+
+export interface AIConfig {
+  provider: AIProvider;
+  apiKey: string;
+  model: string;
+}
+
+export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings';

@@ -3,12 +3,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar as CalendarIcon, Plus, Save, Printer, Filter, X, GripVertical, 
   Clock, Users, Target, Trash2, BookOpen, BarChart3, Bot, Search, 
-  ChevronRight, LayoutDashboard, Settings, Menu, Sparkles, ArrowRight, CalendarDays
+  ChevronRight, LayoutDashboard, Settings, Menu, Sparkles, ArrowRight, CalendarDays,
+  Cpu, Key, SaveAll, Cloud, CloudOff
 } from 'lucide-react';
-import { Exercise, Session, Cycle, View, PhaseId, CycleWeek } from './types';
+import { Exercise, Session, Cycle, View, PhaseId, CycleWeek, AIConfig } from './types';
 import { PHASES, THEMES, INITIAL_EXERCISES, EMPTY_SESSION } from './constants';
 import { refineExerciseDescription, suggestExercises, generateCyclePlan, type SuggestedExercise } from './services/geminiService';
 import { GeminiButton } from './components/GeminiButton';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 // --- Sub-Components for cleaner code ---
 
@@ -27,9 +29,7 @@ const SidebarItem = ({ view, currentView, setView, icon: Icon, label }: any) => 
 );
 
 const StatCard = ({ title, value, icon: Icon, colorClass }: any) => {
-  // Extract the base color name (e.g., 'blue' from 'bg-blue-500') to ensure correct text coloring
   const textColor = colorClass.split(' ')[0].replace('bg-', 'text-');
-  
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
       <div>
@@ -45,7 +45,6 @@ const StatCard = ({ title, value, icon: Icon, colorClass }: any) => {
 
 const PhaseDropZone = ({ phase, exercises, onDrop, onRemove, totalDuration }: any) => {
   const [isOver, setIsOver] = useState(false);
-  // Ensure exercises is always an array
   const safeExercises = Array.isArray(exercises) ? exercises : [];
 
   return (
@@ -72,7 +71,6 @@ const PhaseDropZone = ({ phase, exercises, onDrop, onRemove, totalDuration }: an
             Glissez des exercices ici
           </div>
         ) : (
-          // Filter out null/undefined exercises to prevent crashes
           safeExercises.filter((ex: Exercise) => ex).map((ex: Exercise) => (
             <div key={ex.instanceId} className="group bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:border-orange-200 hover:shadow-md transition-all flex items-start gap-3">
                <div className="mt-1 p-1.5 bg-slate-50 rounded-lg text-slate-400">
@@ -110,6 +108,8 @@ export default function App() {
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
   const [savedSessions, setSavedSessions] = useState<Session[]>([]);
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [aiConfig, setAiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-2.5-flash' });
+  const [isConnectedToSupabase, setIsConnectedToSupabase] = useState(false);
   
   // Filters & Search
   const [filterPhase, setFilterPhase] = useState('all');
@@ -131,46 +131,126 @@ export default function App() {
   // Refs
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialization
+  // Initialization Data Logic
   useEffect(() => {
-    const loadData = () => {
-      try {
-        const exResult = localStorage.getItem('pingmanager_exercises');
-        const sessResult = localStorage.getItem('pingmanager_sessions');
-        const cyclesResult = localStorage.getItem('pingmanager_cycles');
-        
-        // Sanitize loaded data to ensure no nulls
-        const loadedExercises = exResult ? JSON.parse(exResult) : INITIAL_EXERCISES;
-        setExercises(Array.isArray(loadedExercises) ? loadedExercises.filter(e => e) : INITIAL_EXERCISES);
+    const loadData = async () => {
+      let loadedExercises = INITIAL_EXERCISES;
+      let loadedSessions: Session[] = [];
+      let loadedCycles: Cycle[] = [];
 
-        const loadedSessions = sessResult ? JSON.parse(sessResult) : [];
-        setSavedSessions(Array.isArray(loadedSessions) ? loadedSessions : []);
-        
-        const loadedCycles = cyclesResult ? JSON.parse(cyclesResult) : [];
-        setCycles(Array.isArray(loadedCycles) ? loadedCycles : []);
+      // Check Supabase Connection
+      const hasSupabase = isSupabaseConfigured();
+      setIsConnectedToSupabase(hasSupabase);
 
-      } catch (err) {
-        console.error("Error loading data:", err);
-        setExercises(INITIAL_EXERCISES);
-        setSavedSessions([]);
-        setCycles([]);
+      if (hasSupabase && supabase) {
+          try {
+              // Fetch from Supabase
+              const { data: customExos } = await supabase.from('custom_exercises').select('*');
+              const { data: sess } = await supabase.from('sessions').select('*');
+              const { data: cyc } = await supabase.from('cycles').select('*');
+
+              if (customExos) loadedExercises = [...INITIAL_EXERCISES, ...customExos];
+              if (sess) loadedSessions = sess;
+              if (cyc) {
+                  // Mapper les champs snake_case de la DB vers camelCase si nécessaire
+                  // Ici on suppose que la DB a les mêmes noms de colonnes ou qu'on gère le mapping
+                  // Pour simplifier avec JSONB, 'weeks' est déjà un tableau.
+                  loadedCycles = cyc.map((c: any) => ({
+                      id: c.id,
+                      name: c.name,
+                      startDate: c.start_date, // Mapping start_date -> startDate
+                      weeks: c.weeks
+                  }));
+              }
+          } catch (error) {
+              console.error("Erreur chargement Supabase, repli sur LocalStorage", error);
+          }
+      } 
+      
+      // If Supabase failed or is not configured, fetch LocalStorage
+      if ((!hasSupabase || loadedSessions.length === 0) && localStorage.getItem('pingmanager_sessions')) {
+          try {
+            const exResult = localStorage.getItem('pingmanager_exercises');
+            const sessResult = localStorage.getItem('pingmanager_sessions');
+            const cyclesResult = localStorage.getItem('pingmanager_cycles');
+            
+            const lsExercises = exResult ? JSON.parse(exResult) : [];
+            // Merge custom exercises from LS if not already present
+            // Simple logic: use LS if Supabase empty
+            if (loadedExercises.length === INITIAL_EXERCISES.length && lsExercises.length > 0) {
+                loadedExercises = lsExercises;
+            }
+
+            const lsSessions = sessResult ? JSON.parse(sessResult) : [];
+            if (loadedSessions.length === 0) loadedSessions = lsSessions;
+
+            const lsCycles = cyclesResult ? JSON.parse(cyclesResult) : [];
+            if (loadedCycles.length === 0) loadedCycles = lsCycles;
+
+          } catch (err) { console.error("LS Error", err); }
       }
+
+      setExercises(loadedExercises);
+      setSavedSessions(loadedSessions);
+      setCycles(loadedCycles);
+
+      const aiConfigResult = localStorage.getItem('pingmanager_ai_config');
+      if (aiConfigResult) setAiConfig(JSON.parse(aiConfigResult));
     };
+    
     loadData();
   }, []);
 
-  // Persistence
-  useEffect(() => {
-    try {
-      localStorage.setItem('pingmanager_exercises', JSON.stringify(exercises));
-      localStorage.setItem('pingmanager_sessions', JSON.stringify(savedSessions));
-      localStorage.setItem('pingmanager_cycles', JSON.stringify(cycles));
-    } catch (err) { console.error('Save error:', err); }
-  }, [exercises, savedSessions, cycles]);
+  // Persistence Helpers
+  const persistExercises = async (newExercises: Exercise[], newItem?: Exercise) => {
+     setExercises(newExercises);
+     localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises));
+     
+     if (isConnectedToSupabase && supabase && newItem) {
+         await supabase.from('custom_exercises').upsert(newItem);
+     }
+  };
+
+  const persistSessions = async (newSessions: Session[], currentSess?: Session) => {
+      setSavedSessions(newSessions);
+      localStorage.setItem('pingmanager_sessions', JSON.stringify(newSessions));
+
+      if (isConnectedToSupabase && supabase && currentSess) {
+          await supabase.from('sessions').upsert({
+              id: currentSess.id,
+              name: currentSess.name,
+              date: currentSess.date,
+              exercises: currentSess.exercises
+          });
+      }
+  };
+
+  const persistCycles = async (newCycles: Cycle[], currentCyc?: Cycle) => {
+      setCycles(newCycles);
+      localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles));
+
+      if (isConnectedToSupabase && supabase && currentCyc) {
+           await supabase.from('cycles').upsert({
+               id: currentCyc.id,
+               name: currentCyc.name,
+               start_date: currentCyc.startDate,
+               weeks: currentCyc.weeks
+           });
+      }
+  };
+
+  const deleteCycleData = async (id: number) => {
+      const newCycles = cycles.filter(c => c.id !== id);
+      setCycles(newCycles);
+      localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles));
+      if (isConnectedToSupabase && supabase) {
+          await supabase.from('cycles').delete().eq('id', id);
+      }
+  };
 
   // Helpers
   const filteredExercises = exercises.filter(ex => {
-    if (!ex) return false; // Safety check
+    if (!ex) return false; 
     if (filterPhase !== 'all' && ex.phase !== filterPhase) return false;
     if (filterTheme !== 'all' && ex.theme !== filterTheme) return false;
     if (searchTerm) {
@@ -187,7 +267,6 @@ export default function App() {
     try {
       const allExercises = Object.values(session.exercises).flat() as Exercise[];
       if (!Array.isArray(allExercises)) return 0;
-      // Filter nulls before reduce
       return allExercises.filter(e => e).reduce((sum, ex) => sum + (ex?.duration || 0), 0);
     } catch (e) {
       console.warn("Error calculating duration", e);
@@ -197,25 +276,19 @@ export default function App() {
 
   const getActiveCycleInfo = () => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Reset time for accurate date comparison
+    now.setHours(0, 0, 0, 0); 
 
-    // Find first active cycle
     const active = cycles.map(c => {
         if (!c.startDate) return null;
-        
-        // Fix: Create date from parts to avoid UTC conversion issues that might shift the day
         const [y, m, d] = c.startDate.split('-').map(Number);
-        const start = new Date(y, m - 1, d); // Local time 00:00:00
+        const start = new Date(y, m - 1, d); 
         
         const diffTime = now.getTime() - start.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        // Check if cycle has started
         if (diffDays < 0) return null;
 
         const weekIdx = Math.floor(diffDays / 7);
-        
-        // Check if cycle is still ongoing
         if (weekIdx < c.weeks.length) {
             return { 
                 cycle: c, 
@@ -261,35 +334,58 @@ export default function App() {
   // Data Operations
   const saveSession = () => {
     if (!currentSession.name.trim()) return;
-    const existingSessionIndex = savedSessions.findIndex(s => s.id === currentSession.id);
+    
+    let sessionToSave = currentSession;
+    // Ensure ID exists
+    if (!sessionToSave.id) sessionToSave = { ...sessionToSave, id: Date.now() };
+
+    let updatedSessions = [...savedSessions];
+    const existingSessionIndex = savedSessions.findIndex(s => s.id === sessionToSave.id);
+    
     if (existingSessionIndex > -1) {
-        const updated = [...savedSessions];
-        updated[existingSessionIndex] = currentSession;
-        setSavedSessions(updated);
+        updatedSessions[existingSessionIndex] = sessionToSave;
     } else {
-        setSavedSessions(prev => [...prev, { ...currentSession, id: Date.now() }]);
+        updatedSessions.push(sessionToSave);
     }
+    
+    persistSessions(updatedSessions, sessionToSave);
     setCurrentSession({ ...EMPTY_SESSION });
     setView('history');
   };
 
   const addNewExercise = () => {
     if (!newExercise?.name) return;
-    setExercises(prev => [...prev, { ...newExercise, id: `custom_${Date.now()}` } as Exercise]);
+    const exerciseToAdd = { ...newExercise, id: `custom_${Date.now()}` } as Exercise;
+    const updatedExercises = [...exercises, exerciseToAdd];
+    persistExercises(updatedExercises, exerciseToAdd);
     setNewExercise(null);
   };
 
   const saveCycle = () => {
     if (!currentCycle?.name) return;
-    if ('id' in currentCycle) {
-       setCycles(prev => prev.map(c => c.id === currentCycle.id ? currentCycle as Cycle : c));
+    
+    let cycleToSave = currentCycle as Cycle;
+    if (!cycleToSave.id) cycleToSave = { ...cycleToSave, id: Date.now() };
+
+    let updatedCycles = [...cycles];
+    const existingIdx = cycles.findIndex(c => c.id === cycleToSave.id);
+    
+    if (existingIdx > -1) {
+       updatedCycles[existingIdx] = cycleToSave;
     } else {
-       setCycles(prev => [...prev, { ...currentCycle, id: Date.now() } as Cycle]);
+       updatedCycles.push(cycleToSave);
     }
+    
+    persistCycles(updatedCycles, cycleToSave);
     setCurrentCycle(null);
   };
 
-  // AI Handlers
+  const saveAIConfig = () => {
+    localStorage.setItem('pingmanager_ai_config', JSON.stringify(aiConfig));
+    alert('Configuration IA sauvegardée !');
+  };
+
+  // AI Handlers (unchanged)
   const handleRefineDescription = async () => {
     if (!newExercise?.description) return;
     setIsLoadingAI(true);
@@ -362,7 +458,16 @@ export default function App() {
             <div className="bg-accent p-2 rounded-lg">
                <Target className="text-white" size={24} />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Ping<span className="text-accent">Manager</span></h1>
+            <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Ping<span className="text-accent">Manager</span></h1>
+                <div className="flex items-center gap-1 text-[10px] font-medium mt-1">
+                    {isConnectedToSupabase ? (
+                        <><Cloud size={10} className="text-emerald-400"/> <span className="text-emerald-400">Cloud Actif</span></>
+                    ) : (
+                        <><CloudOff size={10} className="text-slate-500"/> <span className="text-slate-500">Mode Local</span></>
+                    )}
+                </div>
+            </div>
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2">
@@ -371,6 +476,7 @@ export default function App() {
             <SidebarItem view="calendar" currentView={view} setView={setView} icon={CalendarIcon} label="Planification (Cycles)" />
             <SidebarItem view="history" currentView={view} setView={setView} icon={BookOpen} label="Historique Séances" />
             <SidebarItem view="library" currentView={view} setView={setView} icon={Filter} label="Bibliothèque Exos" />
+            <SidebarItem view="settings" currentView={view} setView={setView} icon={Settings} label="Paramètres" />
           </nav>
           
           <div className="p-4 bg-slate-900/50 m-4 rounded-xl border border-slate-800">
@@ -378,7 +484,7 @@ export default function App() {
               <Sparkles size={16} />
               <span className="text-xs font-bold uppercase tracking-wider">AI Powered</span>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">Utilisez Gemini 2.5 Flash pour optimiser vos entraînements.</p>
+            <p className="text-xs text-slate-400 leading-relaxed">Utilisez {aiConfig.provider === 'openrouter' ? 'OpenRouter' : 'Gemini 2.5 Flash'} pour optimiser vos entraînements.</p>
           </div>
         </div>
       </aside>
@@ -404,7 +510,11 @@ export default function App() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h2 className="text-3xl font-bold text-slate-800">Bonjour, Coach 👋</h2>
-                  <p className="text-slate-500 mt-1">Voici un aperçu de votre activité.</p>
+                  <p className="text-slate-500 mt-1">
+                      {isConnectedToSupabase 
+                        ? "Vos données sont synchronisées avec le Cloud." 
+                        : "Mode hors ligne (données locales uniquement)."}
+                  </p>
                 </div>
                 <button onClick={() => setView('sessions')} className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2">
                   <Plus size={20} /> Nouvelle Séance
@@ -517,7 +627,7 @@ export default function App() {
                      </div>
                      <h3 className="text-2xl font-bold mb-3">Besoin d'inspiration ?</h3>
                      <p className="text-slate-300 mb-8 leading-relaxed">
-                        Laissez l'IA Gemini analyser vos objectifs et vous suggérer des exercices sur-mesure pour compléter vos séances.
+                        Laissez l'IA {aiConfig.provider === 'openrouter' ? 'OpenRouter' : 'Gemini'} analyser vos objectifs et vous suggérer des exercices sur-mesure.
                      </p>
                      <button onClick={() => setView('sessions')} className="w-full bg-white text-slate-900 hover:bg-slate-100 px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg">
                        Créer avec l'IA <ArrowRight size={18} />
@@ -740,7 +850,7 @@ export default function App() {
              </div>
           )}
 
-          {/* OTHER VIEWS (History & Library Wrapper - simplified logic reuses components potentially but kept explicit for xml) */}
+          {/* OTHER VIEWS */}
           {view === 'history' && (
              <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <h2 className="text-2xl font-bold text-slate-800 mb-6">Historique des Séances</h2>
@@ -810,6 +920,93 @@ export default function App() {
             </div>
           )}
 
+          {/* SETTINGS VIEW */}
+          {view === 'settings' && (
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-8 animate-fade-in">
+              <div className="flex items-center gap-3 mb-8 border-b border-slate-100 pb-4">
+                 <div className="p-3 bg-slate-100 rounded-full text-slate-700">
+                    <Settings size={24} />
+                 </div>
+                 <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Paramètres</h2>
+                    <p className="text-slate-500 text-sm">Configurez le moteur IA et la connexion Cloud.</p>
+                 </div>
+              </div>
+
+              {/* Statut Cloud */}
+              <div className="mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                 <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                    {isConnectedToSupabase ? <Cloud className="text-emerald-500"/> : <CloudOff className="text-slate-400"/>} 
+                    État de la synchronisation
+                 </h3>
+                 <p className="text-sm text-slate-600">
+                    {isConnectedToSupabase 
+                      ? "Connecté à Supabase. Vos données sont sauvegardées en ligne." 
+                      : "Déconnecté. Les données sont stockées uniquement dans ce navigateur (LocalStorage). Ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans Vercel pour activer le cloud."}
+                 </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                     <Cpu size={16} className="text-accent"/> Fournisseur IA
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                     <button 
+                        onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})}
+                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200 hover:border-slate-300 text-slate-500'}`}
+                     >
+                        <span className="font-bold">Google Gemini</span>
+                        <span className="text-xs opacity-80">Gratuit & Rapide</span>
+                     </button>
+                     <button 
+                        onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})}
+                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200 hover:border-slate-300 text-slate-500'}`}
+                     >
+                        <span className="font-bold">OpenRouter</span>
+                        <span className="text-xs opacity-80">Accès à GPT-4, Claude...</span>
+                     </button>
+                  </div>
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                      <Key size={16} className="text-accent"/> Clé API IA {aiConfig.provider === 'openrouter' ? '(OpenRouter)' : '(Google)'}
+                   </label>
+                   <input 
+                      type="password" 
+                      value={aiConfig.apiKey} 
+                      onChange={(e) => setAiConfig({...aiConfig, apiKey: e.target.value})} 
+                      placeholder={aiConfig.provider === 'google' ? "Laisser vide pour utiliser la clé par défaut" : "sk-or-..."}
+                      className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-accent text-slate-900"
+                   />
+                   <p className="text-xs text-slate-400 mt-2">
+                      {aiConfig.provider === 'google' 
+                         ? "Si vide, l'application utilisera la clé configurée sur Vercel." 
+                         : "Requis pour OpenRouter. Stocké localement dans votre navigateur."}
+                   </p>
+                </div>
+
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-2">Modèle IA</label>
+                   <input 
+                      type="text" 
+                      value={aiConfig.model} 
+                      onChange={(e) => setAiConfig({...aiConfig, model: e.target.value})} 
+                      className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-accent text-slate-900 font-mono text-sm"
+                   />
+                   <p className="text-xs text-slate-400 mt-2">Ex: gemini-2.5-flash, openai/gpt-4o, anthropic/claude-3-opus...</p>
+                </div>
+
+                <div className="pt-6 border-t border-slate-100 flex justify-end">
+                   <button onClick={saveAIConfig} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg">
+                      <SaveAll size={20} /> Enregistrer
+                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
@@ -860,7 +1057,7 @@ export default function App() {
               <p className="text-slate-500 text-sm mb-6">Cette action est irréversible.</p>
               <div className="flex gap-3 justify-center">
                  <button onClick={() => setCycleToDelete(null)} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium">Annuler</button>
-                 <button onClick={() => { setCycles(prev => prev.filter(c => c.id !== cycleToDelete)); setCycleToDelete(null); }} className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600">Confirmer</button>
+                 <button onClick={() => deleteCycleData(cycleToDelete)} className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600">Confirmer</button>
               </div>
            </div>
         </div>

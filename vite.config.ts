@@ -1,3 +1,4 @@
+
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -8,7 +9,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // Permet d'utiliser process.env.API_KEY dans le code frontend
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      // Inject Supabase vars for safe access in lib/supabase.ts
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
     }
   };
 });
