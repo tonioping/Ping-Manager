@@ -1,6 +1,6 @@
 
-import { GoogleGenAI, Type } from "@google/generative-ai";
-import { AIConfig } from "../types";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { AIConfig } from "../types"
 
 // Default configuration values
 const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
@@ -96,8 +96,8 @@ const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) 
   const apiKey = config.apiKey || process.env.API_KEY;
   if (!apiKey) throw new Error("Clé API Google manquante");
 
-  const ai = new GoogleGenAI({ apiKey });
-  const model = config.model || DEFAULT_GOOGLE_MODEL;
+  const ai = new GoogleGenerativeAI({ apiKey });
+    const model = config.model || DEFAULT_GOOGLE_MODEL;
 
   const generateConfig: any = {};
   if (schemaConfig) {
@@ -158,15 +158,15 @@ export const suggestExercises = async (sessionName: string, existingExercises: s
     } else {
       // Google Schema
       const schema = {
-        type: Type.ARRAY,
+        type: SchemaType.ARRAY,
         items: {
-          type: Type.OBJECT,
+          type: SchemaType.OBJECT,
           properties: {
-            name: { type: Type.STRING },
-            duration: { type: Type.INTEGER },
-            description: { type: Type.STRING },
-            material: { type: Type.STRING },
-            theme: { type: Type.STRING },
+            name: { type: SchemaType.STRING },
+            duration: { type: SchemaType.INTEGER },
+            description: { type: SchemaType.STRING },
+            material: { type: SchemaType.STRING },
+            theme: { type: SchemaType.STRING },
           }
         }
       };
@@ -197,16 +197,16 @@ export const generateCyclePlan = async (promptText: string, numWeeks: number): P
         text = await callOpenRouter(config, prompt, true);
     } else {
         const schema = {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
                 weeks: {
-                    type: Type.ARRAY,
+                    type: SchemaType.ARRAY,
                     items: {
-                        type: Type.OBJECT,
+                        type: SchemaType.OBJECT,
                         properties: {
-                            weekNumber: { type: Type.INTEGER },
-                            theme: { type: Type.STRING },
-                            notes: { type: Type.STRING }
+                            weekNumber: { type: SchemaType.INTEGER },
+                            theme: { type: SchemaType.STRING },
+                            notes: { type: SchemaType.STRING }
                         }
                     }
                 }
