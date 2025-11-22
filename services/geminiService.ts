@@ -93,10 +93,8 @@ const callOpenRouter = async (config: AIConfig, prompt: string, responseSchema?:
 
 // --- GOOGLE API CALLER ---
 const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) => {
-  const apiKey = config.apiKey || process.env.API_KEY;
-  if (!apiKey) throw new Error("Clé API Google manquante");
-
-  const ai = new GoogleGenAI({ apiKey });
+  // Guideline: Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = config.model || DEFAULT_GOOGLE_MODEL;
 
   const generateConfig: any = {};

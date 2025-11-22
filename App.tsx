@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar as CalendarIcon, Plus, Save, Printer, Filter, X, GripVertical, 
@@ -180,7 +181,7 @@ export default function App() {
 
             } catch (error) {
                 console.error("Error loading from Supabase:", error);
-                alert("Erreur de chargement Cloud.");
+                alert("Erreur de chargement Cloud. Vérifiez votre connexion.");
             }
         } 
         // B. LOCAL MODE (Not authenticated or offline)
@@ -389,6 +390,10 @@ export default function App() {
 
   const handleLogout = async () => {
       if (supabase) await supabase.auth.signOut();
+      // Clear cloud data from memory to prevent data leak
+      setSavedSessions([]);
+      setCycles([]);
+      setExercises(INITIAL_EXERCISES); // Reset to default only
       setSession(null);
       setShowAuth(true);
   };
@@ -579,7 +584,9 @@ export default function App() {
                 <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><Settings size={24} /></div><h2 className="text-2xl font-bold text-slate-800">Paramètres</h2></div>
                 <div className="space-y-6">
                    <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Cpu size={16} className="text-accent"/> Fournisseur IA</label><div className="grid grid-cols-2 gap-4"><button onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">Google</span></button><button onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">OpenRouter</span></button></div></div>
-                   <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Key size={16} className="text-accent"/> Clé API</label><input type="password" value={aiConfig.apiKey} onChange={(e) => setAiConfig({...aiConfig, apiKey: e.target.value})} className="w-full p-3 border rounded-xl text-slate-900"/></div>
+                   
+                   {/* API Key field removed as per Gemini guidelines */}
+                   
                    <div className="pt-6 border-t flex justify-end"><button onClick={saveAIConfig} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2"><SaveAll size={20} /> Enregistrer</button></div>
                 </div>
              </div>
