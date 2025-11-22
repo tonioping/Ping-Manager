@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIConfig } from "../types";
 
@@ -109,7 +108,7 @@ const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) 
     config: generateConfig
   });
 
-  return response.text;
+  return response.text || "";
 };
 
 // --- EXPORTED FUNCTIONS ---
