@@ -43,7 +43,6 @@ const StatCard = ({ title, value, icon: Icon, colorClass }: any) => {
   );
 };
 
-// Toast Notification Component
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
   <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
     {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
@@ -147,12 +146,11 @@ export default function App() {
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
   // 1. INITIALIZATION: Check Auth & Load Data
   useEffect(() => {
-    // Get session from Supabase if configured
     if (supabase) {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
@@ -166,28 +164,26 @@ export default function App() {
 
         return () => subscription.unsubscribe();
     } else {
-        // No supabase configured, skip auth screen
         setShowAuth(false);
     }
   }, []);
 
-  // 2. DATA LOADING LOGIC (Separated)
+  // 2. DATA LOADING LOGIC
   useEffect(() => {
     const loadData = async () => {
-        // A. CLOUD MODE (Authenticated)
         if (session && supabase) {
             try {
                 // console.log("Loading from Supabase...");
-                // 1. Exercises (Default + Custom)
-                const { data: customExos } = await supabase.from('custom_exercises').select('*');
+                const { data: customExos, error: errorExos } = await supabase.from('custom_exercises').select('*');
+                if (errorExos) throw errorExos;
                 setExercises([...INITIAL_EXERCISES, ...(customExos || [])]);
 
-                // 2. Sessions
-                const { data: sess } = await supabase.from('sessions').select('*').order('date', { ascending: false });
+                const { data: sess, error: errorSess } = await supabase.from('sessions').select('*').order('date', { ascending: false });
+                if (errorSess) throw errorSess;
                 setSavedSessions(sess || []);
 
-                // 3. Cycles (Mapping snake_case to camelCase)
-                const { data: cyc } = await supabase.from('cycles').select('*');
+                const { data: cyc, error: errorCyc } = await supabase.from('cycles').select('*');
+                if (errorCyc) throw errorCyc;
                 const mappedCycles = (cyc || []).map((c: any) => ({
                     id: c.id,
                     name: c.name,
@@ -196,12 +192,12 @@ export default function App() {
                 }));
                 setCycles(mappedCycles);
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error loading from Supabase:", error);
-                showToast("Erreur de chargement Cloud", 'error');
+                // Don't show toast on load error to avoid spam, just log
+                // showToast(`Erreur Cloud: ${error.message}`, 'error');
             }
         } 
-        // B. LOCAL MODE (Not authenticated or offline)
         else {
             console.log("Loading from LocalStorage...");
             try {
@@ -211,7 +207,6 @@ export default function App() {
                 const aiConfigResult = localStorage.getItem('pingmanager_ai_config');
 
                 const lsExercises = exResult ? JSON.parse(exResult) : [];
-                // Only overwrite initial if we have data
                 if (lsExercises.length > 0) {
                     setExercises(lsExercises);
                 } else {
@@ -233,9 +228,9 @@ export default function App() {
     }
   }, [session, showAuth]);
 
-  // 3. PERSISTENCE LOGIC (Supabase First)
+  // 3. PERSISTENCE LOGIC (FIXED & ROBUST)
   const persistExercises = async (newExercises: Exercise[], newItem?: Exercise) => {
-     setExercises(newExercises); // Optimistic update
+     setExercises(newExercises); 
      
      if (supabase && newItem) {
          const { data: { user } } = await supabase.auth.getUser();
@@ -251,7 +246,8 @@ export default function App() {
                  user_id: user.id
              });
              if (error) {
-                 showToast("Erreur Cloud: " + error.message, 'error');
+                 console.error(error);
+                 showToast("Erreur sauvegarde Exercice (Cloud)", 'error');
              } else {
                  showToast("Exercice sauvegardé (Cloud)");
              }
@@ -278,9 +274,14 @@ export default function App() {
                   exercises: currentSess.exercises,
                   user_id: user.id
               });
+              
               if (error) {
                   console.error("Supabase Session Error:", error);
-                  showToast("Erreur sauvegarde Cloud !", 'error');
+                  if (error.code === '42P01') {
+                      showToast("ERREUR CRITIQUE : Tables manquantes dans Supabase !", 'error');
+                  } else {
+                      showToast(`Erreur sauvegarde : ${error.message}`, 'error');
+                  }
               } else {
                   showToast("Séance sauvegardée (Cloud)");
               }
@@ -295,7 +296,7 @@ export default function App() {
   };
 
   const persistCycles = async (newCycles: Cycle[], currentCyc?: Cycle) => {
-      setCycles(newCycles); // Optimistic
+      setCycles(newCycles);
 
       if (supabase && currentCyc) {
            const { data: { user } } = await supabase.auth.getUser();
@@ -374,7 +375,7 @@ export default function App() {
   const activeCycleData = getActiveCycleInfo();
   const totalDuration = calculateTotalDuration(currentSession);
 
-  // Drag & Drop & Filters (Unchanged mostly)
+  // Drag & Drop & Filters
   const filteredExercises = exercises.filter(ex => {
     if (!ex) return false; 
     if (filterPhase !== 'all' && ex.phase !== filterPhase) return false;
