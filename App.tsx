@@ -4,7 +4,7 @@ import {
   Calendar as CalendarIcon, Plus, Save, Printer, Filter, X, GripVertical, 
   Clock, Users, Target, Trash2, BookOpen, Bot, Search, 
   LayoutDashboard, Settings, Menu, Sparkles, ArrowRight, CalendarDays,
-  Cpu, Key, SaveAll, Cloud, CloudOff, LogOut, LogIn, User
+  Cpu, Key, SaveAll, Cloud, CloudOff, LogOut, LogIn, User, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { Exercise, Session, Cycle, View, PhaseId, AIConfig } from './types';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION } from './constants';
@@ -42,6 +42,15 @@ const StatCard = ({ title, value, icon: Icon, colorClass }: any) => {
     </div>
   );
 };
+
+// Toast Notification Component
+const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
+  <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+    {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+    <span className="font-medium text-sm">{message}</span>
+    <button onClick={onClose}><X size={16} className="opacity-50 hover:opacity-100" /></button>
+  </div>
+);
 
 const PhaseDropZone = ({ phase, exercises, onDrop, onRemove }: any) => {
   const [isOver, setIsOver] = useState(false);
@@ -114,6 +123,9 @@ export default function App() {
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [aiConfig, setAiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-2.5-flash' });
   
+  // Feedback State
+  const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
+
   // Filters & UI State
   const [filterPhase, setFilterPhase] = useState('all');
   const [filterTheme, setFilterTheme] = useState('all');
@@ -132,6 +144,11 @@ export default function App() {
 
   // Refs
   const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // 1. INITIALIZATION: Check Auth & Load Data
   useEffect(() => {
@@ -160,7 +177,7 @@ export default function App() {
         // A. CLOUD MODE (Authenticated)
         if (session && supabase) {
             try {
-                console.log("Loading from Supabase...");
+                // console.log("Loading from Supabase...");
                 // 1. Exercises (Default + Custom)
                 const { data: customExos } = await supabase.from('custom_exercises').select('*');
                 setExercises([...INITIAL_EXERCISES, ...(customExos || [])]);
@@ -181,7 +198,7 @@ export default function App() {
 
             } catch (error) {
                 console.error("Error loading from Supabase:", error);
-                alert("Erreur de chargement Cloud. Vérifiez votre connexion.");
+                showToast("Erreur de chargement Cloud", 'error');
             }
         } 
         // B. LOCAL MODE (Not authenticated or offline)
@@ -220,60 +237,88 @@ export default function App() {
   const persistExercises = async (newExercises: Exercise[], newItem?: Exercise) => {
      setExercises(newExercises); // Optimistic update
      
-     if (session && supabase && newItem) {
-         // Cloud Save
-         const { error } = await supabase.from('custom_exercises').insert({
-             id: newItem.id,
-             name: newItem.name,
-             phase: newItem.phase,
-             theme: newItem.theme,
-             duration: newItem.duration,
-             description: newItem.description,
-             material: newItem.material,
-             user_id: session.user.id
-         });
-         if (error) console.error("Supabase Exercise Error:", error);
+     if (supabase && newItem) {
+         const { data: { user } } = await supabase.auth.getUser();
+         if (user) {
+             const { error } = await supabase.from('custom_exercises').insert({
+                 id: newItem.id,
+                 name: newItem.name,
+                 phase: newItem.phase,
+                 theme: newItem.theme,
+                 duration: newItem.duration,
+                 description: newItem.description,
+                 material: newItem.material,
+                 user_id: user.id
+             });
+             if (error) {
+                 showToast("Erreur Cloud: " + error.message, 'error');
+             } else {
+                 showToast("Exercice sauvegardé (Cloud)");
+             }
+         } else {
+             localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises));
+             showToast("Exercice sauvegardé (Local)");
+         }
      } else {
-         // Local Save
          localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises));
+         showToast("Exercice sauvegardé (Local)");
      }
   };
 
   const persistSessions = async (newSessions: Session[], currentSess?: Session) => {
       setSavedSessions(newSessions); // Optimistic
 
-      if (session && supabase && currentSess) {
-          // Cloud Save
-          const { error } = await supabase.from('sessions').upsert({
-              id: currentSess.id,
-              name: currentSess.name,
-              date: currentSess.date,
-              exercises: currentSess.exercises,
-              user_id: session.user.id
-          });
-          if (error) console.error("Supabase Session Error:", error);
+      if (supabase && currentSess) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+              const { error } = await supabase.from('sessions').upsert({
+                  id: currentSess.id,
+                  name: currentSess.name,
+                  date: currentSess.date,
+                  exercises: currentSess.exercises,
+                  user_id: user.id
+              });
+              if (error) {
+                  console.error("Supabase Session Error:", error);
+                  showToast("Erreur sauvegarde Cloud !", 'error');
+              } else {
+                  showToast("Séance sauvegardée (Cloud)");
+              }
+          } else {
+              localStorage.setItem('pingmanager_sessions', JSON.stringify(newSessions));
+              showToast("Séance sauvegardée (Local)");
+          }
       } else {
-          // Local Save
           localStorage.setItem('pingmanager_sessions', JSON.stringify(newSessions));
+          showToast("Séance sauvegardée (Local)");
       }
   };
 
   const persistCycles = async (newCycles: Cycle[], currentCyc?: Cycle) => {
       setCycles(newCycles); // Optimistic
 
-      if (session && supabase && currentCyc) {
-           // Cloud Save (Map camelCase back to snake_case)
-           const { error } = await supabase.from('cycles').upsert({
-               id: currentCyc.id,
-               name: currentCyc.name,
-               start_date: currentCyc.startDate,
-               weeks: currentCyc.weeks,
-               user_id: session.user.id
-           });
-           if (error) console.error("Supabase Cycle Error:", error);
+      if (supabase && currentCyc) {
+           const { data: { user } } = await supabase.auth.getUser();
+           if (user) {
+               const { error } = await supabase.from('cycles').upsert({
+                   id: currentCyc.id,
+                   name: currentCyc.name,
+                   start_date: currentCyc.startDate,
+                   weeks: currentCyc.weeks,
+                   user_id: user.id
+               });
+               if (error) {
+                   showToast("Erreur sauvegarde Cycle", 'error');
+               } else {
+                   showToast("Cycle sauvegardé (Cloud)");
+               }
+           } else {
+               localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles));
+               showToast("Cycle sauvegardé (Local)");
+           }
       } else {
-           // Local Save
            localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles));
+           showToast("Cycle sauvegardé (Local)");
       }
   };
 
@@ -281,10 +326,18 @@ export default function App() {
       const newCycles = cycles.filter(c => c.id !== id);
       setCycles(newCycles);
 
-      if (session && supabase) {
-          await supabase.from('cycles').delete().eq('id', id);
+      if (supabase) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+              await supabase.from('cycles').delete().eq('id', id);
+              showToast("Cycle supprimé (Cloud)");
+          } else {
+              localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles));
+              showToast("Cycle supprimé (Local)");
+          }
       } else {
           localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles));
+          showToast("Cycle supprimé (Local)");
       }
   };
 
@@ -385,17 +438,19 @@ export default function App() {
 
   const saveAIConfig = () => {
     localStorage.setItem('pingmanager_ai_config', JSON.stringify(aiConfig));
-    alert('Configuration IA sauvegardée !');
+    showToast('Configuration IA sauvegardée !');
   };
 
   const handleLogout = async () => {
-      if (supabase) await supabase.auth.signOut();
-      // Clear cloud data from memory to prevent data leak
-      setSavedSessions([]);
-      setCycles([]);
-      setExercises(INITIAL_EXERCISES); // Reset to default only
-      setSession(null);
-      setShowAuth(true);
+      if (confirm("Déconnexion : Vos données Cloud ne seront plus visibles en mode local. Continuer ?")) {
+          if (supabase) await supabase.auth.signOut();
+          setSavedSessions([]);
+          setCycles([]);
+          setExercises(INITIAL_EXERCISES); 
+          setSession(null);
+          setShowAuth(true);
+          showToast("Déconnecté. Mode Local actif.");
+      }
   };
 
   // AI Handlers
@@ -441,7 +496,9 @@ export default function App() {
   // --- RENDER MAIN APP ---
   return (
     <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
-      
+      {/* Toast Notification */}
+      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-primary text-slate-300 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col">
