@@ -4,7 +4,7 @@ import {
   Calendar as CalendarIcon, Plus, Save, Printer, Filter, X, GripVertical, 
   Clock, Users, Target, Trash2, BookOpen, Bot, Search, 
   LayoutDashboard, Settings, Menu, Sparkles, ArrowRight, CalendarDays,
-  Cpu, Key, SaveAll, Cloud, CloudOff, LogOut, User
+  Cpu, Key, SaveAll, Cloud, CloudOff, LogOut, LogIn, User
 } from 'lucide-react';
 import { Exercise, Session, Cycle, View, PhaseId, AIConfig } from './types';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION } from './constants';
@@ -471,9 +471,13 @@ export default function App() {
           </nav>
           
           <div className="p-4">
-             {session && (
+             {session ? (
                 <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800 mb-4">
                     <LogOut size={16} /> Déconnexion
+                </button>
+             ) : (
+                <button onClick={() => setShowAuth(true)} className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover transition-colors rounded-lg mb-4 shadow-lg shadow-orange-500/20">
+                    <LogIn size={16} /> Connexion Cloud
                 </button>
              )}
              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
@@ -585,8 +589,32 @@ export default function App() {
                 <div className="space-y-6">
                    <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Cpu size={16} className="text-accent"/> Fournisseur IA</label><div className="grid grid-cols-2 gap-4"><button onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">Google</span></button><button onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">OpenRouter</span></button></div></div>
                    
-                   {/* API Key field removed as per Gemini guidelines */}
+                   {aiConfig.provider === 'openrouter' && (
+                     <div>
+                       <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                         <Key size={16} className="text-accent"/> Clé API OpenRouter
+                       </label>
+                       <input 
+                         type="password" 
+                         value={aiConfig.apiKey} 
+                         onChange={(e) => setAiConfig({...aiConfig, apiKey: e.target.value})} 
+                         className="w-full p-3 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none transition-all"
+                         placeholder="sk-or-..."
+                       />
+                       <p className="text-xs text-slate-400 mt-1">Nécessaire pour utiliser les modèles OpenRouter.</p>
+                     </div>
+                   )}
                    
+                   {aiConfig.provider === 'google' && (
+                     <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center gap-3">
+                        <Sparkles size={20} />
+                        <div>
+                          <p className="font-bold text-sm">Mode Google Gemini natif</p>
+                          <p className="text-xs opacity-80">L'application utilise la clé API sécurisée du serveur.</p>
+                        </div>
+                     </div>
+                   )}
+
                    <div className="pt-6 border-t flex justify-end"><button onClick={saveAIConfig} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2"><SaveAll size={20} /> Enregistrer</button></div>
                 </div>
              </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LogIn, UserPlus, Loader2, AlertCircle } from 'lucide-react';
@@ -46,8 +47,11 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 animate-fade-in">
         <div className="text-center mb-8">
+          <div className="inline-flex p-3 bg-orange-50 rounded-full mb-4">
+             <LogIn className="text-orange-500" size={32} />
+          </div>
           <h1 className="text-3xl font-bold text-slate-800 mb-2">Ping<span className="text-orange-500">Manager</span></h1>
           <p className="text-slate-500">Connectez-vous pour synchroniser vos données.</p>
         </div>
@@ -67,7 +71,7 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-slate-900"
               placeholder="coach@exemple.com"
             />
           </div>
@@ -79,7 +83,7 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+              className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-slate-900"
               placeholder="••••••••"
             />
           </div>
@@ -104,7 +108,8 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
         </div>
         
         <div className="mt-8 pt-6 border-t text-center">
-             <button onClick={() => onAuthSuccess()} className="text-xs text-slate-400 hover:text-slate-600 underline">
+             <p className="text-xs text-slate-400 mb-2">Vous n'avez pas de compte ?</p>
+             <button onClick={() => onAuthSuccess()} className="text-sm font-semibold text-slate-600 hover:text-slate-900 underline decoration-2 decoration-orange-200 hover:decoration-orange-500 transition-all">
                  Continuer en mode hors ligne (Local)
              </button>
         </div>
