@@ -5,7 +5,7 @@ import {
   Clock, Users, Target, Trash2, BookOpen, Bot, Search, 
   LayoutDashboard, Settings, Menu, Sparkles, ArrowRight, CalendarDays,
   Cpu, Key, SaveAll, Cloud, CloudOff, LogOut, LogIn, User, CheckCircle, AlertCircle,
-  CreditCard, Award, UserCircle, Minus
+  CreditCard, Award, UserCircle, Minus, Edit3
 } from 'lucide-react';
 import { Exercise, Session, Cycle, View, PhaseId, AIConfig, CoachProfile } from './types';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION } from './constants';
@@ -175,7 +175,6 @@ export default function App() {
     const loadData = async () => {
         if (session && supabase) {
             try {
-                // console.log("Loading from Supabase...");
                 const { data: customExos, error: errorExos } = await supabase.from('custom_exercises').select('*');
                 if (errorExos) throw errorExos;
                 setExercises([...INITIAL_EXERCISES, ...(customExos || [])]);
@@ -202,11 +201,9 @@ export default function App() {
 
             } catch (error: any) {
                 console.error("Error loading from Supabase:", error);
-                // showToast(`Erreur Cloud: ${error.message}`, 'error');
             }
         } 
         else {
-            console.log("Loading from LocalStorage...");
             try {
                 const exResult = localStorage.getItem('pingmanager_exercises');
                 const sessResult = localStorage.getItem('pingmanager_sessions');
@@ -487,7 +484,7 @@ export default function App() {
 
           <nav className="flex-1 px-4 py-6 space-y-2">
             <SidebarItem view="dashboard" currentView={view} setView={setView} icon={LayoutDashboard} label="Tableau de bord" />
-            <SidebarItem view="calendar" currentView={view} setView={setView} icon={CalendarIcon} label="Planification (Cycles)" />
+            <SidebarItem view="calendar" currentView={view} setView={setView} icon={CalendarDays} label="Planification (Cycles)" />
             <SidebarItem view="sessions" currentView={view} setView={setView} icon={Plus} label="Créer une séance" />
             <SidebarItem view="history" currentView={view} setView={setView} icon={BookOpen} label="Historique Séances" />
             <SidebarItem view="library" currentView={view} setView={setView} icon={Filter} label="Bibliothèque Exos" />
@@ -574,21 +571,72 @@ export default function App() {
           {/* CALENDAR VIEW (Moved up & Updated) */}
           {view === 'calendar' && (
             <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><CalendarIcon className="text-accent"/> Cycles</h2><button onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })) })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau</button></div>
+                <div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><CalendarDays className="text-accent"/> Cycles</h2><button onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })) })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau</button></div>
                 {currentCycle && (
                     <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 animate-fade-in ring-4 ring-slate-100">
                         <div className="flex justify-between mb-6"><h3 className="text-lg font-bold">Éditeur</h3><button onClick={() => setCurrentCycle(null)}><X /></button></div>
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6"><input type="text" className="md:col-span-8 p-3 border rounded-xl text-slate-900" placeholder="Objectif" value={currentCycle.name} onChange={(e) => setCurrentCycle({...currentCycle, name: e.target.value})} /><div className="md:col-span-4 relative"><input ref={dateInputRef} type="date" className="w-full p-3 border rounded-xl text-slate-900" value={currentCycle.startDate} onClick={showCalendarPicker} onChange={(e) => setCurrentCycle({...currentCycle, startDate: e.target.value})} /></div></div>
                         <div className="mb-6 bg-indigo-50 p-4 rounded-xl flex justify-between items-center"><div className="flex gap-3 text-indigo-900"><Bot size={24}/><span className="font-bold text-sm">Générer via IA</span></div><GeminiButton onClick={handleGenerateCycle} isLoading={isLoadingAI}>Générer</GeminiButton></div>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">{currentCycle.weeks.map((week, idx) => (<div key={idx} className="flex gap-3 p-3 bg-slate-50 rounded-lg border"><div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-bold text-slate-500 shrink-0">{week.weekNumber}</div><input type="text" placeholder="Thème" value={week.theme} onChange={(e) => {const w=[...currentCycle.weeks]; w[idx].theme=e.target.value; setCurrentCycle({...currentCycle, weeks:w})}} className="flex-1 p-2 border rounded text-sm text-slate-900"/><input type="text" placeholder="Notes" value={week.notes} onChange={(e) => {const w=[...currentCycle.weeks]; w[idx].notes=e.target.value; setCurrentCycle({...currentCycle, weeks:w})}} className="flex-1 p-2 border rounded text-sm hidden md:block text-slate-900"/></div>))}</div>
+                        
+                        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            {currentCycle.weeks.map((week, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-3 hover:border-accent transition-colors group">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center font-bold text-slate-500 border border-slate-200 shadow-sm">
+                                                {week.weekNumber}
+                                            </div>
+                                            <span className="font-bold text-slate-700">Semaine {week.weekNumber}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Thème Principal</label>
+                                            <div className="relative">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Ex: Topspin Revers" 
+                                                    value={week.theme} 
+                                                    onChange={(e) => {
+                                                        const w=[...currentCycle.weeks]; 
+                                                        w[idx].theme=e.target.value; 
+                                                        setCurrentCycle({...currentCycle, weeks:w})
+                                                    }} 
+                                                    className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all pl-9"
+                                                />
+                                                <Edit3 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Notes & Objectifs</label>
+                                            <textarea 
+                                                placeholder="Détails techniques, points clés..." 
+                                                value={week.notes} 
+                                                onChange={(e) => {
+                                                    const w=[...currentCycle.weeks]; 
+                                                    w[idx].notes=e.target.value; 
+                                                    setCurrentCycle({...currentCycle, weeks:w})
+                                                }} 
+                                                rows={2}
+                                                className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all resize-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                         
                         {/* Boutons d'ajout/suppression de semaines */}
-                        <div className="flex gap-2 mt-2 mb-4">
-                            <button onClick={() => setCurrentCycle(prev => prev ? {...prev, weeks: [...prev.weeks, { weekNumber: prev.weeks.length + 1, theme: '', notes: '' }]} : null)} className="text-xs flex items-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition"><Plus size={14}/> Ajouter semaine</button>
-                            <button onClick={() => setCurrentCycle(prev => prev && prev.weeks.length > 1 ? {...prev, weeks: prev.weeks.slice(0, -1)} : prev)} className="text-xs flex items-center gap-1 px-3 py-2 bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 rounded-lg transition"><Minus size={14}/> Retirer semaine</button>
+                        <div className="flex gap-2 mt-4 mb-4 pt-4 border-t border-slate-100">
+                            <button onClick={() => setCurrentCycle(prev => prev ? {...prev, weeks: [...prev.weeks, { weekNumber: prev.weeks.length + 1, theme: '', notes: '' }]} : null)} className="text-sm font-medium flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 transition shadow-sm"><Plus size={16}/> Ajouter une semaine</button>
+                            <button onClick={() => setCurrentCycle(prev => prev && prev.weeks.length > 1 ? {...prev, weeks: prev.weeks.slice(0, -1)} : prev)} className="text-sm font-medium flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-600 rounded-xl transition shadow-sm"><Minus size={16}/> Retirer semaine</button>
                         </div>
 
-                        <div className="mt-6 flex justify-end gap-3"><button onClick={() => setCurrentCycle(null)} className="px-5 py-2 text-slate-600">Annuler</button><button onClick={saveCycle} className="px-6 py-2 bg-slate-900 text-white rounded-lg shadow-lg">Enregistrer</button></div>
+                        <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button onClick={() => setCurrentCycle(null)} className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-xl transition">Annuler</button>
+                            <button onClick={saveCycle} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition font-bold flex items-center gap-2"><Save size={18}/> Enregistrer le cycle</button>
+                        </div>
                     </div>
                 )}
                 <div className="grid gap-6">{cycles.map(cycle => (<div key={cycle.id} className="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all"><div className="flex justify-between items-start mb-6"><div><h3 className="text-xl font-bold text-slate-800">{cycle.name}</h3><p className="text-slate-500 text-sm mt-1">Début: {new Date(cycle.startDate).toLocaleDateString()}</p></div><div className="flex gap-2"><button onClick={() => setCurrentCycle(cycle)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Settings size={18}/></button><button onClick={() => setCycleToDelete(cycle.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button></div></div><div className="flex overflow-x-auto pb-4 gap-3 custom-scrollbar">{cycle.weeks.map((week, i) => (<div key={i} className={`min-w-[140px] p-3 rounded-xl border flex flex-col justify-between h-28 ${week.theme ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-100'}`}><span className="text-xs font-bold text-slate-400 uppercase">Sem {week.weekNumber}</span><p className="text-sm font-semibold line-clamp-2 text-slate-800">{week.theme || 'Repos'}</p></div>))}</div></div>))}</div>
