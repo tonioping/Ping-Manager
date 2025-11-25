@@ -92,12 +92,12 @@ export const EMPTY_SESSION: Session = {
     exercises: { echauffement: [], regularite: [], technique: [], schema: [], matchs: [] }
 };
 
-export const CYCLE_TYPES = [
-    { value: 'developpement', label: 'Développement' },
-    { value: 'competition', label: 'Compétition' },
-    { value: 'recuperation', label: 'Récupération' },
-    { value: 'pre-saison', label: 'Pré-saison' }
-];
+export const CYCLE_TYPES: Record<string, { value: string; label: string; color: string; icon: string }> = {
+    'developpement': { value: 'developpement', label: 'Développement', color: 'bg-blue-500 text-blue-800 border-blue-200', icon: '📈' },
+    'competition': { value: 'competition', label: 'Compétition', color: 'bg-orange-500 text-orange-800 border-orange-200', icon: '🏆' },
+    'recuperation': { value: 'recuperation', label: 'Récupération', color: 'bg-emerald-500 text-emerald-800 border-emerald-200', icon: '🔋' },
+    'pre-saison': { value: 'pre-saison', label: 'Pré-saison', color: 'bg-purple-500 text-purple-800 border-purple-200', icon: '🏋️' }
+};
 
 export const DEFAULT_SKILLS: Skill[] = [
     { id: 's1', name: 'Service', category: 'Technique' },

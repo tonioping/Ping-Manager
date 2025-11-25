@@ -310,31 +310,15 @@ export default function App() {
           setPlayerEvals(data || []);
       }
   };
-
-  // --- FIX: SAFEGUARD SUPABASE AUTH ---
   const saveEvaluation = async (playerId: string, skillId: string, score: number, comment?: string) => {
-      // If supabase is not configured, we are in local mode or config error
-      if (!supabase) {
-         showToast("Sauvegarde évaluation impossible en local (nécessite Cloud)", 'error');
-         return;
-      }
-
+      if (!supabase) { showToast("Sauvegarde impossible en local.", 'error'); return; }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { showToast("Veuillez vous connecter.", 'error'); return; }
-      
       const evalToSave = { player_id: playerId, skill_id: skillId, score, date: new Date().toISOString().split('T')[0], comment, user_id: user.id };
       const updatedEvals = [...playerEvals.filter(e => e.skill_id !== skillId), evalToSave as PlayerEvaluation];
       setPlayerEvals(updatedEvals);
-      
-      const { error } = await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
-      if (error) {
-          console.error("Evaluation save error:", error);
-          showToast("Erreur sauvegarde.", 'error');
-      } else {
-          showToast("Évaluation sauvegardée");
-      }
+      await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); showToast("Évaluation sauvegardée");
   };
-
   const saveAIConfig = () => { localStorage.setItem('pingmanager_ai_config', JSON.stringify(aiConfig)); showToast('Configuration IA sauvegardée !'); };
   const handleLogout = async () => { if (confirm("Déconnexion ?")) { if (supabase) await supabase.auth.signOut(); setSavedSessions([]); setCycles([]); setExercises(INITIAL_EXERCISES); setPlayers([]); setCurrentPlayer(null); setPlayerEvals([]); setSession(null); setShowAuth(true); showToast("Déconnecté."); } };
 
@@ -388,7 +372,7 @@ export default function App() {
             <SidebarItem view="calendar" currentView={view} setView={setView} icon={CalendarDays} label="Planification (Cycles)" />
             <SidebarItem view="sessions" currentView={view} setView={setView} icon={Plus} label="Créer une séance" />
             <SidebarItem view="history" currentView={view} setView={setView} icon={BookOpen} label="Historique Séances" />
-            <SidebarItem view="players" currentView={view} setView={setView} icon={GraduationCap} label="Joueurs & Progression" />
+            <SidebarItem view="players" currentView={view} setView={setView} icon={GraduationCap} label="Joueurs & Progression" /> {/* NEW TAB */}
             <SidebarItem view="library" currentView={view} setView={setView} icon={Filter} label="Bibliothèque Exos" />
             <SidebarItem view="subscription" currentView={view} setView={setView} icon={CreditCard} label="Abonnement" /> {/* NEW TAB */}
             <SidebarItem view="settings" currentView={view} setView={setView} icon={Settings} label="Paramètres" />
@@ -426,12 +410,63 @@ export default function App() {
             </div>
           )}
           
-          {view === 'calendar' && (/*...same as before...*/ <div className="text-center py-20">Calendrier chargé...</div>)}
-          {view === 'sessions' && (/*...same as before...*/ <div className="text-center py-20">Sessions chargé...</div>)}
-          {view === 'history' && (/*...same as before...*/ <div className="text-center py-20">Historique chargé...</div>)}
-          {view === 'library' && (/*...same as before...*/ <div className="text-center py-20">Bibliothèque chargé...</div>)}
+          {/* CALENDAR VIEW (Timeline & Editor) */}
+          {view === 'calendar' && (
+            <div className="max-w-6xl mx-auto space-y-6">
+                <div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><CalendarDays className="text-accent"/> Cycles</h2><button onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })) })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau</button></div>
+                {currentCycle && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
+                                <div><h3 className="text-xl font-bold text-slate-800">{(currentCycle as any).id ? 'Modifier le Cycle' : 'Nouveau Cycle'}</h3><p className="text-xs text-slate-500 mt-1">Définissez les objectifs et la progression.</p></div>
+                                <button onClick={() => setCurrentCycle(null)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-1">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
+                                    <div className="md:col-span-6"><label className="block text-sm font-bold text-slate-700 mb-2">Nom du Cycle</label><input type="text" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle({...currentCycle, name: e.target.value})} /></div>
+                                    <div className="md:col-span-3"><label className="block text-sm font-bold text-slate-700 mb-2">Type</label><select value={(currentCycle as any).type || 'developpement'} onChange={(e) => setCurrentCycle({...currentCycle, type: e.target.value as CycleType})} className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 bg-white focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium">{Object.entries(CYCLE_TYPES).map(([key, val]) => (<option key={key} value={key}>{val.icon} {val.label}</option>))}</select></div>
+                                    <div className="md:col-span-3"><label className="block text-sm font-bold text-slate-700 mb-2">Début</label><input ref={dateInputRef} type="date" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium cursor-pointer" value={currentCycle.startDate} onClick={showCalendarPicker} onChange={(e) => setCurrentCycle({...currentCycle, startDate: e.target.value})} /></div>
+                                    <div className="md:col-span-12"><label className="block text-sm font-bold text-slate-700 mb-2">Objectifs Globaux</label><textarea className="w-full p-3 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none resize-none shadow-sm" rows={2} placeholder="Quels sont les buts principaux de cette période ?" value={(currentCycle as any).objectives || ''} onChange={(e) => setCurrentCycle({...currentCycle, objectives: e.target.value})}></textarea></div>
+                                </div>
+                                <div className="mb-8 bg-indigo-50 p-5 rounded-xl border border-indigo-100 flex flex-col sm:flex-row justify-between items-center gap-4"><div className="flex gap-4 items-center"><div className="bg-white p-3 rounded-lg shadow-sm text-indigo-600"><Bot size={24}/></div><div><h4 className="font-bold text-indigo-900">Assistant IA</h4><p className="text-sm text-indigo-700/80">Générez automatiquement une progression sur {currentCycle.weeks.length} semaines.</p></div></div><GeminiButton onClick={handleGenerateCycle} isLoading={isLoadingAI}>Générer le plan</GeminiButton></div>
+                                <div className="space-y-4">{currentCycle.weeks.map((week, idx) => (<div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:border-accent/50"><div className="flex items-center gap-3 mb-4"><div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div><h4 className="font-bold text-slate-700 text-lg">Semaine {week.weekNumber}</h4></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Thème Technique</label><div className="relative"><input type="text" placeholder="Ex: Topspin Revers" value={week.theme} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], theme: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"/><Edit3 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/></div></div><div><label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Notes & Objectifs</label><textarea placeholder="Points clés à travailler..." value={week.notes} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], notes: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} rows={2} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all resize-none"/></div></div></div>))}</div>
+                                <div className="flex justify-center gap-4 mt-8 mb-4"><button onClick={() => setCurrentCycle(prev => prev ? {...prev, weeks: [...prev.weeks, { weekNumber: prev.weeks.length + 1, theme: '', notes: '' }]} : null)} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-accent hover:text-accent rounded-xl text-slate-600 font-medium transition shadow-sm"><Plus size={18}/> Ajouter une semaine</button><button onClick={() => setCurrentCycle(prev => prev && prev.weeks.length > 1 ? {...prev, weeks: prev.weeks.slice(0, -1)} : prev)} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-red-300 hover:text-red-500 rounded-xl text-slate-600 font-medium transition shadow-sm"><Minus size={18}/> Retirer semaine</button></div>
+                            </div>
+                            <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-4"><button onClick={() => setCurrentCycle(null)} className="px-6 py-3 text-slate-600 font-semibold hover:bg-slate-50 rounded-xl transition">Annuler</button><button onClick={saveCycle} className="px-8 py-3 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition font-bold flex items-center gap-2 transform hover:scale-105 active:scale-95"><Save size={20}/> Enregistrer le cycle</button></div>
+                        </div>
+                    </div>
+                )}
+                <div className="grid gap-6">{cycles.map(cycle => { const cycleTypeConfig = CYCLE_TYPES[(cycle as any).type || 'developpement']; return (<div key={cycle.id} className="relative animate-fade-in"><div className={`absolute -left-[29px] top-6 w-6 h-6 rounded-full border-4 border-white shadow-sm ${cycleTypeConfig.color.split(' ')[0]} z-10`}></div><div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all group"><div className={`p-4 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-start ${cycleTypeConfig.color.replace('text-', 'bg-').replace('800', '50')}`}><div><div className="flex items-center gap-3 mb-1"><span className={`text-xl`}>{cycleTypeConfig.icon}</span><h3 className="text-lg font-bold text-slate-800">{cycle.name}</h3></div><div className="flex items-center gap-3 text-xs text-slate-500 font-medium"><span className="flex items-center gap-1"><CalendarIcon size={12}/> {new Date(cycle.startDate).toLocaleDateString()}</span><span>•</span><span>{cycle.weeks.length} semaines</span><span className={`px-2 py-0.5 rounded-full ${cycleTypeConfig.color}`}>{cycleTypeConfig.label}</span></div></div><div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => setCurrentCycle(cycle)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"><Pencil size={18}/></button><button onClick={() => setCycleToDelete(cycle.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 size={18}/></button></div></div>{cycle.objectives && (<div className="px-6 py-3 bg-slate-50/50 border-b border-slate-100 text-sm text-slate-600 italic">"{cycle.objectives}"</div>)}<div className="p-4"><div className="flex overflow-x-auto gap-3 pb-2 custom-scrollbar">{cycle.weeks.map((week, i) => (<div key={i} className="min-w-[140px] w-[140px] p-3 bg-slate-50 rounded-xl border border-slate-100 shrink-0 flex flex-col h-28 justify-between"><div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sem {week.weekNumber}</span>{week.theme && <div className={`w-1.5 h-1.5 rounded-full ${cycleTypeConfig.color.split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></div>}</div><p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight" title={week.theme}>{week.theme || 'Non défini'}</p>{week.notes && <div className="h-1 w-8 bg-slate-200 rounded-full mt-1"></div>}</div>))}</div></div></div></div>); })}</div>
+            </div>
+          )}
+          
+          {/* SESSIONS (Reordered) */}
+          {view === 'sessions' && (
+             <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
+               <div className="w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                     <div className="relative mb-3"><Search className="absolute left-3 top-2.5 text-slate-400" size={16} /><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-white border rounded-lg text-sm text-slate-900" /></div>
+                     <select value={filterPhase} onChange={(e) => setFilterPhase(e.target.value)} className="w-full text-xs p-2 border rounded-lg bg-white text-slate-900"><option value="all">Toutes phases</option>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2">{filteredExercises.map(ex => (<div key={ex.id} draggable onDragStart={() => handleDragStart(ex)} className="p-3 bg-white border rounded-xl hover:border-accent cursor-grab"><div className="flex justify-between items-start mb-1"><span className="font-semibold text-sm text-slate-800">{ex.name}</span><GripVertical size={16} className="text-slate-300"/></div><div className="flex gap-1"><span className="text-[10px] px-1.5 bg-slate-100 rounded">{PHASES.find(p => p.id === ex.phase)?.label}</span></div></div>))}</div>
+               </div>
+               <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-slate-200">
+                  <div className="p-4 border-b border-slate-100 bg-white z-10 flex flex-col md:flex-row gap-4 justify-between items-center">
+                     <div className="flex gap-3 w-full"><input type="text" placeholder="Nom de la séance" value={currentSession.name} onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} className="flex-1 p-2 text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-accent outline-none text-slate-900" /><input type="date" value={currentSession.date} onChange={(e) => setCurrentSession(prev => ({ ...prev, date: e.target.value }))} className="p-2 bg-slate-50 rounded-lg text-sm text-slate-600 outline-none" /></div>
+                     <div className="flex gap-2"><div className="text-right mr-2"><div className="text-xs text-slate-400 uppercase font-bold">Durée</div><div className="text-xl font-bold text-emerald-600">{totalDuration} min</div></div><GeminiButton onClick={handleSuggestExercises} isLoading={isLoadingAI} className="!py-2 !px-3 !text-sm">IA</GeminiButton><button onClick={saveSession} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800"><Save size={20}/></button></div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">{PHASES.map(phase => (<PhaseDropZone key={phase.id} phase={phase} exercises={currentSession.exercises?.[phase.id] || []} onDrop={handleDrop} onRemove={removeExerciseFromSession}/>))}</div>
+               </div>
+             </div>
+          )}
+          
+          {/* HISTORY */}
+          {view === 'history' && (<div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><h2 className="text-2xl font-bold text-slate-800 mb-6">Historique</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{savedSessions.map(session => (<div key={session.id} className="border rounded-xl p-5 hover:border-accent cursor-pointer" onClick={() => { setCurrentSession({...session}); setView('sessions'); }}><h3 className="font-bold text-slate-800 line-clamp-1">{session.name}</h3><p className="text-xs text-slate-500 mb-4 flex items-center gap-2"><CalendarIcon size={12}/> {new Date(session.date).toLocaleDateString()}</p><div className="flex gap-2"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">{calculateTotalDuration(session)} min</span></div></div>))}</div></div>)}
+          
+          {/* LIBRARY */}
+          {view === 'library' && (<div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-800">Bibliothèque</h2><button onClick={() => setNewExercise({ name: '', phase: 'technique', theme: null, duration: 15, description: '', material: '' })} className="bg-accent text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18} /> Créer</button></div>{newExercise && (<div className="mb-8 p-6 bg-slate-50 rounded-xl border animate-fade-in"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" placeholder="Nom" className="p-3 border rounded-lg col-span-2 text-slate-900" value={newExercise.name} onChange={e => setNewExercise({...newExercise, name: e.target.value})}/><select className="p-3 border rounded-lg text-slate-900" value={newExercise.phase} onChange={e => setNewExercise({...newExercise, phase: e.target.value as PhaseId})}>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select><input type="number" placeholder="Durée" className="p-3 border rounded-lg text-slate-900" value={newExercise.duration} onChange={e => setNewExercise({...newExercise, duration: parseInt(e.target.value)||0})}/><textarea className="col-span-2 p-3 border rounded-lg text-slate-900" rows={3} placeholder="Description" value={newExercise.description} onChange={e => setNewExercise({...newExercise, description: e.target.value})}></textarea><div className="col-span-2 flex justify-between items-center"><GeminiButton onClick={handleRefineDescription} isLoading={isLoadingAI}>Améliorer</GeminiButton><div className="flex gap-2"><button onClick={() => setNewExercise(null)} className="px-4 py-2 text-slate-500">Annuler</button><button onClick={addNewExercise} className="px-4 py-2 bg-slate-900 text-white rounded-lg">Sauvegarder</button></div></div></div></div>)}<div className="space-y-3">{exercises.map(ex => (<div key={ex.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition"><div><h4 className="font-bold text-slate-800">{ex.name}</h4><p className="text-sm text-slate-500 mt-1">{ex.description}</p></div><span className={`text-xs font-bold px-2 py-1 rounded uppercase ${PHASES.find(p => p.id === ex.phase)?.color.split(' ')[2]}`}>{PHASES.find(p => p.id === ex.phase)?.label}</span></div>))}</div></div>)}
 
-          {/* PLAYERS VIEW */}
+          {/* PLAYERS VIEW (NEW) */}
           {view === 'players' && (
              <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
                 {!currentPlayer && !newPlayerMode && (
@@ -522,7 +557,7 @@ export default function App() {
              </div>
           )}
 
-          {/* SUBSCRIPTION VIEW */}
+          {/* SUBSCRIPTION VIEW (Restored) */}
           {view === 'subscription' && (
              <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
                 <div className="text-center mb-12">
@@ -531,7 +566,6 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Free Plan */}
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-2 bg-slate-200"></div>
                         <h3 className="text-xl font-bold text-slate-800 mb-2">Découverte</h3>
@@ -544,8 +578,6 @@ export default function App() {
                         </ul>
                         <button className="w-full py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 cursor-default">Votre plan actuel</button>
                     </div>
-
-                    {/* Pro Plan */}
                     <div className="bg-slate-900 p-8 rounded-3xl shadow-xl relative overflow-hidden text-white transform md:scale-105">
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-pink-500"></div>
                         <div className="absolute top-4 right-4 px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">POPULAIRE</div>
@@ -564,13 +596,46 @@ export default function App() {
                         )}
                     </div>
                 </div>
-                
                 <div className="text-center text-xs text-slate-400 mt-8">Paiement sécurisé via Stripe • Annulation à tout moment</div>
              </div>
           )}
 
-          {/* SETTINGS VIEW (Preserved) */}
-          {view === 'settings' && (/* ... Settings code ... */ <div className="text-center py-20">Paramètres chargé...</div>)}
+          {/* SETTINGS VIEW (Restored) */}
+          {view === 'settings' && (
+             <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><UserCircle size={24} /></div><h2 className="text-2xl font-bold text-slate-800">Profil Coach</h2></div>
+                    <div className="space-y-4">
+                        <div><label className="block text-sm font-bold text-slate-700 mb-2">Nom complet</label><input type="text" value={coachProfile.name} onChange={(e) => setCoachProfile({...coachProfile, name: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900" placeholder="Ex: Antoine Dupont" /></div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Award size={16}/> Club</label><input type="text" value={coachProfile.club} onChange={(e) => setCoachProfile({...coachProfile, club: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900" placeholder="Ex: Ping Paris 12" /></div>
+                            <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><CreditCard size={16}/> Licence</label><input type="text" value={coachProfile.license} onChange={(e) => setCoachProfile({...coachProfile, license: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900" placeholder="Numéro" /></div>
+                        </div>
+                        <div className="pt-4 flex justify-end"><button onClick={saveProfile} className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2"><Save size={18} /> Sauvegarder Profil</button></div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                    <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><Settings size={24} /></div><h2 className="text-2xl font-bold text-slate-800">Configuration IA</h2></div>
+                    <div className="space-y-6">
+                    <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Cpu size={16} className="text-accent"/> Fournisseur</label><div className="grid grid-cols-2 gap-4"><button onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">Google</span></button><button onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">OpenRouter</span></button></div></div>
+                    
+                    {aiConfig.provider === 'openrouter' && (
+                        <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Key size={16} className="text-accent"/> Clé API OpenRouter</label>
+                        <input type="password" value={aiConfig.apiKey} onChange={(e) => setAiConfig({...aiConfig, apiKey: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none transition-all" placeholder="sk-or-..." />
+                        </div>
+                    )}
+                    
+                    {aiConfig.provider === 'google' && (
+                        <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center gap-3"><Sparkles size={20} /><div><p className="font-bold text-sm">Mode Google Gemini natif</p><p className="text-xs opacity-80">L'application utilise la clé API sécurisée du serveur.</p></div></div>
+                    )}
+
+                    <div className="pt-6 border-t flex justify-end"><button onClick={saveAIConfig} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2"><SaveAll size={20} /> Enregistrer Config IA</button></div>
+                    </div>
+                </div>
+             </div>
+          )}
         </div>
       </main>
 
