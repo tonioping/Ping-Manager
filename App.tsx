@@ -354,7 +354,7 @@ export default function App() {
   if (showAuth) return <Auth onAuthSuccess={() => setShowAuth(false)} />;
 
   return (
-    <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-200 font-sans overflow-hidden">
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Sidebar */}

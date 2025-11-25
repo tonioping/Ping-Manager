@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-100;
+  @apply bg-slate-200;
 }
 
 /* Custom Scrollbar */
