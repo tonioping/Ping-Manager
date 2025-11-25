@@ -39,6 +39,12 @@ export interface Cycle {
   weeks: CycleWeek[];
 }
 
+export interface CoachProfile {
+  name: string;
+  club: string;
+  license: string;
+}
+
 export type AIProvider = 'google' | 'openrouter';
 
 export interface AIConfig {
