@@ -310,14 +310,31 @@ export default function App() {
           setPlayerEvals(data || []);
       }
   };
+
+  // --- FIX: SAFEGUARD SUPABASE AUTH ---
   const saveEvaluation = async (playerId: string, skillId: string, score: number, comment?: string) => {
+      // If supabase is not configured, we are in local mode or config error
+      if (!supabase) {
+         showToast("Sauvegarde évaluation impossible en local (nécessite Cloud)", 'error');
+         return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { showToast("Veuillez vous connecter.", 'error'); return; }
+      
       const evalToSave = { player_id: playerId, skill_id: skillId, score, date: new Date().toISOString().split('T')[0], comment, user_id: user.id };
       const updatedEvals = [...playerEvals.filter(e => e.skill_id !== skillId), evalToSave as PlayerEvaluation];
       setPlayerEvals(updatedEvals);
-      if (supabase) { await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); showToast("Évaluation sauvegardée"); }
+      
+      const { error } = await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
+      if (error) {
+          console.error("Evaluation save error:", error);
+          showToast("Erreur sauvegarde.", 'error');
+      } else {
+          showToast("Évaluation sauvegardée");
+      }
   };
+
   const saveAIConfig = () => { localStorage.setItem('pingmanager_ai_config', JSON.stringify(aiConfig)); showToast('Configuration IA sauvegardée !'); };
   const handleLogout = async () => { if (confirm("Déconnexion ?")) { if (supabase) await supabase.auth.signOut(); setSavedSessions([]); setCycles([]); setExercises(INITIAL_EXERCISES); setPlayers([]); setCurrentPlayer(null); setPlayerEvals([]); setSession(null); setShowAuth(true); showToast("Déconnecté."); } };
 
