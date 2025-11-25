@@ -1,4 +1,3 @@
-
 export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'schema' | 'matchs';
 
 export interface Phase {
@@ -17,6 +16,7 @@ export interface Exercise {
   description: string;
   material: string;
   instanceId?: number; 
+  user_id?: string;
 }
 
 export interface Session {
@@ -24,6 +24,7 @@ export interface Session {
   name: string;
   date: string;
   exercises: Record<PhaseId, Exercise[]>;
+  user_id?: string;
 }
 
 export interface CycleWeek {
@@ -32,17 +33,24 @@ export interface CycleWeek {
   notes: string;
 }
 
+export type CycleType = 'developpement' | 'competition' | 'recuperation' | 'pre-saison';
+
 export interface Cycle {
   id: number;
   name: string;
   startDate: string;
   weeks: CycleWeek[];
+  type: CycleType;
+  objectives: string;
+  user_id?: string;
 }
 
 export interface CoachProfile {
   name: string;
   club: string;
   license: string;
+  is_pro?: boolean;
+  subscription_status?: string;
 }
 
 export type AIProvider = 'google' | 'openrouter';
@@ -53,4 +61,30 @@ export interface AIConfig {
   model: string;
 }
 
-export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings';
+export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings' | 'players' | 'subscription';
+
+export interface Player {
+    id: string;
+    first_name: string;
+    last_name: string;
+    birth_date?: string;
+    level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
+    notes?: string;
+    user_id?: string;
+}
+
+export interface Skill {
+    id: string;
+    name: string;
+    category: string;
+}
+
+export interface PlayerEvaluation {
+    id?: number;
+    player_id: string;
+    skill_id: string;
+    score: number;
+    date: string;
+    comment?: string;
+    user_id?: string;
+}

@@ -1,5 +1,4 @@
-
-import { Phase, Exercise, Session } from './types';
+import { Phase, Exercise, Session, Skill } from './types';
 
 // Couleurs modernisées : Plus douces pour le fond, bordures claires
 export const PHASES: Phase[] = [
@@ -92,3 +91,20 @@ export const EMPTY_SESSION: Session = {
     date: new Date().toISOString().split('T')[0],
     exercises: { echauffement: [], regularite: [], technique: [], schema: [], matchs: [] }
 };
+
+export const CYCLE_TYPES = [
+    { value: 'developpement', label: 'Développement' },
+    { value: 'competition', label: 'Compétition' },
+    { value: 'recuperation', label: 'Récupération' },
+    { value: 'pre-saison', label: 'Pré-saison' }
+];
+
+export const DEFAULT_SKILLS: Skill[] = [
+    { id: 's1', name: 'Service', category: 'Technique' },
+    { id: 's2', name: 'Remise', category: 'Technique' },
+    { id: 's3', name: 'Coup Droit', category: 'Technique' },
+    { id: 's4', name: 'Revers', category: 'Technique' },
+    { id: 's5', name: 'Jeu de jambes', category: 'Physique' },
+    { id: 's6', name: 'Tactique', category: 'Mental' },
+    { id: 's7', name: 'Mental', category: 'Mental' },
+];
