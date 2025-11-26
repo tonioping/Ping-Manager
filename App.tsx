@@ -420,7 +420,7 @@ export default function App() {
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
                                 <div><h3 className="text-xl font-bold text-slate-800">{(currentCycle as any).id ? 'Modifier le Cycle' : 'Nouveau Cycle'}</h3><p className="text-xs text-slate-500 mt-1">Définissez les objectifs et la progression.</p></div>
                                 <button onClick={() => setCurrentCycle(null)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
-                            </div>
+                            </div>)}
                             <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-1">
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
                                     <div className="md:col-span-6"><label className="block text-sm font-bold text-slate-700 mb-2">Nom du Cycle</label><input type="text" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle({...currentCycle, name: e.target.value})} /></div>
