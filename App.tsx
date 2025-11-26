@@ -1,51 +1,24 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { 
-  Calendar as CalendarIcon, Plus, Save, Printer, Filter, X, GripVertical, 
-  Clock, Users, Target, Trash2, BookOpen, Bot, Search, 
-  LayoutDashboard, Settings, Menu, Sparkles, ArrowRight, CalendarDays,
-  Cpu, Key, SaveAll, Cloud, CloudOff, LogOut, LogIn, User, CheckCircle, AlertCircle,
-  CreditCard, Award, UserCircle, Minus, Edit3, Pencil, GraduationCap, TrendingUp, Activity, Check
+  Calendar as CalendarIcon, Plus, Save, Filter, X, 
+  Clock, Target, Bot, Search, Menu, SaveAll, Sparkles, User, CheckCircle, AlertCircle,
+  CreditCard, Award, UserCircle, Minus, Check, Settings, LogIn, LogOut, Loader2
 } from 'lucide-react';
-// Import Recharts pour les graphiques
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 import { Exercise, Session, Cycle, View, PhaseId, AIConfig, CoachProfile, CycleType, Player, PlayerEvaluation, Skill } from './types';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, CYCLE_TYPES, DEFAULT_SKILLS } from './constants';
 import { refineExerciseDescription, suggestExercises, generateCyclePlan, type SuggestedExercise } from './services/geminiService';
 import { GeminiButton } from './components/GeminiButton';
+import { Sidebar } from './components/Sidebar'; 
+
+// Lazy Loading des vues principales pour alléger le chargement initial
+const DashboardView = React.lazy(() => import('./components/DashboardView').then(module => ({ default: module.DashboardView })));
+const CyclesView = React.lazy(() => import('./components/CyclesView').then(module => ({ default: module.CyclesView })));
+const SessionsView = React.lazy(() => import('./components/SessionsView').then(module => ({ default: module.SessionsView })));
+const PlayersView = React.lazy(() => import('./components/PlayersView').then(module => ({ default: module.PlayersView })));
+
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
-
-// --- Sub-Components ---
-const SidebarItem = ({ view, currentView, setView, icon: Icon, label }: any) => (
-  <button
-    onClick={() => setView(view)}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-      currentView === view 
-        ? 'bg-accent text-white shadow-lg shadow-orange-500/20 font-semibold' 
-        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-    }`}
-  >
-    <Icon size={20} className={currentView === view ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
-    <span className="text-sm tracking-wide">{label}</span>
-  </button>
-);
-
-const StatCard = ({ title, value, icon: Icon, colorClass }: any) => {
-  const textColor = colorClass.split(' ')[0].replace('bg-', 'text-');
-  return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between hover:shadow-md transition-shadow">
-      <div>
-        <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
-        <h3 className="text-3xl font-bold text-slate-800">{value}</h3>
-      </div>
-      <div className={`p-4 rounded-xl ${colorClass} bg-opacity-10`}>
-        <Icon size={28} className={textColor} />
-      </div>
-    </div>
-  );
-};
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
   <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
@@ -55,66 +28,16 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
   </div>
 );
 
-const PhaseDropZone = ({ phase, exercises, onDrop, onRemove }: any) => {
-  const [isOver, setIsOver] = useState(false);
-  const safeExercises = Array.isArray(exercises) ? exercises : [];
-
-  return (
-    <div 
-      onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}
-      onDragLeave={() => setIsOver(false)}
-      onDrop={(e) => { onDrop(phase.id); setIsOver(false); }}
-      className={`transition-all duration-300 rounded-xl border-2 border-dashed p-4 min-h-[140px] 
-        ${isOver ? 'bg-orange-50 border-orange-400 scale-[1.01]' : `${phase.color.split(' ')[0]} ${phase.color.split(' ')[1]} bg-opacity-30`}`}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className={`w-3 h-8 rounded-full ${phase.color.split(' ')[0].replace('50', '500')}`}></div>
-          <h3 className={`font-bold text-lg ${phase.color.split(' ')[2]}`}>{phase.label}</h3>
-        </div>
-        <span className="text-xs font-bold px-3 py-1 bg-white rounded-full shadow-sm text-slate-600 border border-slate-100">
-          {safeExercises.reduce((acc: number, ex: Exercise) => acc + (ex?.duration || 0), 0)} / {phase.duration} min
-        </span>
-      </div>
-
-      <div className="space-y-3">
-        {safeExercises.length === 0 ? (
-          <div className="h-20 flex items-center justify-center text-slate-400 italic text-sm">
-            Glissez des exercices ici
-          </div>
-        ) : (
-          safeExercises.filter((ex: Exercise) => ex).map((ex: Exercise) => (
-            <div key={ex.instanceId} className="group bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:border-orange-200 hover:shadow-md transition-all flex items-start gap-3">
-               <div className="mt-1 p-1.5 bg-slate-50 rounded-lg text-slate-400">
-                  <Target size={14} />
-               </div>
-               <div className="flex-1 min-w-0">
-                 <div className="font-semibold text-slate-800 truncate">{ex.name}</div>
-                 <div className="text-xs text-slate-500 line-clamp-2 mt-0.5">{ex.description}</div>
-                 <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs font-bold text-accent flex items-center gap-1 bg-orange-50 px-2 py-0.5 rounded">
-                      <Clock size={12} /> {ex.duration} min
-                    </span>
-                 </div>
-               </div>
-               <button 
-                onClick={() => onRemove(phase.id, ex.instanceId)}
-                className="text-slate-300 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
-               >
-                 <X size={18} />
-               </button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
+const PageLoader = () => (
+  <div className="flex h-full w-full items-center justify-center text-indigo-600">
+    <Loader2 className="animate-spin" size={40} />
+  </div>
+);
 
 export default function App() {
   // User Session State
   const [session, setSession] = useState<any>(null);
-  const [showAuth, setShowAuth] = useState(true); // Default to showing Auth
+  const [showAuth, setShowAuth] = useState(true); 
 
   // App Data State
   const [view, setView] = useState<View>('dashboard');
@@ -136,12 +59,6 @@ export default function App() {
   // Feedback State
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
 
-  // Filters & UI State
-  const [filterPhase, setFilterPhase] = useState('all');
-  const [filterTheme, setFilterTheme] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
-  
   // Forms State
   const [newExercise, setNewExercise] = useState<Omit<Exercise, 'id'> | null>(null);
   const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
@@ -155,10 +72,10 @@ export default function App() {
   // Refs
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+  const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
-  };
+  }, []);
 
   // 1. INITIALIZATION: Check Auth & Load Data
   useEffect(() => {
@@ -277,12 +194,12 @@ export default function App() {
            else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
       } else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
   };
-  const deleteCycleData = async (id: number) => {
+  const deleteCycleData = useCallback(async (id: number) => {
       const newCycles = cycles.filter(c => c.id !== id);
       setCycles(newCycles);
       if (supabase) { const { data: { user } } = await supabase.auth.getUser(); if (user) await supabase.from('cycles').delete().eq('id', id); } 
       else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
-  };
+  }, [cycles]);
 
   const saveProfile = async () => {
       if (supabase && session) {
@@ -320,13 +237,11 @@ export default function App() {
       await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); showToast("Évaluation sauvegardée");
   };
   const saveAIConfig = () => { localStorage.setItem('pingmanager_ai_config', JSON.stringify(aiConfig)); showToast('Configuration IA sauvegardée !'); };
-  const handleLogout = async () => { if (confirm("Déconnexion ?")) { if (supabase) await supabase.auth.signOut(); setSavedSessions([]); setCycles([]); setExercises(INITIAL_EXERCISES); setPlayers([]); setCurrentPlayer(null); setPlayerEvals([]); setSession(null); setShowAuth(true); showToast("Déconnecté."); } };
+  const handleLogout = useCallback(async () => { if (confirm("Déconnexion ?")) { if (supabase) await supabase.auth.signOut(); setSavedSessions([]); setCycles([]); setExercises(INITIAL_EXERCISES); setPlayers([]); setCurrentPlayer(null); setPlayerEvals([]); setSession(null); setShowAuth(true); showToast("Déconnecté."); } }, [supabase, showToast]);
 
   // --- SUBSCRIPTION HANDLER (MOCK) ---
   const handleSubscribe = async (plan: 'monthly' | 'yearly') => {
-     // In a real app, this would redirect to Stripe Checkout
      alert(`Redirection vers Stripe pour l'abonnement ${plan === 'monthly' ? 'Mensuel (9.99€)' : 'Annuel (89.99€)'}...\n\n(Simulation: Votre compte passe en PRO)`);
-     
      if (supabase && session) {
          await supabase.from('profiles').update({ is_pro: true, subscription_status: 'active' }).eq('id', session.user.id);
          setCoachProfile(prev => ({ ...prev, is_pro: true, subscription_status: 'active' }));
@@ -336,7 +251,8 @@ export default function App() {
 
   // --- SAVE WRAPPERS & HELPERS (Condensed) ---
   const saveSession = async () => { if (!currentSession.name.trim()) { showToast("Nom requis.", 'error'); return; } const isNew = currentSession.id === 0; const sessionToSave: Session = { ...currentSession, id: isNew ? Date.now() : currentSession.id }; let newSessions = isNew ? [sessionToSave, ...savedSessions] : savedSessions.map(s => s.id === sessionToSave.id ? sessionToSave : s); setCurrentSession(sessionToSave); await persistSessions(newSessions, sessionToSave); };
-  const saveCycle = async () => { 
+  
+  const saveCycle = useCallback(async () => { 
       if (!currentCycle || !currentCycle.name) { showToast("Nom requis.", 'error'); return; } 
       const cycleId = (currentCycle as any).id || Date.now(); 
       const cycleToSave: Cycle = { 
@@ -350,21 +266,38 @@ export default function App() {
       const updatedCycles = exists ? cycles.map(c => c.id === cycleId ? cycleToSave : c) : [...cycles, cycleToSave]; 
       await persistCycles(updatedCycles, cycleToSave); 
       setCurrentCycle(null); 
-  };
+  }, [currentCycle, cycles, showToast]);
+
   const addNewExercise = async () => { if (!newExercise || !newExercise.name) { showToast("Nom requis.", 'error'); return; } const exercise: Exercise = { ...newExercise, id: `custom_${Date.now()}` } as Exercise; await persistExercises([...exercises, exercise], exercise); setNewExercise(null); };
   const handleRefineDescription = async () => { if (!newExercise?.description) return; setIsLoadingAI(true); const refinedDesc = await refineExerciseDescription(newExercise.description); setNewExercise(prev => prev ? {...prev, description: refinedDesc} : null); setIsLoadingAI(false); };
   const handleSuggestExercises = async () => { if (!currentSession.name) { showToast("Nommez la séance d'abord !", 'error'); return; } setIsLoadingAI(true); try { const allExercises = Object.values(currentSession.exercises).flat().filter(e => e) as Exercise[]; const suggestions = await suggestExercises(currentSession.name, allExercises.map(e => e.name)); if (suggestions) { setSuggestedExercises(suggestions.map((s: SuggestedExercise) => ({ ...s, phase: 'technique', id: `ai_${Date.now()}_${Math.random()}` }))); setShowSuggestionsModal(true); } else { showToast("Aucune suggestion IA.", 'error'); } } catch (error) { console.error(error); showToast("Erreur IA: " + (error as Error).message, 'error'); } finally { setIsLoadingAI(false); } };
-  const handleGenerateCycle = async () => { if (!currentCycle?.name) { showToast("Objectif requis.", 'error'); return; } setIsLoadingAI(true); try { const result = await generateCyclePlan(currentCycle.name, currentCycle.weeks.length); if (result) setCurrentCycle(prev => prev ? { ...prev, weeks: result.weeks } : null); } catch (e) { console.error(e); showToast("Erreur IA: " + (e as Error).message, 'error'); } finally { setIsLoadingAI(false); } };
-  const showCalendarPicker = () => { try { if (dateInputRef.current) (dateInputRef.current as any).showPicker?.() || dateInputRef.current.focus(); } catch (e) {} };
-  const calculateTotalDuration = (session: Session) => { try { const allExercises = Object.values(session.exercises).flat() as Exercise[]; return allExercises.filter(e => e).reduce((sum, ex) => sum + (ex?.duration || 0), 0); } catch (e) { return 0; } };
-  const getActiveCycleInfo = () => { const now = new Date(); now.setHours(0, 0, 0, 0); return cycles.map(c => { if (!c.startDate) return null; const [y, m, d] = c.startDate.split('-').map(Number); const start = new Date(y, m - 1, d); const diffTime = now.getTime() - start.getTime(); const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); if (diffDays < 0) return null; const weekIdx = Math.floor(diffDays / 7); if (weekIdx < c.weeks.length) { return { cycle: c, week: c.weeks[weekIdx], weekNum: weekIdx + 1, totalWeeks: c.weeks.length }; } return null; }).find(c => c !== null); };
-  const activeCycleData = getActiveCycleInfo();
-  const totalDuration = calculateTotalDuration(currentSession);
-  const filteredExercises = exercises.filter(ex => { if (!ex) return false; if (filterPhase !== 'all' && ex.phase !== filterPhase) return false; if (filterTheme !== 'all' && ex.theme !== filterTheme) return false; if (searchTerm) { const term = searchTerm.toLowerCase(); const matchName = ex.name ? ex.name.toLowerCase().includes(term) : false; const matchTheme = ex.theme ? ex.theme.toLowerCase().includes(term) : false; if (!matchName && !matchTheme) return false; } return true; });
-  const handleDragStart = (exercise: Exercise) => setDraggedExercise(exercise);
-  const handleDrop = (phaseId: PhaseId) => { if (draggedExercise) { setCurrentSession(prev => ({ ...prev, exercises: { ...prev.exercises, [phaseId]: [...(prev.exercises[phaseId] || []), { ...draggedExercise, instanceId: Date.now() }] } })); setDraggedExercise(null); } };
-  const removeExerciseFromSession = (phaseId: PhaseId, instanceId: number) => { setCurrentSession(prev => ({ ...prev, exercises: { ...prev.exercises, [phaseId]: (prev.exercises[phaseId] || []).filter(ex => ex.instanceId !== instanceId) } })); };
-  const getRadarData = () => { if (!playerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); const latestScores: Record<string, number> = {}; playerEvals.forEach(ev => { latestScores[ev.skill_id] = ev.score; }); return DEFAULT_SKILLS.map(skill => ({ subject: skill.name, A: latestScores[skill.id] || 0, fullMark: 5 })); };
+  
+  const handleGenerateCycle = useCallback(async () => { if (!currentCycle?.name) { showToast("Objectif requis.", 'error'); return; } setIsLoadingAI(true); try { const result = await generateCyclePlan(currentCycle.name, currentCycle.weeks.length); if (result) setCurrentCycle(prev => prev ? { ...prev, weeks: result.weeks } : null); } catch (e) { console.error(e); showToast("Erreur IA: " + (e as Error).message, 'error'); } finally { setIsLoadingAI(false); } }, [currentCycle, showToast]);
+  
+  const showCalendarPicker = useCallback(() => { try { if (dateInputRef.current) (dateInputRef.current as any).showPicker?.() || dateInputRef.current.focus(); } catch (e) {} }, []);
+  
+  // OPTIMIZED: Memoized calculations
+  const totalDuration = useMemo(() => { 
+    try { 
+        const allExercises = Object.values(currentSession.exercises).flat() as Exercise[]; 
+        return allExercises.filter(e => e).reduce((sum, ex) => sum + (ex?.duration || 0), 0); 
+    } catch (e) { return 0; } 
+  }, [currentSession.exercises]);
+
+  const activeCycleData = useMemo(() => {
+    const now = new Date(); now.setHours(0, 0, 0, 0); 
+    return cycles.map(c => { 
+        if (!c.startDate) return null; 
+        const [y, m, d] = c.startDate.split('-').map(Number); 
+        const start = new Date(y, m - 1, d); 
+        const diffTime = now.getTime() - start.getTime(); 
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+        if (diffDays < 0) return null; 
+        const weekIdx = Math.floor(diffDays / 7); 
+        if (weekIdx < c.weeks.length) { return { cycle: c, week: c.weeks[weekIdx], weekNum: weekIdx + 1, totalWeeks: c.weeks.length }; } 
+        return null; 
+    }).find(c => c !== null); 
+  }, [cycles]);
 
   if (showAuth) return <Auth onAuthSuccess={() => setShowAuth(false)} />;
 
@@ -372,34 +305,16 @@ export default function App() {
     <div className="flex h-screen bg-slate-200 font-sans overflow-hidden">
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-primary text-slate-300 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-full flex flex-col">
-          <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-            <div className="bg-accent p-2 rounded-lg"><Target className="text-white" size={24} /></div>
-            <div className="min-w-0"><h1 className="text-2xl font-bold text-white tracking-tight">Ping<span className="text-accent">Manager</span></h1>
-                <div className="flex items-center gap-1 text-[10px] font-medium mt-1 truncate">{session ? <><User size={10} className="text-emerald-400"/> <span className="text-emerald-400 truncate">{session.user.email}</span></> : <><CloudOff size={10} className="text-slate-500"/> <span className="text-slate-500">Local</span></>}</div>
-            </div>
-          </div>
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            <SidebarItem view="dashboard" currentView={view} setView={setView} icon={LayoutDashboard} label="Tableau de bord" />
-            <SidebarItem view="calendar" currentView={view} setView={setView} icon={CalendarDays} label="Planification (Cycles)" />
-            <SidebarItem view="sessions" currentView={view} setView={setView} icon={Plus} label="Créer une séance" />
-            <SidebarItem view="history" currentView={view} setView={setView} icon={BookOpen} label="Historique Séances" />
-            <SidebarItem view="players" currentView={view} setView={setView} icon={GraduationCap} label="Joueurs & Progression" />
-            <SidebarItem view="library" currentView={view} setView={setView} icon={Filter} label="Bibliothèque Exos" />
-            <SidebarItem view="subscription" currentView={view} setView={setView} icon={CreditCard} label="Abonnement" /> {/* NEW TAB */}
-            <SidebarItem view="settings" currentView={view} setView={setView} icon={Settings} label="Paramètres" />
-          </nav>
-          <div className="p-4">
-             {session ? <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800 mb-4"><LogOut size={16} /> Déconnexion</button>
-             : <button onClick={() => setShowAuth(true)} className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover transition-colors rounded-lg mb-4 shadow-lg"><LogIn size={16} /> Connexion Cloud</button>}
-             <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800"><div className="flex items-center gap-2 mb-2 text-accent"><Sparkles size={16} /><span className="text-xs font-bold uppercase tracking-wider">AI Powered</span></div><p className="text-xs text-slate-400 leading-relaxed">Boosté par {aiConfig.provider === 'openrouter' ? 'OpenRouter' : 'Gemini'}.</p></div>
-          </div>
-        </div>
-      </aside>
+      <Sidebar 
+        view={view} 
+        setView={setView} 
+        mobileMenuOpen={mobileMenuOpen} 
+        session={session} 
+        handleLogout={handleLogout} 
+        setShowAuth={setShowAuth} 
+        aiConfig={aiConfig}
+      />
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-slate-800"><Target className="text-accent" /> PingManager</div>
@@ -407,191 +322,70 @@ export default function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
-          {/* DASHBOARD (Truncated) */}
-          {view === 'dashboard' && (
-            <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div><h2 className="text-3xl font-bold text-slate-800">Bonjour, {coachProfile.name || 'Coach'} 👋</h2><p className="text-slate-500 mt-1">{session ? "Mode Cloud actif." : "Mode Local."}</p></div>
-                <button onClick={() => setView('sessions')} className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2"><Plus size={20} /> Nouvelle Séance</button>
-              </div>
-              {coachProfile.is_pro && <div className="inline-flex items-center gap-2 px-4 py-1 bg-gradient-to-r from-amber-100 to-orange-100 text-orange-700 rounded-full font-bold text-xs border border-orange-200 shadow-sm"><Sparkles size={14} className="text-orange-500"/> COACH PRO</div>}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Séances Créées" value={savedSessions.length} icon={BookOpen} colorClass="bg-blue-500 text-white" />
-                <StatCard title="Joueurs Suivis" value={players.length} icon={GraduationCap} colorClass="bg-emerald-500 text-white" />
-                <StatCard title="Cycles Actifs" value={cycles.length} icon={Users} colorClass="bg-purple-500 text-white" />
-              </div>
-              {/* Active Cycle Logic */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 relative overflow-hidden hover:shadow-md transition-shadow">
-                        {activeCycleData ? (
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-2 text-accent mb-3"><CalendarDays size={18} /><span className="text-xs font-bold uppercase tracking-wider">Cycle en cours</span></div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-1">{activeCycleData.cycle.name}</h3>
-                                <div className="flex items-baseline gap-2 mb-3"><span className="text-3xl font-bold text-accent">Semaine {activeCycleData.weekNum}</span><span className="text-slate-400 font-medium text-sm">/ {activeCycleData.totalWeeks}</span></div>
-                                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-4"><div className="text-xs font-bold text-orange-800 uppercase mb-1">Focus Technique</div><p className="text-lg font-semibold text-slate-800">{activeCycleData.week.theme || 'Thème libre'}</p>{activeCycleData.week.notes && <p className="text-sm text-slate-600 mt-2 italic">"{activeCycleData.week.notes}"</p>}</div>
-                                <div className="flex gap-4 pt-2"><button onClick={() => { setCurrentSession({...EMPTY_SESSION, name: `S${activeCycleData.weekNum} - ${activeCycleData.week.theme || 'Entraînement'}`}); setView('sessions'); }} className="text-sm font-semibold text-slate-800 hover:text-accent flex items-center gap-1"><Plus size={16} /> Créer la séance</button></div>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-6 text-center"><div className="bg-slate-100 p-3 rounded-full mb-3 text-slate-400"><CalendarIcon size={24} /></div><h3 className="text-lg font-bold text-slate-800">Aucun cycle actif</h3><button onClick={() => setView('calendar')} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition mt-4">Démarrer un cycle</button></div>
-                        )}
-                      </div>
-                       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                           <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-slate-800">Activités Récentes</h3><button onClick={() => setView('history')} className="text-sm text-accent font-medium hover:underline">Voir tout</button></div>
-                           {savedSessions.length === 0 ? (<div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200"><p className="text-slate-400">Aucune séance récente.</p></div>) : (<div className="space-y-4">{savedSessions.slice(-3).reverse().map(session => (<div key={session.id} onClick={() => { setCurrentSession({...session}); setView('sessions'); }} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-orange-50 cursor-pointer border border-slate-100"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-full bg-white border flex items-center justify-center text-slate-400"><CalendarIcon size={18} /></div><div><h4 className="font-bold text-slate-800">{session.name}</h4><p className="text-xs text-slate-500 mt-1">{new Date(session.date).toLocaleDateString()}</p></div></div></div>))}</div>)}
-                       </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-primary to-slate-800 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-center"><div className="relative z-10"><h3 className="text-2xl font-bold mb-3">Besoin d'inspiration ?</h3><p className="text-slate-300 mb-8">L'IA est prête à vous aider.</p><button onClick={() => setView('sessions')} className="w-full bg-white text-slate-900 px-5 py-3 rounded-xl font-bold flex items-center justify-center gap-2">Créer avec l'IA <ArrowRight size={18} /></button></div></div>
-              </div>
-            </div>
-          )}
-          
-          {/* CALENDAR VIEW */}
-          {view === 'calendar' && (
-            <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><CalendarDays className="text-accent"/> Cycles</h2><button onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '' })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau</button></div>
-                {currentCycle && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
-                                <div><h3 className="text-xl font-bold text-slate-800">{(currentCycle as any).id ? 'Modifier le Cycle' : 'Nouveau Cycle'}</h3><p className="text-xs text-slate-500 mt-1">Définissez les objectifs et la progression.</p></div>
-                                <button onClick={() => setCurrentCycle(null)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
-                            </div>
-                            <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-1">
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                                    <div className="md:col-span-6"><label className="block text-sm font-bold text-slate-700 mb-2">Nom du Cycle</label><input type="text" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle({...currentCycle, name: e.target.value})} /></div>
-                                    <div className="md:col-span-3"><label className="block text-sm font-bold text-slate-700 mb-2">Type</label><select value={(currentCycle as any).type || 'developpement'} onChange={(e) => setCurrentCycle({...currentCycle, type: e.target.value as CycleType})} className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 bg-white focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium">{Object.entries(CYCLE_TYPES).map(([key, val]) => (<option key={key} value={key}>{val.icon} {val.label}</option>))}</select></div>
-                                    <div className="md:col-span-3"><label className="block text-sm font-bold text-slate-700 mb-2">Début</label><input ref={dateInputRef} type="date" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium cursor-pointer" value={currentCycle.startDate} onClick={showCalendarPicker} onChange={(e) => setCurrentCycle({...currentCycle, startDate: e.target.value})} /></div>
-                                    <div className="md:col-span-12"><label className="block text-sm font-bold text-slate-700 mb-2">Objectifs Globaux</label><textarea className="w-full p-3 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none resize-none shadow-sm" rows={2} placeholder="Quels sont les buts principaux de cette période ?" value={(currentCycle as any).objectives || ''} onChange={(e) => setCurrentCycle({...currentCycle, objectives: e.target.value})}></textarea></div>
-                                </div>
-                                <div className="mb-8 bg-indigo-50 p-5 rounded-xl border border-indigo-100 flex flex-col sm:flex-row justify-between items-center gap-4"><div className="flex gap-4 items-center"><div className="bg-white p-3 rounded-lg shadow-sm text-indigo-600"><Bot size={24}/></div><div><h4 className="font-bold text-indigo-900">Assistant IA</h4><p className="text-sm text-indigo-700/80">Générez automatiquement une progression sur {currentCycle.weeks.length} semaines.</p></div></div><GeminiButton onClick={handleGenerateCycle} isLoading={isLoadingAI}>Générer le plan</GeminiButton></div>
-                                <div className="space-y-4">{currentCycle.weeks.map((week, idx) => (<div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:border-accent/50"><div className="flex items-center gap-3 mb-4"><div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div><h4 className="font-bold text-slate-700 text-lg">Semaine {week.weekNumber}</h4></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Thème Technique</label><div className="relative"><input type="text" placeholder="Ex: Topspin Revers" value={week.theme} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], theme: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"/><Edit3 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/></div></div><div><label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Notes & Objectifs</label><textarea placeholder="Points clés à travailler..." value={week.notes} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], notes: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} rows={2} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all resize-none"/></div></div></div>))}</div>
-                                <div className="flex justify-center gap-4 mt-8 mb-4"><button onClick={() => setCurrentCycle(prev => prev ? {...prev, weeks: [...prev.weeks, { weekNumber: prev.weeks.length + 1, theme: '', notes: '' }]} : null)} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-accent hover:text-accent rounded-xl text-slate-600 font-medium transition shadow-sm"><Plus size={18}/> Ajouter une semaine</button><button onClick={() => setCurrentCycle(prev => prev && prev.weeks.length > 1 ? {...prev, weeks: prev.weeks.slice(0, -1)} : prev)} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 hover:border-red-300 hover:text-red-500 rounded-xl text-slate-600 font-medium transition shadow-sm"><Minus size={18}/> Retirer semaine</button></div>
-                            </div>
-                            <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-4"><button onClick={() => setCurrentCycle(null)} className="px-6 py-3 text-slate-600 font-semibold hover:bg-slate-50 rounded-xl transition">Annuler</button><button onClick={saveCycle} className="px-8 py-3 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition font-bold flex items-center gap-2 transform hover:scale-105 active:scale-95"><Save size={20}/> Enregistrer le cycle</button></div>
-                        </div>
-                    </div>
-                )}
-                <div className="grid gap-6">{cycles.map(cycle => { const cycleTypeConfig = CYCLE_TYPES[(cycle as any).type || 'developpement']; return (<div key={cycle.id} className="relative animate-fade-in"><div className={`absolute -left-[29px] top-6 w-6 h-6 rounded-full border-4 border-white shadow-sm ${cycleTypeConfig.color.split(' ')[0]} z-10`}></div><div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all group"><div className={`p-4 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-start ${cycleTypeConfig.color.replace('text-', 'bg-').replace('800', '50')}`}><div><div className="flex items-center gap-3 mb-1"><span className={`text-xl`}>{cycleTypeConfig.icon}</span><h3 className="text-lg font-bold text-slate-800">{cycle.name}</h3></div><div className="flex items-center gap-3 text-xs text-slate-500 font-medium"><span className="flex items-center gap-1"><CalendarIcon size={12}/> {new Date(cycle.startDate).toLocaleDateString()}</span><span>•</span><span>{cycle.weeks.length} semaines</span><span className={`px-2 py-0.5 rounded-full ${cycleTypeConfig.color}`}>{cycleTypeConfig.label}</span></div></div><div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => setCurrentCycle(cycle)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"><Pencil size={18}/></button><button onClick={() => setCycleToDelete(cycle.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"><Trash2 size={18}/></button></div></div>{cycle.objectives && (<div className="px-6 py-3 bg-slate-50/50 border-b border-slate-100 text-sm text-slate-600 italic">"{cycle.objectives}"</div>)}<div className="p-4"><div className="flex overflow-x-auto gap-3 pb-2 custom-scrollbar">{cycle.weeks.map((week, i) => (<div key={i} className="min-w-[140px] w-[140px] p-3 bg-slate-50 rounded-xl border border-slate-100 shrink-0 flex flex-col h-28 justify-between"><div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sem {week.weekNumber}</span>{week.theme && <div className={`w-1.5 h-1.5 rounded-full ${cycleTypeConfig.color.split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></div>}</div><p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight" title={week.theme}>{week.theme || 'Non défini'}</p>{week.notes && <div className="h-1 w-8 bg-slate-200 rounded-full mt-1"></div>}</div>))}</div></div></div></div>); })}</div>
-            </div>
-          )}
-          
-          {/* SESSIONS (Reordered) */}
-          {view === 'sessions' && (
-             <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
-               <div className="w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-                     <div className="relative mb-3"><Search className="absolute left-3 top-2.5 text-slate-400" size={16} /><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-white border rounded-lg text-sm text-slate-900" /></div>
-                     <select value={filterPhase} onChange={(e) => setFilterPhase(e.target.value)} className="w-full text-xs p-2 border rounded-lg bg-white text-slate-900"><option value="all">Toutes phases</option>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">{filteredExercises.map(ex => (<div key={ex.id} draggable onDragStart={() => handleDragStart(ex)} className="p-3 bg-white border rounded-xl hover:border-accent cursor-grab"><div className="flex justify-between items-start mb-1"><span className="font-semibold text-sm text-slate-800">{ex.name}</span><GripVertical size={16} className="text-slate-300"/></div><div className="flex gap-1"><span className="text-[10px] px-1.5 bg-slate-100 rounded">{PHASES.find(p => p.id === ex.phase)?.label}</span></div></div>))}</div>
-               </div>
-               <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-slate-200">
-                  <div className="p-4 border-b border-slate-100 bg-white z-10 flex flex-col md:flex-row gap-4 justify-between items-center">
-                     <div className="flex gap-3 w-full"><input type="text" placeholder="Nom de la séance" value={currentSession.name} onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} className="flex-1 p-2 text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-accent outline-none text-slate-900" /><input type="date" value={currentSession.date} onChange={(e) => setCurrentSession(prev => ({ ...prev, date: e.target.value }))} className="p-2 bg-slate-50 rounded-lg text-sm text-slate-600 outline-none" /></div>
-                     <div className="flex gap-2"><div className="text-right mr-2"><div className="text-xs text-slate-400 uppercase font-bold">Durée</div><div className="text-xl font-bold text-emerald-600">{totalDuration} min</div></div><GeminiButton onClick={handleSuggestExercises} isLoading={isLoadingAI} className="!py-2 !px-3 !text-sm">IA</GeminiButton><button onClick={saveSession} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800"><Save size={20}/></button></div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">{PHASES.map(phase => (<PhaseDropZone key={phase.id} phase={phase} exercises={currentSession.exercises?.[phase.id] || []} onDrop={handleDrop} onRemove={removeExerciseFromSession}/>))}</div>
-               </div>
-             </div>
-          )}
+          <Suspense fallback={<PageLoader />}>
+            {/* DASHBOARD VIEW */}
+            {view === 'dashboard' && (
+              <DashboardView 
+                coachProfile={coachProfile}
+                session={session}
+                savedSessions={savedSessions}
+                players={players}
+                cycles={cycles}
+                activeCycleData={activeCycleData}
+                setView={setView}
+                setCurrentSession={setCurrentSession}
+              />
+            )}
+
+            {/* PLAYERS VIEW */}
+            {view === 'players' && (
+               <PlayersView 
+                 players={players}
+                 currentPlayer={currentPlayer}
+                 setCurrentPlayer={setCurrentPlayer}
+                 newPlayerMode={newPlayerMode}
+                 setNewPlayerMode={setNewPlayerMode}
+                 savePlayer={savePlayer}
+                 playerEvals={playerEvals}
+                 saveEvaluation={saveEvaluation}
+                 loadPlayerEvaluations={loadPlayerEvaluations}
+               />
+            )}
+            
+            {/* CALENDAR VIEW */}
+            {view === 'calendar' && (
+              <CyclesView 
+                cycles={cycles}
+                currentCycle={currentCycle}
+                setCurrentCycle={setCurrentCycle}
+                saveCycle={saveCycle}
+                setCycleToDelete={setCycleToDelete}
+                handleGenerateCycle={handleGenerateCycle}
+                isLoadingAI={isLoadingAI}
+                dateInputRef={dateInputRef}
+                showCalendarPicker={showCalendarPicker}
+              />
+            )}
+            
+            {/* SESSIONS VIEW */}
+            {view === 'sessions' && (
+               <SessionsView 
+                  exercises={exercises}
+                  currentSession={currentSession}
+                  setCurrentSession={setCurrentSession}
+                  saveSession={saveSession}
+                  handleSuggestExercises={handleSuggestExercises}
+                  isLoadingAI={isLoadingAI}
+                  totalDuration={totalDuration}
+               />
+            )}
+          </Suspense>
           
           {/* HISTORY */}
-          {view === 'history' && (<div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><h2 className="text-2xl font-bold text-slate-800 mb-6">Historique</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{savedSessions.map(session => (<div key={session.id} className="border rounded-xl p-5 hover:border-accent cursor-pointer" onClick={() => { setCurrentSession({...session}); setView('sessions'); }}><h3 className="font-bold text-slate-800 line-clamp-1">{session.name}</h3><p className="text-xs text-slate-500 mb-4 flex items-center gap-2"><CalendarIcon size={12}/> {new Date(session.date).toLocaleDateString()}</p><div className="flex gap-2"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">{calculateTotalDuration(session)} min</span></div></div>))}</div></div>)}
+          {view === 'history' && (<div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><h2 className="text-2xl font-bold text-slate-800 mb-6">Historique</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{savedSessions.map(session => (<div key={session.id} className="border rounded-xl p-5 hover:border-accent cursor-pointer" onClick={() => { setCurrentSession({...session}); setView('sessions'); }}><h3 className="font-bold text-slate-800 line-clamp-1">{session.name}</h3><p className="text-xs text-slate-500 mb-4 flex items-center gap-2"><CalendarIcon size={12}/> {new Date(session.date).toLocaleDateString()}</p><div className="flex gap-2"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">{totalDuration} min</span></div></div>))}</div></div>)}
           
           {/* LIBRARY */}
           {view === 'library' && (<div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-800">Bibliothèque</h2><button onClick={() => setNewExercise({ name: '', phase: 'technique', theme: null, duration: 15, description: '', material: '' })} className="bg-accent text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18} /> Créer</button></div>{newExercise && (<div className="mb-8 p-6 bg-slate-50 rounded-xl border animate-fade-in"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" placeholder="Nom" className="p-3 border rounded-lg col-span-2 text-slate-900" value={newExercise.name} onChange={e => setNewExercise({...newExercise, name: e.target.value})}/><select className="p-3 border rounded-lg text-slate-900" value={newExercise.phase} onChange={e => setNewExercise({...newExercise, phase: e.target.value as PhaseId})}>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select><input type="number" placeholder="Durée" className="p-3 border rounded-lg text-slate-900" value={newExercise.duration} onChange={e => setNewExercise({...newExercise, duration: parseInt(e.target.value)||0})}/><textarea className="col-span-2 p-3 border rounded-lg text-slate-900" rows={3} placeholder="Description" value={newExercise.description} onChange={e => setNewExercise({...newExercise, description: e.target.value})}></textarea><div className="col-span-2 flex justify-between items-center"><GeminiButton onClick={handleRefineDescription} isLoading={isLoadingAI}>Améliorer</GeminiButton><div className="flex gap-2"><button onClick={() => setNewExercise(null)} className="px-4 py-2 text-slate-500">Annuler</button><button onClick={addNewExercise} className="px-4 py-2 bg-slate-900 text-white rounded-lg">Sauvegarder</button></div></div></div></div>)}<div className="space-y-3">{exercises.map(ex => (<div key={ex.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition"><div><h4 className="font-bold text-slate-800">{ex.name}</h4><p className="text-sm text-slate-500 mt-1">{ex.description}</p></div><span className={`text-xs font-bold px-2 py-1 rounded uppercase ${PHASES.find(p => p.id === ex.phase)?.color.split(' ')[2]}`}>{PHASES.find(p => p.id === ex.phase)?.label}</span></div>))}</div></div>)}
-
-          {/* PLAYERS VIEW */}
-          {view === 'players' && (
-             <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
-                {!currentPlayer && !newPlayerMode && (
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
-                        <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', birth_date: '', level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
-                    </div>
-                )}
-                
-                {!currentPlayer && !newPlayerMode && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {players.map(player => (
-                            <div key={player.id} onClick={() => { setCurrentPlayer(player); loadPlayerEvaluations(player.id); }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-accent cursor-pointer transition-all group">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-orange-100 group-hover:text-accent transition-colors">
-                                        {player.first_name[0]}{player.last_name[0]}
-                                    </div>
-                                    <div><h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3><span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span></div>
-                                </div>
-                                <div className="flex items-center justify-between text-sm text-slate-500"><span>Voir progression</span><ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/></div>
-                            </div>
-                        ))}
-                        {players.length === 0 && (<div className="col-span-full text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300"><p className="text-slate-500 mb-4">Aucun joueur enregistré.</p></div>)}
-                    </div>
-                )}
-
-                {(currentPlayer || newPlayerMode) && (
-                    <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-start">
-                            <div className="flex gap-4 items-center">
-                                <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100"><ArrowRight className="rotate-180" size={20}/></button>
-                                <div>
-                                    {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level}</p></>}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                             <div className="lg:col-span-4 space-y-4">
-                                <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><User size={18}/> Informations</h4>
-                                <input type="text" placeholder="Prénom" className="w-full p-3 border rounded-xl" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
-                                <input type="text" placeholder="Nom" className="w-full p-3 border rounded-xl" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
-                                <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
-                                    <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
-                                </select>
-                                <textarea placeholder="Notes..." rows={4} className="w-full p-3 border rounded-xl" value={currentPlayer?.notes || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)}></textarea>
-                                <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2"><Save size={18}/> Enregistrer</button>
-                             </div>
-
-                             {!newPlayerMode && (
-                                 <div className="lg:col-span-8 space-y-8">
-                                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                         <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Activity size={18} className="text-accent"/> Profil Technique (Radar)</h4>
-                                         <div className="h-[300px] w-full">
-                                             <ResponsiveContainer width="100%" height="100%">
-                                                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={getRadarData()}>
-                                                     <PolarGrid /><PolarAngleAxis dataKey="subject" /><PolarRadiusAxis angle={30} domain={[0, 5]} />
-                                                     <Radar name={currentPlayer?.first_name} dataKey="A" stroke="#f97316" fill="#f97316" fillOpacity={0.6} />
-                                                     <Tooltip />
-                                                 </RadarChart>
-                                             </ResponsiveContainer>
-                                         </div>
-                                     </div>
-
-                                     <div>
-                                         <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-blue-600"/> Évaluation des Compétences</h4>
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                             {DEFAULT_SKILLS.map(skill => {
-                                                 const currentScore = playerEvals.find(e => e.skill_id === skill.id)?.score || 0;
-                                                 return (
-                                                     <div key={skill.id} className="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-white hover:border-blue-300 transition-colors">
-                                                         <div><div className="font-bold text-slate-800">{skill.name}</div><div className="text-xs text-slate-500">{skill.category}</div></div>
-                                                         <div className="flex gap-1">
-                                                             {[1, 2, 3, 4, 5].map(star => (
-                                                                 <button key={star} onClick={() => currentPlayer && saveEvaluation(currentPlayer.id, skill.id, star)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-all ${currentScore >= star ? 'bg-orange-500 text-white scale-110' : 'bg-slate-100 text-slate-300 hover:bg-slate-200'}`}>{star}</button>
-                                                             ))}
-                                                         </div>
-                                                     </div>
-                                                 );
-                                             })}
-                                         </div>
-                                     </div>
-                                 </div>
-                             )}
-                        </div>
-                    </div>
-                )}
-             </div>
-          )}
 
           {/* SUBSCRIPTION VIEW */}
           {view === 'subscription' && (
@@ -636,7 +430,7 @@ export default function App() {
              </div>
           )}
 
-          {/* SETTINGS VIEW (Restored) */}
+          {/* SETTINGS VIEW */}
           {view === 'settings' && (
              <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
@@ -652,16 +446,9 @@ export default function App() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                    <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><Settings size={24} /></div><h2 className="text-2xl font-bold text-slate-800">Configuration IA</h2></div>
+                    <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><Settings size={24} className="text-slate-600"/></div><h2 className="text-2xl font-bold text-slate-800">Configuration IA</h2></div>
                     <div className="space-y-6">
-                    <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Cpu size={16} className="text-accent"/> Fournisseur</label><div className="grid grid-cols-2 gap-4"><button onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">Google</span></button><button onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">OpenRouter</span></button></div></div>
-                    
-                    {aiConfig.provider === 'openrouter' && (
-                        <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Key size={16} className="text-accent"/> Clé API OpenRouter</label>
-                        <input type="password" value={aiConfig.apiKey} onChange={(e) => setAiConfig({...aiConfig, apiKey: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none transition-all" placeholder="sk-or-..." />
-                        </div>
-                    )}
+                    <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Target size={16} className="text-accent"/> Fournisseur</label><div className="grid grid-cols-2 gap-4"><button onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">Google</span></button><button onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">OpenRouter</span></button></div></div>
                     
                     {aiConfig.provider === 'google' && (
                         <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center gap-3"><Sparkles size={20} /><div><p className="font-bold text-sm">Mode Google Gemini natif</p><p className="text-xs opacity-80">L'application utilise la clé API sécurisée du serveur.</p></div></div>
@@ -675,7 +462,59 @@ export default function App() {
         </div>
       </main>
 
-      {/* ... (Modals preserved) ... */}
+      {/* MODAL: EXERCISE SUGGESTIONS */}
+      {showSuggestionsModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-orange-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-orange-100 p-2 rounded-lg text-accent"><Sparkles size={20} /></div>
+                <h3 className="text-xl font-bold text-slate-800">Suggestions IA</h3>
+              </div>
+              <button onClick={() => setShowSuggestionsModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-slate-50/30">
+              <p className="text-slate-600 mb-4">Voici des exercices créatifs basés sur votre séance actuelle :</p>
+              <div className="space-y-4">
+                {suggestedExercises.map((ex, i) => (
+                   <div key={i} className="bg-white border border-slate-200 p-5 rounded-xl hover:shadow-md transition-all group hover:border-accent">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-slate-800 text-lg">{ex.name}</h4>
+                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{ex.theme}</span>
+                      </div>
+                      <p className="text-slate-600 text-sm mb-3 leading-relaxed">{ex.description}</p>
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50">
+                          <div className="flex gap-4 text-xs font-medium text-slate-500">
+                             <span className="flex items-center gap-1"><Clock size={12}/> {ex.duration} min</span>
+                             <span className="flex items-center gap-1"><Target size={12}/> {ex.material}</span>
+                          </div>
+                          <button 
+                            onClick={() => {
+                                const phaseToAddTo = 'technique';
+                                setCurrentSession(prev => ({
+                                    ...prev,
+                                    exercises: {
+                                        ...prev.exercises,
+                                        [phaseToAddTo]: [...(prev.exercises[phaseToAddTo] || []), { ...ex, id: `ai_added_${Date.now()}_${i}`, phase: phaseToAddTo, instanceId: Date.now() } as Exercise]
+                                    }
+                                }));
+                                showToast("Exercice ajouté !");
+                            }}
+                            className="text-accent font-bold text-sm hover:underline flex items-center gap-1"
+                          >
+                             <Plus size={16}/> Ajouter
+                          </button>
+                      </div>
+                   </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-white flex justify-end">
+               <button onClick={() => setShowSuggestionsModal(false)} className="px-5 py-2 text-slate-600 font-semibold hover:bg-slate-50 rounded-lg transition">Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
