@@ -334,9 +334,23 @@ export default function App() {
      }
   };
 
-  // --- SAVE WRAPPERS, AI & HELPERS (Condensed) ---
+  // --- SAVE WRAPPERS & HELPERS (Condensed) ---
   const saveSession = async () => { if (!currentSession.name.trim()) { showToast("Nom requis.", 'error'); return; } const isNew = currentSession.id === 0; const sessionToSave: Session = { ...currentSession, id: isNew ? Date.now() : currentSession.id }; let newSessions = isNew ? [sessionToSave, ...savedSessions] : savedSessions.map(s => s.id === sessionToSave.id ? sessionToSave : s); setCurrentSession(sessionToSave); await persistSessions(newSessions, sessionToSave); };
-  const saveCycle = async () => { if (!currentCycle || !currentCycle.name) { showToast("Nom requis.", 'error'); return; } const cycleId = (currentCycle as any).id || Date.now(); const cycleToSave: Cycle = { ...currentCycle, id: cycleId, type: (currentCycle as any).type || 'developpement', objectives: (currentCycle as any).objectives || '' } as Cycle; const exists = cycles.find(c => c.id === cycleId); const updatedCycles = exists ? cycles.map(c => c.id === cycleId ? cycleToSave : c) : [...cycles, cycleToSave]; await persistCycles(updatedCycles, cycleToSave); setCurrentCycle(null); };
+  const saveCycle = async () => { 
+      if (!currentCycle || !currentCycle.name) { showToast("Nom requis.", 'error'); return; } 
+      const cycleId = (currentCycle as any).id || Date.now(); 
+      const cycleToSave: Cycle = { 
+          ...currentCycle, 
+          id: cycleId, 
+          type: (currentCycle as any).type || 'developpement', 
+          objectives: (currentCycle as any).objectives || '' 
+      } as Cycle; 
+      
+      const exists = cycles.find(c => c.id === cycleId); 
+      const updatedCycles = exists ? cycles.map(c => c.id === cycleId ? cycleToSave : c) : [...cycles, cycleToSave]; 
+      await persistCycles(updatedCycles, cycleToSave); 
+      setCurrentCycle(null); 
+  };
   const addNewExercise = async () => { if (!newExercise || !newExercise.name) { showToast("Nom requis.", 'error'); return; } const exercise: Exercise = { ...newExercise, id: `custom_${Date.now()}` } as Exercise; await persistExercises([...exercises, exercise], exercise); setNewExercise(null); };
   const handleRefineDescription = async () => { if (!newExercise?.description) return; setIsLoadingAI(true); const refinedDesc = await refineExerciseDescription(newExercise.description); setNewExercise(prev => prev ? {...prev, description: refinedDesc} : null); setIsLoadingAI(false); };
   const handleSuggestExercises = async () => { if (!currentSession.name) { showToast("Nommez la séance d'abord !", 'error'); return; } setIsLoadingAI(true); try { const allExercises = Object.values(currentSession.exercises).flat().filter(e => e) as Exercise[]; const suggestions = await suggestExercises(currentSession.name, allExercises.map(e => e.name)); if (suggestions) { setSuggestedExercises(suggestions.map((s: SuggestedExercise) => ({ ...s, phase: 'technique', id: `ai_${Date.now()}_${Math.random()}` }))); setShowSuggestionsModal(true); } else { showToast("Aucune suggestion IA.", 'error'); } } catch (error) { console.error(error); showToast("Erreur IA: " + (error as Error).message, 'error'); } finally { setIsLoadingAI(false); } };
@@ -372,7 +386,7 @@ export default function App() {
             <SidebarItem view="calendar" currentView={view} setView={setView} icon={CalendarDays} label="Planification (Cycles)" />
             <SidebarItem view="sessions" currentView={view} setView={setView} icon={Plus} label="Créer une séance" />
             <SidebarItem view="history" currentView={view} setView={setView} icon={BookOpen} label="Historique Séances" />
-            <SidebarItem view="players" currentView={view} setView={setView} icon={GraduationCap} label="Joueurs & Progression" /> {/* NEW TAB */}
+            <SidebarItem view="players" currentView={view} setView={setView} icon={GraduationCap} label="Joueurs & Progression" />
             <SidebarItem view="library" currentView={view} setView={setView} icon={Filter} label="Bibliothèque Exos" />
             <SidebarItem view="subscription" currentView={view} setView={setView} icon={CreditCard} label="Abonnement" /> {/* NEW TAB */}
             <SidebarItem view="settings" currentView={view} setView={setView} icon={Settings} label="Paramètres" />
@@ -406,14 +420,36 @@ export default function App() {
                 <StatCard title="Joueurs Suivis" value={players.length} icon={GraduationCap} colorClass="bg-emerald-500 text-white" />
                 <StatCard title="Cycles Actifs" value={cycles.length} icon={Users} colorClass="bg-purple-500 text-white" />
               </div>
-              {/* ... rest of dashboard ... */}
+              {/* Active Cycle Logic */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 relative overflow-hidden hover:shadow-md transition-shadow">
+                        {activeCycleData ? (
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 text-accent mb-3"><CalendarDays size={18} /><span className="text-xs font-bold uppercase tracking-wider">Cycle en cours</span></div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-1">{activeCycleData.cycle.name}</h3>
+                                <div className="flex items-baseline gap-2 mb-3"><span className="text-3xl font-bold text-accent">Semaine {activeCycleData.weekNum}</span><span className="text-slate-400 font-medium text-sm">/ {activeCycleData.totalWeeks}</span></div>
+                                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-4"><div className="text-xs font-bold text-orange-800 uppercase mb-1">Focus Technique</div><p className="text-lg font-semibold text-slate-800">{activeCycleData.week.theme || 'Thème libre'}</p>{activeCycleData.week.notes && <p className="text-sm text-slate-600 mt-2 italic">"{activeCycleData.week.notes}"</p>}</div>
+                                <div className="flex gap-4 pt-2"><button onClick={() => { setCurrentSession({...EMPTY_SESSION, name: `S${activeCycleData.weekNum} - ${activeCycleData.week.theme || 'Entraînement'}`}); setView('sessions'); }} className="text-sm font-semibold text-slate-800 hover:text-accent flex items-center gap-1"><Plus size={16} /> Créer la séance</button></div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-6 text-center"><div className="bg-slate-100 p-3 rounded-full mb-3 text-slate-400"><CalendarIcon size={24} /></div><h3 className="text-lg font-bold text-slate-800">Aucun cycle actif</h3><button onClick={() => setView('calendar')} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition mt-4">Démarrer un cycle</button></div>
+                        )}
+                      </div>
+                       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                           <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-slate-800">Activités Récentes</h3><button onClick={() => setView('history')} className="text-sm text-accent font-medium hover:underline">Voir tout</button></div>
+                           {savedSessions.length === 0 ? (<div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200"><p className="text-slate-400">Aucune séance récente.</p></div>) : (<div className="space-y-4">{savedSessions.slice(-3).reverse().map(session => (<div key={session.id} onClick={() => { setCurrentSession({...session}); setView('sessions'); }} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-orange-50 cursor-pointer border border-slate-100"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-full bg-white border flex items-center justify-center text-slate-400"><CalendarIcon size={18} /></div><div><h4 className="font-bold text-slate-800">{session.name}</h4><p className="text-xs text-slate-500 mt-1">{new Date(session.date).toLocaleDateString()}</p></div></div></div>))}</div>)}
+                       </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-primary to-slate-800 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-center"><div className="relative z-10"><h3 className="text-2xl font-bold mb-3">Besoin d'inspiration ?</h3><p className="text-slate-300 mb-8">L'IA est prête à vous aider.</p><button onClick={() => setView('sessions')} className="w-full bg-white text-slate-900 px-5 py-3 rounded-xl font-bold flex items-center justify-center gap-2">Créer avec l'IA <ArrowRight size={18} /></button></div></div>
+              </div>
             </div>
           )}
           
-          {/* CALENDAR VIEW (Timeline & Editor) */}
+          {/* CALENDAR VIEW */}
           {view === 'calendar' && (
             <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><CalendarDays className="text-accent"/> Cycles</h2><button onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })) })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau</button></div>
+                <div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><CalendarDays className="text-accent"/> Cycles</h2><button onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '' })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau</button></div>
                 {currentCycle && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -466,7 +502,7 @@ export default function App() {
           {/* LIBRARY */}
           {view === 'library' && (<div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-800">Bibliothèque</h2><button onClick={() => setNewExercise({ name: '', phase: 'technique', theme: null, duration: 15, description: '', material: '' })} className="bg-accent text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18} /> Créer</button></div>{newExercise && (<div className="mb-8 p-6 bg-slate-50 rounded-xl border animate-fade-in"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" placeholder="Nom" className="p-3 border rounded-lg col-span-2 text-slate-900" value={newExercise.name} onChange={e => setNewExercise({...newExercise, name: e.target.value})}/><select className="p-3 border rounded-lg text-slate-900" value={newExercise.phase} onChange={e => setNewExercise({...newExercise, phase: e.target.value as PhaseId})}>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select><input type="number" placeholder="Durée" className="p-3 border rounded-lg text-slate-900" value={newExercise.duration} onChange={e => setNewExercise({...newExercise, duration: parseInt(e.target.value)||0})}/><textarea className="col-span-2 p-3 border rounded-lg text-slate-900" rows={3} placeholder="Description" value={newExercise.description} onChange={e => setNewExercise({...newExercise, description: e.target.value})}></textarea><div className="col-span-2 flex justify-between items-center"><GeminiButton onClick={handleRefineDescription} isLoading={isLoadingAI}>Améliorer</GeminiButton><div className="flex gap-2"><button onClick={() => setNewExercise(null)} className="px-4 py-2 text-slate-500">Annuler</button><button onClick={addNewExercise} className="px-4 py-2 bg-slate-900 text-white rounded-lg">Sauvegarder</button></div></div></div></div>)}<div className="space-y-3">{exercises.map(ex => (<div key={ex.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition"><div><h4 className="font-bold text-slate-800">{ex.name}</h4><p className="text-sm text-slate-500 mt-1">{ex.description}</p></div><span className={`text-xs font-bold px-2 py-1 rounded uppercase ${PHASES.find(p => p.id === ex.phase)?.color.split(' ')[2]}`}>{PHASES.find(p => p.id === ex.phase)?.label}</span></div>))}</div></div>)}
 
-          {/* PLAYERS VIEW (NEW) */}
+          {/* PLAYERS VIEW */}
           {view === 'players' && (
              <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
                 {!currentPlayer && !newPlayerMode && (
@@ -557,7 +593,7 @@ export default function App() {
              </div>
           )}
 
-          {/* SUBSCRIPTION VIEW (Restored) */}
+          {/* SUBSCRIPTION VIEW */}
           {view === 'subscription' && (
              <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
                 <div className="text-center mb-12">
