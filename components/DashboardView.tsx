@@ -47,9 +47,27 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Séances Créées" value={savedSessions.length} icon={BookOpen} colorClass="bg-blue-500 text-white" />
-        <StatCard title="Joueurs Suivis" value={players.length} icon={Users} colorClass="bg-emerald-500 text-white" />
-        <StatCard title="Cycles Actifs" value={cycles.length} icon={Target} colorClass="bg-purple-500 text-white" />
+        <StatCard 
+          title="Séances Créées" 
+          value={savedSessions.length} 
+          icon={BookOpen} 
+          colorClass="bg-blue-500 text-white" 
+          onClick={() => setView('history')}
+        />
+        <StatCard 
+          title="Joueurs Suivis" 
+          value={players.length} 
+          icon={Users} 
+          colorClass="bg-emerald-500 text-white" 
+          onClick={() => setView('players')}
+        />
+        <StatCard 
+          title="Cycles Actifs" 
+          value={cycles.length} 
+          icon={Target} 
+          colorClass="bg-purple-500 text-white" 
+          onClick={() => setView('calendar')}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -130,4 +148,3 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
     </div>
   );
 });
-    

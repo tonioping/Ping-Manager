@@ -1,8 +1,13 @@
+// Replaced failing vite/client reference with manual declarations
+declare module '*.css';
+declare module '*.png';
+declare module '*.jpg';
+declare module '*.jpeg';
+
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string
   readonly VITE_SUPABASE_ANON_KEY: string
   readonly API_KEY: string
-  [key: string]: string | boolean | undefined
 }
 
 interface ImportMeta {
@@ -16,7 +21,6 @@ declare namespace NodeJS {
   }
 }
 
-declare module '*.css';
 declare module '*.svg' {
   import * as React from 'react';
   export const ReactComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement> & { title?: string }>;

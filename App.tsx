@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { 
   Calendar as CalendarIcon, Plus, Save, Filter, X, 
@@ -268,6 +269,11 @@ export default function App() {
       setCurrentCycle(null); 
   }, [currentCycle, cycles, showToast]);
 
+  const handleUpdateCycle = useCallback(async (updatedCycle: Cycle) => {
+    const updatedCycles = cycles.map(c => c.id === updatedCycle.id ? updatedCycle : c);
+    await persistCycles(updatedCycles, updatedCycle);
+  }, [cycles]);
+
   const addNewExercise = async () => { if (!newExercise || !newExercise.name) { showToast("Nom requis.", 'error'); return; } const exercise: Exercise = { ...newExercise, id: `custom_${Date.now()}` } as Exercise; await persistExercises([...exercises, exercise], exercise); setNewExercise(null); };
   const handleRefineDescription = async () => { if (!newExercise?.description) return; setIsLoadingAI(true); const refinedDesc = await refineExerciseDescription(newExercise.description); setNewExercise(prev => prev ? {...prev, description: refinedDesc} : null); setIsLoadingAI(false); };
   const handleSuggestExercises = async () => { if (!currentSession.name) { showToast("Nommez la séance d'abord !", 'error'); return; } setIsLoadingAI(true); try { const allExercises = Object.values(currentSession.exercises).flat().filter(e => e) as Exercise[]; const suggestions = await suggestExercises(currentSession.name, allExercises.map(e => e.name)); if (suggestions) { setSuggestedExercises(suggestions.map((s: SuggestedExercise) => ({ ...s, phase: 'technique', id: `ai_${Date.now()}_${Math.random()}` }))); setShowSuggestionsModal(true); } else { showToast("Aucune suggestion IA.", 'error'); } } catch (error) { console.error(error); showToast("Erreur IA: " + (error as Error).message, 'error'); } finally { setIsLoadingAI(false); } };
@@ -309,6 +315,7 @@ export default function App() {
         view={view} 
         setView={setView} 
         mobileMenuOpen={mobileMenuOpen} 
+        setMobileMenuOpen={setMobileMenuOpen}
         session={session} 
         handleLogout={handleLogout} 
         setShowAuth={setShowAuth} 
@@ -364,6 +371,8 @@ export default function App() {
                 isLoadingAI={isLoadingAI}
                 dateInputRef={dateInputRef}
                 showCalendarPicker={showCalendarPicker}
+                savedSessions={savedSessions}
+                onUpdateCycle={handleUpdateCycle}
               />
             )}
             

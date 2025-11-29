@@ -1,3 +1,4 @@
+
 export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'schema' | 'matchs';
 
 export interface Phase {
@@ -31,6 +32,8 @@ export interface CycleWeek {
   weekNumber: number;
   theme: string;
   notes: string;
+  sessionId?: number;
+  sessionName?: string;
 }
 
 export type CycleType = 'developpement' | 'competition' | 'recuperation' | 'pre-saison';
@@ -68,6 +71,7 @@ export interface Player {
     first_name: string;
     last_name: string;
     birth_date?: string;
+    age?: number;
     level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
     notes?: string;
     user_id?: string;

@@ -1,8 +1,8 @@
 
-import React from 'react';
-import { CalendarDays, Plus, X, Bot, Save, Minus, Pencil, Trash2, Calendar as CalendarIcon, Edit3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { CalendarDays, Plus, X, Bot, Save, Minus, Pencil, Trash2, Calendar as CalendarIcon, Edit3, Link, Check, BookOpen } from 'lucide-react';
 import { GeminiButton } from './GeminiButton';
-import { Cycle, CycleType } from '../types';
+import { Cycle, CycleType, Session } from '../types';
 import { CYCLE_TYPES } from '../constants';
 
 interface CyclesViewProps {
@@ -15,6 +15,8 @@ interface CyclesViewProps {
   isLoadingAI: boolean;
   dateInputRef: React.RefObject<HTMLInputElement>;
   showCalendarPicker: () => void;
+  savedSessions: Session[];
+  onUpdateCycle: (cycle: Cycle) => void;
 }
 
 export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
@@ -26,13 +28,50 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
   handleGenerateCycle,
   isLoadingAI,
   dateInputRef,
-  showCalendarPicker
+  showCalendarPicker,
+  savedSessions,
+  onUpdateCycle
 }) => {
+  const [editingWeek, setEditingWeek] = useState<{cycle: Cycle, weekIndex: number} | null>(null);
+
+  const handleLinkSession = (session: Session) => {
+    if (!editingWeek) return;
+    const { cycle, weekIndex } = editingWeek;
+    
+    // Create updated weeks array
+    const updatedWeeks = [...cycle.weeks];
+    updatedWeeks[weekIndex] = {
+      ...updatedWeeks[weekIndex],
+      sessionId: session.id,
+      sessionName: session.name
+    };
+
+    const updatedCycle = { ...cycle, weeks: updatedWeeks };
+    onUpdateCycle(updatedCycle);
+    setEditingWeek(null);
+  };
+
+  const handleUnlinkSession = () => {
+    if (!editingWeek) return;
+    const { cycle, weekIndex } = editingWeek;
+
+    const updatedWeeks = [...cycle.weeks];
+    updatedWeeks[weekIndex] = {
+        ...updatedWeeks[weekIndex],
+        sessionId: undefined,
+        sessionName: undefined
+    };
+
+    const updatedCycle = { ...cycle, weeks: updatedWeeks };
+    onUpdateCycle(updatedCycle);
+    setEditingWeek(null);
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-          <CalendarDays className="text-accent"/> Cycles
+          <CalendarDays className="text-accent"/> Planification Annuel
         </h2>
         <button 
           onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '' })} 
@@ -41,6 +80,42 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
           <Plus size={18} /> Nouveau
         </button>
       </div>
+
+      {/* MODAL SELECTION SEANCE */}
+      {editingWeek && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                 <h3 className="font-bold text-slate-800">Lier une séance</h3>
+                 <button onClick={() => setEditingWeek(null)}><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
+              </div>
+              <div className="p-4">
+                 <p className="text-sm text-slate-500 mb-4">Sélectionnez une séance pour la <strong>Semaine {editingWeek.weekIndex + 1}</strong> de <strong>{editingWeek.cycle.name}</strong>.</p>
+                 <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    {savedSessions.length === 0 && <p className="text-center text-slate-400 py-4">Aucune séance enregistrée.</p>}
+                    {savedSessions.map(sess => (
+                        <button 
+                            key={sess.id}
+                            onClick={() => handleLinkSession(sess)}
+                            className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-accent hover:bg-orange-50 transition-all flex justify-between items-center group"
+                        >
+                            <div>
+                                <div className="font-bold text-slate-800">{sess.name}</div>
+                                <div className="text-xs text-slate-500">{new Date(sess.date).toLocaleDateString()}</div>
+                            </div>
+                            {editingWeek.cycle.weeks[editingWeek.weekIndex].sessionId === sess.id && <Check size={18} className="text-green-500"/>}
+                        </button>
+                    ))}
+                 </div>
+                 {editingWeek.cycle.weeks[editingWeek.weekIndex].sessionName && (
+                     <div className="mt-4 pt-4 border-t border-slate-100">
+                         <button onClick={handleUnlinkSession} className="w-full py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium transition">Détacher la séance actuelle</button>
+                     </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
 
       {currentCycle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -160,13 +235,27 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                   {/* GRID SYSTEM: 6 WEEKS PER LINE */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {cycle.weeks.map((week, i) => (
-                      <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col h-28 justify-between hover:border-accent/50 transition-colors">
+                      <div 
+                        key={i} 
+                        onClick={() => setEditingWeek({cycle, weekIndex: i})}
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col h-28 justify-between hover:border-accent hover:bg-white hover:shadow-sm cursor-pointer transition-all relative group/week"
+                      >
+                        <div className="absolute top-2 right-2 text-slate-300 group-hover/week:text-accent transition-colors">
+                            <Link size={14} />
+                        </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sem {week.weekNumber}</span>
                           {week.theme && <div className={`w-1.5 h-1.5 rounded-full ${cycleTypeConfig.color.split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></div>}
                         </div>
                         <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight" title={week.theme}>{week.theme || 'Non défini'}</p>
-                        {week.notes && <div className="h-1 w-8 bg-slate-200 rounded-full mt-1"></div>}
+                        
+                        {week.sessionName ? (
+                            <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded border border-orange-200 truncate">
+                                <BookOpen size={10} /> <span className="truncate">{week.sessionName}</span>
+                            </div>
+                        ) : (
+                            week.notes && <div className="h-1 w-8 bg-slate-200 rounded-full mt-1"></div>
+                        )}
                       </div>
                     ))}
                   </div>

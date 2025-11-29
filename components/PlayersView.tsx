@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
@@ -40,7 +41,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
         {!currentPlayer && !newPlayerMode && (
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
-                <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', birth_date: '', level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
+                <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', birth_date: '', age: undefined, level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
             </div>
         )}
         
@@ -52,7 +53,13 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                             <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-orange-100 group-hover:text-accent transition-colors">
                                 {player.first_name[0]}{player.last_name[0]}
                             </div>
-                            <div><h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3><span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span></div>
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
+                                <div className="flex gap-2 mt-1">
+                                    <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span>
+                                    {player.age && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">{player.age} ans</span>}
+                                </div>
+                            </div>
                         </div>
                         <div className="flex items-center justify-between text-sm text-slate-500"><span>Voir progression</span><ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/></div>
                     </div>
@@ -67,7 +74,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                     <div className="flex gap-4 items-center">
                         <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100"><ArrowRight className="rotate-180" size={20}/></button>
                         <div>
-                            {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level}</p></>}
+                            {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level} {currentPlayer?.age ? `• ${currentPlayer.age} ans` : ''}</p></>}
                         </div>
                     </div>
                 </div>
@@ -75,13 +82,41 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                 <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
                      <div className="lg:col-span-4 space-y-4">
                         <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><User size={18}/> Informations</h4>
-                        <input type="text" placeholder="Prénom" className="w-full p-3 border rounded-xl" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
-                        <input type="text" placeholder="Nom" className="w-full p-3 border rounded-xl" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
-                        <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
-                            <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
-                        </select>
-                        <textarea placeholder="Notes..." rows={4} className="w-full p-3 border rounded-xl" value={currentPlayer?.notes || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)}></textarea>
-                        <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2"><Save size={18}/> Enregistrer</button>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2 sm:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Prénom</label>
+                                <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Nom</label>
+                                <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Age</label>
+                                <input 
+                                    type="number" 
+                                    className="w-full p-3 border rounded-xl" 
+                                    value={currentPlayer?.age || ''} 
+                                    onChange={e => setCurrentPlayer(prev => prev ? {...prev, age: parseInt(e.target.value) || undefined} : null)} 
+                                    placeholder="Ans" 
+                                />
+                            </div>
+                            <div className="col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Niveau</label>
+                                <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
+                                    <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label>
+                            <textarea placeholder="Particularités, style de jeu..." rows={4} className="w-full p-3 border rounded-xl" value={currentPlayer?.notes || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)}></textarea>
+                        </div>
+                        <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition"><Save size={18}/> Enregistrer</button>
                      </div>
 
                      {!newPlayerMode && (
