@@ -324,7 +324,9 @@ export default function App() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-slate-800"><Target className="text-accent" /> PingManager</div>
+          <div onClick={() => setView('dashboard')} className="flex items-center gap-2 font-bold text-slate-800 cursor-pointer hover:opacity-80 transition-opacity">
+             <Target className="text-accent" /> PingManager
+          </div>
           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600">{mobileMenuOpen ? <X /> : <Menu />}</button>
         </header>
 
