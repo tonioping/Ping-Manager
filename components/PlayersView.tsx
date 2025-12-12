@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Player, PlayerEvaluation, Skill } from '../types';
 import { DEFAULT_SKILLS } from '../constants';
@@ -12,6 +12,7 @@ interface PlayersViewProps {
   newPlayerMode: boolean;
   setNewPlayerMode: React.Dispatch<React.SetStateAction<boolean>>;
   savePlayer: (player: Player) => void;
+  deletePlayer: (playerId: string) => void;
   playerEvals: PlayerEvaluation[];
   saveEvaluation: (playerId: string, skillId: string, score: number) => void;
   loadPlayerEvaluations: (playerId: string) => void;
@@ -24,6 +25,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   newPlayerMode,
   setNewPlayerMode,
   savePlayer,
+  deletePlayer,
   playerEvals,
   saveEvaluation,
   loadPlayerEvaluations
@@ -77,6 +79,15 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                             {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level} {currentPlayer?.age ? `• ${currentPlayer.age} ans` : ''}</p></>}
                         </div>
                     </div>
+                    {!newPlayerMode && currentPlayer && (
+                        <button 
+                            onClick={() => deletePlayer(currentPlayer.id)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Supprimer le joueur"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    )}
                 </div>
 
                 <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">

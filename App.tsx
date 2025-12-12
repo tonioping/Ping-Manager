@@ -250,22 +250,97 @@ export default function App() {
       setNewPlayerMode(false); 
       setCurrentPlayer(null);
   };
+  
+  const deletePlayer = async (playerId: string) => {
+      if (!confirm("Êtes-vous sûr de vouloir supprimer ce joueur ? Cette action est irréversible.")) return;
+
+      const newPlayers = players.filter(p => p.id !== playerId);
+      setPlayers(newPlayers);
+      
+      if (supabase && session) {
+          const { error } = await supabase.from('players').delete().eq('id', playerId);
+          if(error) {
+             showToast("Erreur suppression: " + error.message, 'error');
+          } else {
+             showToast("Joueur supprimé (Cloud)");
+          }
+      } else {
+          localStorage.setItem('pingmanager_players', JSON.stringify(newPlayers));
+          showToast("Joueur supprimé (Local)");
+      }
+      setPlayerEvals(prev => prev.filter(e => e.player_id !== playerId));
+      setCurrentPlayer(null);
+  };
 
   const loadPlayerEvaluations = async (playerId: string) => {
       if (supabase && session) {
           const { data } = await supabase.from('player_evaluations').select('*').eq('player_id', playerId).order('date', { ascending: false });
           setPlayerEvals(data || []);
+      } else {
+          // MODE LOCAL : Chargement depuis localStorage
+          try {
+             const allEvalsJSON = localStorage.getItem('pingmanager_evaluations');
+             const allEvals: PlayerEvaluation[] = allEvalsJSON ? JSON.parse(allEvalsJSON) : [];
+             const playerSpecificEvals = allEvals.filter(e => e.player_id === playerId);
+             // Tri par date décroissante pour afficher le plus récent en premier (comme le Radar prend le 1er trouvé)
+             playerSpecificEvals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+             setPlayerEvals(playerSpecificEvals);
+          } catch(e) {
+             console.error("Erreur lecture evals local", e);
+             setPlayerEvals([]);
+          }
       }
   };
+  
   const saveEvaluation = async (playerId: string, skillId: string, score: number, comment?: string) => {
-      if (!supabase) { showToast("Sauvegarde impossible en local.", 'error'); return; }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { showToast("Veuillez vous connecter.", 'error'); return; }
-      const evalToSave = { player_id: playerId, skill_id: skillId, score, date: new Date().toISOString().split('T')[0], comment, user_id: user.id };
-      const updatedEvals = [...playerEvals.filter(e => e.skill_id !== skillId), evalToSave as PlayerEvaluation];
-      setPlayerEvals(updatedEvals);
-      await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); showToast("Évaluation sauvegardée");
+      const today = new Date().toISOString().split('T')[0];
+      const evalToSave: PlayerEvaluation = { 
+          player_id: playerId, 
+          skill_id: skillId, 
+          score, 
+          date: today, 
+          comment 
+      };
+
+      if (supabase && session) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) { showToast("Veuillez vous connecter.", 'error'); return; }
+          
+          evalToSave.user_id = user.id;
+          
+          // Mise à jour optimiste de l'état
+          // On retire l'ancienne éval pour ce skill si elle existe (pour l'affichage immédiat du bon score sur le radar)
+          const otherEvals = playerEvals.filter(e => e.skill_id !== skillId);
+          setPlayerEvals([evalToSave, ...otherEvals]);
+
+          await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
+          showToast("Évaluation sauvegardée (Cloud)");
+      } else {
+          // MODE LOCAL
+          try {
+              const allEvalsJSON = localStorage.getItem('pingmanager_evaluations');
+              let allEvals: PlayerEvaluation[] = allEvalsJSON ? JSON.parse(allEvalsJSON) : [];
+              
+              // On supprime l'éventuelle évaluation déjà existante pour ce joueur/skill/date pour la remplacer (mise à jour du jour)
+              allEvals = allEvals.filter(e => !(e.player_id === playerId && e.skill_id === skillId && e.date === today));
+              
+              allEvals.push(evalToSave);
+              localStorage.setItem('pingmanager_evaluations', JSON.stringify(allEvals));
+
+              // Mise à jour de l'état local pour rafraîchir l'interface
+              // On garde les évaluations du joueur courant, on retire l'ancienne du skill pour mettre la nouvelle
+              const otherCurrentPlayerEvals = playerEvals.filter(e => e.skill_id !== skillId);
+              // On met la nouvelle en premier pour qu'elle soit prise en compte par le .find() du radar/stars
+              setPlayerEvals([evalToSave, ...otherCurrentPlayerEvals]);
+              
+              showToast("Évaluation sauvegardée (Local)");
+          } catch(e) {
+              console.error("Erreur sauvegarde eval local", e);
+              showToast("Erreur sauvegarde locale", 'error');
+          }
+      }
   };
+  
   const saveAIConfig = () => { localStorage.setItem('pingmanager_ai_config', JSON.stringify(aiConfig)); showToast('Configuration IA sauvegardée !'); };
   const handleLogout = useCallback(async () => { if (confirm("Déconnexion ?")) { if (supabase) await supabase.auth.signOut(); setSavedSessions([]); setCycles([]); setExercises(INITIAL_EXERCISES); setPlayers([]); setCurrentPlayer(null); setPlayerEvals([]); setSession(null); setShowAuth(true); showToast("Déconnecté."); } }, [supabase, showToast]);
 
@@ -387,6 +462,7 @@ export default function App() {
                  playerEvals={playerEvals}
                  saveEvaluation={saveEvaluation}
                  loadPlayerEvaluations={loadPlayerEvaluations}
+                 deletePlayer={deletePlayer}
                />
             )}
             
