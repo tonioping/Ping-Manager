@@ -66,6 +66,16 @@ export const INITIAL_EXERCISES: Exercise[] = [
   { id: 't20', name: 'Le Bloc "Coupé" (Chop-block)', phase: 'technique', theme: 'Bloc', duration: 15, description: 'Sur un topspin, effectuer un geste descendant sec pour renvoyer une balle coupée et flottante.', material: 'Balles' },
   { id: 't21', name: 'Pas croisés (Balle excentrée)', phase: 'technique', theme: 'Jeu de jambes', duration: 15, description: 'Panier de balles : Le coach envoie une balle très sortante plein CD. Le joueur doit utiliser le pas croisé pour l\'atteindre.', material: 'Panier de balles' },
   { id: 't22', name: 'Liaison CD / RV Aléatoire', phase: 'technique', theme: 'Incertitude', duration: 20, description: 'Panier : Le coach envoie aléatoirement à droite ou à gauche. Le joueur doit décider instantanément quel coup jouer.', material: 'Panier de balles' },
+  // Nouveaux exercices Apprentissage Topspin
+  { id: 't23', name: 'Apprentissage Topspin CD (Panier)', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Panier balle coupée. Focus sur l\'action "bas vers haut". Le joueur doit toucher la balle devant lui et la frotter.', material: 'Panier de balles' },
+  { id: 't24', name: 'Apprentissage Topspin RV (Panier)', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Panier balle coupée. Focus sur l\'utilisation du poignet ("accélération finale") et le coude qui reste stable.', material: 'Panier de balles' },
+  { id: 't25', name: 'Régularité Topspin CD sur Bloc', phase: 'technique', theme: 'Coup Droit (CD)', duration: 15, description: 'Diagonale CD. L\'attaquant enchaîne les topspins rotation sans forcer. Le bloqueur assure la balle.', material: 'Balles' },
+  { id: 't26', name: 'Régularité Topspin RV sur Bloc', phase: 'technique', theme: 'Revers (RV)', duration: 15, description: 'Diagonale RV. Rythme lent. Le joueur doit maintenir une hauteur de balle sécurisante (filet + 10cm).', material: 'Balles' },
+  { id: 't27', name: 'Topspin CD "Ligne droite"', phase: 'technique', theme: 'Topspin', duration: 12, description: 'Jouer le topspin le long de la ligne. Nécessite d\'orienter les épaules et de frapper la balle un peu plus tard.', material: 'Balles' },
+  { id: 't28', name: 'Topspin RV "Ligne droite"', phase: 'technique', theme: 'Topspin', duration: 12, description: 'Jouer le topspin RV ligne droite. Nécessite de fermer l\'angle du poignet au moment de l\'impact.', material: 'Balles' },
+  { id: 't29', name: 'Démarrage Topspin CD sur Poussette', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Séquence : 1 Poussette CD -> Le relanceur pousse long -> Démarrage en Topspin CD rotation.', material: 'Balles' },
+  { id: 't30', name: 'Démarrage Topspin RV sur Poussette', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Séquence : 1 Poussette RV -> Le relanceur pousse long -> Démarrage en Topspin RV (action poignet).', material: 'Balles' },
+
 
   // --- DÉPLACEMENT (D1-D20) ---
   { id: 'd1', name: 'Pas chassés latéraux rapides', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Multiballes : distribution rapide Plein CD / Plein RV. Le joueur doit se déplacer exclusivement en pas chassés rasant le sol.', material: 'Panier de balles' },

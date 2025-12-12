@@ -85,6 +85,9 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   const [filterPhase, setFilterPhase] = useState('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   
+  // Tooltip State
+  const [tooltip, setTooltip] = useState<{x: number, y: number, content: string} | null>(null);
+  
   // Mobile Tab State: 'session' displayed by default to see content immediately
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
 
@@ -141,8 +144,18 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   }, [setCurrentSession]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] lg:h-[calc(100vh-100px)]">
+    <div className="flex flex-col h-[calc(100vh-80px)] lg:h-[calc(100vh-100px)] relative">
       
+      {/* TOOLTIP RENDERER */}
+      {tooltip && (
+        <div 
+          className="fixed z-[100] bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl max-w-xs pointer-events-none animate-fade-in border border-slate-700 leading-relaxed"
+          style={{ top: tooltip.y + 15, left: Math.min(tooltip.x + 15, window.innerWidth - 320) }}
+        >
+          {tooltip.content}
+        </div>
+      )}
+
       {/* MOBILE TABS */}
       <div className="lg:hidden flex p-1 mx-4 mb-2 bg-slate-200 rounded-xl">
         <button 
@@ -188,7 +201,10 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                 <div 
                 key={ex.id} 
                 draggable 
-                onDragStart={() => handleDragStart(ex)} 
+                onDragStart={() => { handleDragStart(ex); setTooltip(null); }}
+                onMouseEnter={(e) => !draggedExercise && setTooltip({x: e.clientX, y: e.clientY, content: ex.description})}
+                onMouseMove={(e) => !draggedExercise && setTooltip({x: e.clientX, y: e.clientY, content: ex.description})}
+                onMouseLeave={() => setTooltip(null)}
                 className="p-3 bg-white border rounded-xl hover:border-accent cursor-grab active:cursor-grabbing transition-colors group flex justify-between items-center"
                 >
                 <div className="flex-1">
