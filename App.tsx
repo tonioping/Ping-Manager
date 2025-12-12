@@ -211,17 +211,25 @@ export default function App() {
           showToast("Profil mis à jour (Local)");
       }
   };
+  
   const savePlayer = async (player: Player) => {
       let updatedPlayers = [...players];
       const isNew = !players.find(p => p.id === player.id); 
       if (isNew) updatedPlayers.push(player); else updatedPlayers = players.map(p => p.id === player.id ? player : p);
       setPlayers(updatedPlayers);
       if (supabase && session) {
-          const { error } = await supabase.from('players').upsert({ ...player, user_id: session.user.id });
+          // Correction critique : Convertir date vide en null pour PostgreSQL
+          const playerPayload = {
+              ...player,
+              birth_date: player.birth_date === '' ? null : player.birth_date,
+              user_id: session.user.id
+          };
+          const { error } = await supabase.from('players').upsert(playerPayload);
           if(error) showToast("Erreur sauvegarde joueur: " + error.message, 'error'); else showToast("Joueur sauvegardé (Cloud)");
       } else { localStorage.setItem('pingmanager_players', JSON.stringify(updatedPlayers)); showToast("Joueur sauvegardé (Local)"); }
       setNewPlayerMode(false); setCurrentPlayer(null);
   };
+
   const loadPlayerEvaluations = async (playerId: string) => {
       if (supabase && session) {
           const { data } = await supabase.from('player_evaluations').select('*').eq('player_id', playerId).order('date', { ascending: false });
