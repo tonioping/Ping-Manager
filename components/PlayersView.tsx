@@ -105,11 +105,21 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                 />
                             </div>
                             <div className="col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Niveau</label>
-                                <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
-                                    <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
-                                </select>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Date de naissance</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full p-3 border rounded-xl bg-white text-sm" 
+                                    value={currentPlayer?.birth_date || ''} 
+                                    onChange={e => setCurrentPlayer(prev => prev ? {...prev, birth_date: e.target.value} : null)} 
+                                />
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Niveau</label>
+                            <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
+                                <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
+                            </select>
                         </div>
 
                         <div>

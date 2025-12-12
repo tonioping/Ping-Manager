@@ -218,10 +218,12 @@ export default function App() {
       if (isNew) updatedPlayers.push(player); else updatedPlayers = players.map(p => p.id === player.id ? player : p);
       setPlayers(updatedPlayers);
       if (supabase && session) {
-          // Correction critique : Convertir date vide en null pour PostgreSQL
+          // Robust checking: if birth_date is undefined, empty string or whitespace, send NULL
+          const birthDate = (!player.birth_date || player.birth_date.trim() === '') ? null : player.birth_date;
+          
           const playerPayload = {
               ...player,
-              birth_date: player.birth_date === '' ? null : player.birth_date,
+              birth_date: birthDate,
               user_id: session.user.id
           };
           const { error } = await supabase.from('players').upsert(playerPayload);
