@@ -6,6 +6,7 @@ export const PHASES: Phase[] = [
   { id: 'echauffement', label: 'ÉCHAUFFEMENT', duration: 15, color: 'bg-orange-50 border-orange-200 text-orange-900' },
   { id: 'regularite', label: 'RÉGULARITÉ', duration: 20, color: 'bg-sky-50 border-sky-200 text-sky-900' },
   { id: 'technique', label: 'TECHNIQUE', duration: 25, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+  { id: 'deplacement', label: 'DÉPLACEMENT', duration: 20, color: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-900' },
   { id: 'schema', label: 'SCHÉMA DE JEU', duration: 15, color: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
   { id: 'matchs', label: 'MATCHS VARIÉS', duration: 15, color: 'bg-rose-50 border-rose-200 text-rose-900' }
 ];
@@ -36,7 +37,6 @@ export const INITIAL_EXERCISES: Exercise[] = [
   { id: 'r10', name: 'Bloc CD sur Topspin RV', phase: 'regularite', theme: 'Bloc', duration: 10, description: 'Exercice spécifique croisé. Le relanceur bloque en coup droit sur le topspin revers du partenaire.', material: 'Balles' },
   { id: 'r11', name: 'Topspin CD Ligne Droite', phase: 'regularite', theme: 'Topspin', duration: 12, description: 'A effectue des topspins CD le long de la ligne. B bloque en RV. Demande un ajustement du poignet pour éviter de croiser.', material: 'Balles' },
   { id: 'r12', name: 'Topspin CD sur Bloc Aléatoire', phase: 'regularite', theme: 'Incertitude', duration: 15, description: 'Le bloqueur distribue aléatoirement (Plein CD ou Milieu). L\'attaquant doit ajuster son jeu de jambes pour toujours jouer en Topspin CD.', material: 'Balles' },
-  // AJOUTS DÉPLACEMENT & INCERTITUDE
   { id: 'r13', name: '1 ou 2 Revers puis CD', phase: 'regularite', theme: 'Incertitude', duration: 15, description: 'Le bloqueur joue 1 ou 2 fois dans le revers, puis écarte en coup droit. Le joueur doit rester vigilant pour ne pas anticiper le pivot trop tôt.', material: 'Balles' },
   { id: 'r14', name: 'Distribution 1/2 table Revers', phase: 'regularite', theme: 'Incertitude', duration: 15, description: 'Le bloqueur envoie la balle n\'importe où sur la moitié revers de la table. Le joueur doit ajuster son placement pour tout jouer en Revers.', material: 'Balles' },
   { id: 'r15', name: 'Le Tiroir (Court / Long)', phase: 'regularite', theme: 'Jeu de jambes', duration: 15, description: 'Alternance : 1 balle courte (poussette) -> 1 balle longue (topspin). Travail du déplacement avant-arrière.', material: 'Balles' },
@@ -61,12 +61,33 @@ export const INITIAL_EXERCISES: Exercise[] = [
   { id: 't15', name: 'Le "Hook" (Topspin Latéral)', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Topspin CD avec un geste enveloppant l\'extérieur de la balle pour créer une trajectoire courbe sortante (Hook).', material: 'Balles' },
   { id: 't16', name: 'Topspin CD "Essuie-glace"', phase: 'technique', theme: 'Jeu de jambes', duration: 15, description: '1 Topspin CD coin coup droit, 1 Topspin CD milieu de table. Pas chassés rapides entre chaque coup.', material: 'Balles' },
   { id: 't17', name: 'Contre-Topspin CD à la table', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Sur un topspin adverse modéré, A doit avancer et rejouer en topspin CD juste après le rebond (prise de balle tôt).', material: 'Balles' },
-  // AJOUTS SERVICE & TECHNIQUE
   { id: 't18', name: 'Service "2 rebonds" strict', phase: 'technique', theme: 'Service', duration: 15, description: 'Objectif : Le service doit faire au moins 2 rebonds sur la table adverse si elle n\'est pas touchée. Travail du toucher fin.', material: 'Balles' },
   { id: 't19', name: 'Service Rentrant (Reverse)', phase: 'technique', theme: 'Service', duration: 20, description: 'Travail du service pendule inversé ou rentrant. Le poignet part vers l\'intérieur pour créer un effet sortant pour l\'adversaire.', material: 'Balles' },
   { id: 't20', name: 'Le Bloc "Coupé" (Chop-block)', phase: 'technique', theme: 'Bloc', duration: 15, description: 'Sur un topspin, effectuer un geste descendant sec pour renvoyer une balle coupée et flottante.', material: 'Balles' },
   { id: 't21', name: 'Pas croisés (Balle excentrée)', phase: 'technique', theme: 'Jeu de jambes', duration: 15, description: 'Panier de balles : Le coach envoie une balle très sortante plein CD. Le joueur doit utiliser le pas croisé pour l\'atteindre.', material: 'Panier de balles' },
   { id: 't22', name: 'Liaison CD / RV Aléatoire', phase: 'technique', theme: 'Incertitude', duration: 20, description: 'Panier : Le coach envoie aléatoirement à droite ou à gauche. Le joueur doit décider instantanément quel coup jouer.', material: 'Panier de balles' },
+
+  // --- DÉPLACEMENT (D1-D20) ---
+  { id: 'd1', name: 'Pas chassés latéraux rapides', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Multiballes : distribution rapide Plein CD / Plein RV. Le joueur doit se déplacer exclusivement en pas chassés rasant le sol.', material: 'Panier de balles' },
+  { id: 'd2', name: 'Le Tiroir (Avant-Arrière)', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Alternance balle très courte / balle très profonde. Oblige à fendre vers l\'avant puis repousser fort vers l\'arrière.', material: 'Panier de balles' },
+  { id: 'd3', name: 'Falkenberg "Jambes seules"', phase: 'deplacement', theme: 'Jeu de jambes', duration: 20, description: 'Séquence : Revers -> Pivot -> CD. Focus uniquement sur la vitesse de replacement et l\'équilibre, sans frapper fort.', material: 'Balles' },
+  { id: 'd4', name: 'Pivot + Grand Écart', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: '1 Topspin Pivot (coin revers) suivi immédiatement d\'une balle grand côté CD. Nécessite une impulsion explosive.', material: 'Balles' },
+  { id: 'd5', name: 'Pas croisés défensifs', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Sur une balle très excentrée, le joueur doit croiser les jambes pour gagner de l\'allonge et récupérer la balle.', material: 'Panier de balles' },
+  { id: 'd6', name: 'Multiballes Aléatoire "Survie"', phase: 'deplacement', theme: 'Incertitude', duration: 10, description: 'Le coach envoie des balles à un rythme élevé partout sur la table. Le but est juste de toucher la balle (réaction pure).', material: 'Panier de balles' },
+  { id: 'd7', name: 'Service + Reprise d\'appuis', phase: 'deplacement', theme: 'Service', duration: 15, description: 'Le joueur sert, touche ses genoux (ou un plot au sol) et se met en position de base. Travail de l\'activation post-service.', material: 'Balles' },
+  { id: 'd8', name: 'Shadow "Lumière"', phase: 'deplacement', theme: 'Jeu de jambes', duration: 10, description: 'Le coach pointe une zone avec la raquette. Le joueur doit s\'y déplacer instantanément et mimer un coup (Shadow).', material: 'Aucun' },
+  { id: 'd9', name: 'Echelle de rythme (Coordination)', phase: 'deplacement', theme: 'Physique', duration: 15, description: 'Exercices au sol avec échelle : pas rapides, in & out, cloche-pied. Améliore la fréquence des appuis.', material: 'Echelle de rythme' },
+  { id: 'd10', name: 'Squats sautés + Démarrage', phase: 'deplacement', theme: 'Physique', duration: 10, description: '3 squats sautés hors table, puis sprint vers la table pour jouer une balle envoyée par le coach.', material: 'Balles' },
+  { id: 'd11', name: 'Pas d\'ajustement (Micro-placement)', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Balles envoyées sur le coude (ventre). Le joueur doit faire un tout petit décalage pour jouer en CD ou RV.', material: 'Panier de balles' },
+  { id: 'd12', name: 'La "Croix" (4 coins)', phase: 'deplacement', theme: 'Jeu de jambes', duration: 20, description: 'Enchaînement : CD court -> CD fond -> RV fond -> RV court. Couvre toute la surface de jeu.', material: 'Balles' },
+  { id: 'd13', name: 'Déplacement "Crabe" (Bloc)', phase: 'deplacement', theme: 'Bloc', duration: 15, description: 'Bloc coup droit continu en se déplaçant latéralement sur toute la largeur de la table.', material: 'Balles' },
+  { id: 'd14', name: 'Fente avant (Remise courte)', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Départ position reculée. Sur balle courte, faire une grande fente avant (pied droit pour droitier) pour passer sous la table.', material: 'Balles' },
+  { id: 'd15', name: 'Course arrière (Lob)', phase: 'deplacement', theme: 'Contre-initiative', duration: 15, description: 'Démarrage à la table. Au signal, reculer le plus vite possible (4-5m) pour jouer une balle haute.', material: 'Balles' },
+  { id: 'd16', name: '1 pas, 1 coup (Rythme)', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Chaque coup doit être accompagné d\'un petit saut d\'allègement. Interdiction de jouer "planté" au sol.', material: 'Balles' },
+  { id: 'd17', name: 'Pas chassés avec résistance', phase: 'deplacement', theme: 'Physique', duration: 10, description: 'Déplacements latéraux avec un élastique autour de la taille retenu par un partenaire. Renforcement musculaire.', material: 'Élastique' },
+  { id: 'd18', name: 'Jeu de jambes "Essuie-glace"', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Séquence rapide : Milieu -> Plein CD -> Milieu -> Plein CD. Toujours en coup droit.', material: 'Panier de balles' },
+  { id: 'd19', name: 'Rotation du buste + Replacement', phase: 'deplacement', theme: 'Physique', duration: 15, description: 'Exécuter un Topspin à vide avec rotation maximale du tronc, revenir position neutre, recommencer. Sans balle.', material: 'Médecine ball (optionnel)' },
+  { id: 'd20', name: 'Circuit Training Ping', phase: 'deplacement', theme: 'Physique', duration: 25, description: 'Atelier 1: Corde. Atelier 2: Abdos. Atelier 3: Pas chassés. Atelier 4: Panier de balles. 45sec par atelier.', material: 'Chrono, Tapis' },
 
 
   // --- SCHÉMA DE JEU (S1-S20) ---
@@ -83,7 +104,6 @@ export const INITIAL_EXERCISES: Exercise[] = [
   { id: 's11', name: 'Service Bombe + Frappe', phase: 'schema', theme: 'Service', duration: 10, description: 'Service long rapide (bombe). Si la remise revient, frappe sèche immédiate.', material: 'Balles' },
   { id: 's12', name: 'Service Long + Topspin CD Frappé', phase: 'schema', theme: 'Topspin', duration: 15, description: 'Service rapide long dans le revers. Si l\'adversaire remet, attaquez fort en Topspin CD frappé.', material: 'Balles' },
   { id: 's13', name: 'Remise courte + Topspin CD', phase: 'schema', theme: 'Jeu de jambes', duration: 15, description: 'B sert court. A remet court, B pousse long en CD. A doit reculer rapidement pour démarrer en Topspin CD.', material: 'Balles' },
-  // AJOUTS INCERTITUDE & TACTIQUE
   { id: 's14', name: 'Service Court ou Long (Aléatoire)', phase: 'schema', theme: 'Incertitude', duration: 15, description: 'Le serveur choisit aléatoirement de servir très court ou très long rapide. Le relanceur doit adapter sa position (avancer ou reculer) instantanément.', material: 'Balles' },
   { id: 's15', name: 'Attaque sur balle incertaine', phase: 'schema', theme: 'Incertitude', duration: 15, description: 'A sert, B remet une balle "molle" ou "demi-longue" n\'importe où. A doit décider d\'attaquer ou de temporiser.', material: 'Balles' },
   { id: 's16', name: 'Service Masqué', phase: 'schema', theme: 'Service', duration: 15, description: 'Travail du service en cachant l\'impact avec le corps ou le bras libre (tout en respectant la règle). Objectif : Tromper la lecture adverse.', material: 'Balles' },
@@ -106,7 +126,7 @@ export const EMPTY_SESSION: Session = {
     id: 0,
     name: '',
     date: new Date().toISOString().split('T')[0],
-    exercises: { echauffement: [], regularite: [], technique: [], schema: [], matchs: [] }
+    exercises: { echauffement: [], regularite: [], technique: [], deplacement: [], schema: [], matchs: [] }
 };
 
 export const CYCLE_TYPES: Record<string, { value: string; label: string; color: string; icon: string }> = {

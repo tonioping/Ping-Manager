@@ -1,5 +1,5 @@
 
-export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'schema' | 'matchs';
+export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'deplacement' | 'schema' | 'matchs';
 
 export interface Phase {
   id: PhaseId;
