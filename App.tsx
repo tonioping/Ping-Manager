@@ -217,19 +217,38 @@ export default function App() {
       const isNew = !players.find(p => p.id === player.id); 
       if (isNew) updatedPlayers.push(player); else updatedPlayers = players.map(p => p.id === player.id ? player : p);
       setPlayers(updatedPlayers);
+      
       if (supabase && session) {
-          // Robust checking: if birth_date is undefined, empty string or whitespace, send NULL
-          const birthDate = (!player.birth_date || player.birth_date.trim() === '') ? null : player.birth_date;
-          
+          // STRICT SANITIZATION
+          // We manually verify the date field. If it's an empty string, we FORCE it to null.
+          const rawDate = player.birth_date;
+          const sanitizedDate = (rawDate && typeof rawDate === 'string' && rawDate.trim().length > 0) ? rawDate : null;
+
+          // We construct the payload manually to avoid spreading any "ghost" properties
           const playerPayload = {
-              ...player,
-              birth_date: birthDate,
+              id: player.id,
+              first_name: player.first_name,
+              last_name: player.last_name,
+              level: player.level,
+              age: player.age || null, // Convert 0 or undefined to null if needed, though 0 is valid age, usually input gives NaN if empty
+              birth_date: sanitizedDate,
+              notes: player.notes || null,
               user_id: session.user.id
           };
+          
           const { error } = await supabase.from('players').upsert(playerPayload);
-          if(error) showToast("Erreur sauvegarde joueur: " + error.message, 'error'); else showToast("Joueur sauvegardé (Cloud)");
-      } else { localStorage.setItem('pingmanager_players', JSON.stringify(updatedPlayers)); showToast("Joueur sauvegardé (Local)"); }
-      setNewPlayerMode(false); setCurrentPlayer(null);
+          if(error) {
+              console.error("Supabase Error:", error);
+              showToast("Erreur sauvegarde: " + error.message, 'error');
+          } else {
+              showToast("Joueur sauvegardé (Cloud)");
+          }
+      } else { 
+          localStorage.setItem('pingmanager_players', JSON.stringify(updatedPlayers)); 
+          showToast("Joueur sauvegardé (Local)"); 
+      }
+      setNewPlayerMode(false); 
+      setCurrentPlayer(null);
   };
 
   const loadPlayerEvaluations = async (playerId: string) => {

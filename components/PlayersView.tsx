@@ -100,7 +100,10 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                     type="number" 
                                     className="w-full p-3 border rounded-xl" 
                                     value={currentPlayer?.age || ''} 
-                                    onChange={e => setCurrentPlayer(prev => prev ? {...prev, age: parseInt(e.target.value) || undefined} : null)} 
+                                    onChange={e => {
+                                        const val = parseInt(e.target.value);
+                                        setCurrentPlayer(prev => prev ? {...prev, age: isNaN(val) ? undefined : val} : null);
+                                    }} 
                                     placeholder="Ans" 
                                 />
                             </div>
