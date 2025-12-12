@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   LayoutDashboard, CalendarDays, Plus, BookOpen, GraduationCap, Filter, CreditCard, Settings, 
@@ -40,6 +39,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobi
         }
     };
 
+    const hasUser = session && session.user;
+
     return (
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-primary text-slate-300 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col">
@@ -49,7 +50,13 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobi
           >
             <div className="bg-accent p-2 rounded-lg"><Target className="text-white" size={24} /></div>
             <div className="min-w-0"><h1 className="text-2xl font-bold text-white tracking-tight">Ping<span className="text-accent">Manager</span></h1>
-                <div className="flex items-center gap-1 text-[10px] font-medium mt-1 truncate">{session ? <><User size={10} className="text-emerald-400"/> <span className="text-emerald-400 truncate">{session.user.email}</span></> : <><CloudOff size={10} className="text-slate-500"/> <span className="text-slate-500">Local</span></>}</div>
+                <div className="flex items-center gap-1 text-[10px] font-medium mt-1 truncate">
+                    {hasUser ? (
+                        <><User size={10} className="text-emerald-400"/> <span className="text-emerald-400 truncate">{session.user.email}</span></>
+                    ) : (
+                        <><CloudOff size={10} className="text-slate-500"/> <span className="text-slate-500">Local</span></>
+                    )}
+                </div>
             </div>
           </div>
           <nav className="flex-1 px-4 py-6 space-y-2">
@@ -63,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobi
             <SidebarItem view="settings" currentView={view} setView={handleNavigation} icon={Settings} label="Paramètres" />
           </nav>
           <div className="p-4">
-             {session ? <button onClick={() => { handleLogout(); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800 mb-4"><LogOut size={16} /> Déconnexion</button>
+             {hasUser ? <button onClick={() => { handleLogout(); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800 mb-4"><LogOut size={16} /> Déconnexion</button>
              : <button onClick={() => { setShowAuth(true); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover transition-colors rounded-lg mb-4 shadow-lg"><LogIn size={16} /> Connexion Cloud</button>}
              <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800"><div className="flex items-center gap-2 mb-2 text-accent"><Sparkles size={16} /><span className="text-xs font-bold uppercase tracking-wider">AI Powered</span></div><p className="text-xs text-slate-400 leading-relaxed">Boosté par {aiConfig.provider === 'openrouter' ? 'OpenRouter' : 'Gemini'}.</p></div>
           </div>
