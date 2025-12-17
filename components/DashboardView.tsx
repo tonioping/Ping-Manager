@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Plus, BookOpen, Users, ArrowRight, CalendarDays, Target, Calendar as CalendarIcon, Sparkles 
@@ -15,6 +16,7 @@ interface DashboardViewProps {
   activeCycleData: any;
   setView: (view: View) => void;
   setCurrentSession: (session: Session) => void;
+  setCurrentPlayer: (player: Player | null) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
@@ -25,7 +27,8 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   cycles,
   activeCycleData,
   setView,
-  setCurrentSession
+  setCurrentSession,
+  setCurrentPlayer
 }) => {
   const hasUser = session && session.user;
   

@@ -1,8 +1,9 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIConfig } from "../types";
 
 // Default configuration values
-const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GOOGLE_MODEL = 'gemini-3-flash-preview';
 const DEFAULT_OPENROUTER_MODEL = 'mistralai/mistral-7b-instruct:free'; // Example free model
 
 // Helper to get config from LocalStorage or Environment
