@@ -66,13 +66,25 @@ export interface AIConfig {
 
 export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings' | 'players' | 'subscription';
 
+export type PlayerGroup = 'Débutant' | 'Initiation' | 'Perfectionnement' | 'Loisir' | 'Compétition';
+
 export interface Player {
     id: string;
     first_name: string;
     last_name: string;
-    birth_date?: string;
+    birth_date?: string; 
+    birth_year?: number;
+    ranking_points?: number;
     age?: number;
-    level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
+    level: PlayerGroup;
+    hand?: 'Droitier' | 'Gaucher';
+    grip?: 'Européenne' | 'Porte-plume';
+    equipment?: {
+      blade: string;
+      forehand_rubber: string;
+      backhand_rubber: string;
+      last_change_date: string;
+    };
     notes?: string;
     user_id?: string;
 }
