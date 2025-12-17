@@ -1,6 +1,5 @@
-
 import React, { useMemo } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, ShieldAlert, Zap, MousePointer2, Settings2, Info } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Player, PlayerEvaluation, Skill } from '../types';
 import { DEFAULT_SKILLS } from '../constants';
@@ -34,10 +33,12 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   const radarData = useMemo(() => { 
       if (!playerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); 
       
+      // Filter for current player explicitly to avoid ghost data
       const relevantEvals = currentPlayer 
         ? playerEvals.filter(e => e.player_id === currentPlayer.id)
         : playerEvals;
 
+      // Sort by date to ensure we use the latest evaluation
       const sorted = [...relevantEvals].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       const latestScores: Record<string, number> = {}; 
@@ -48,73 +49,40 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
   const handleNewPlayer = () => {
       const newId = crypto.randomUUID();
-      setCurrentPlayer({ 
-        id: newId, 
-        first_name: '', 
-        last_name: '', 
-        level: 'Debutants',
-        hand: 'Droitier',
-        grip: 'Européenne',
-        ranking_points: 500,
-        equipment: {
-          blade: '',
-          forehand_rubber: '',
-          backhand_rubber: '',
-          last_change_date: new Date().toISOString().split('T')[0]
-        }
-      });
+      setCurrentPlayer({ id: newId, first_name: '', last_name: '', birth_date: undefined, age: undefined, level: 'Debutants' });
       setNewPlayerMode(true);
+      // Critical: Clear evaluations for the new ID so we don't see previous player's data
       loadPlayerEvaluations(newId);
   };
 
-  const isEquipmentOld = (dateStr?: string) => {
-    if (!dateStr) return false;
-    const lastChange = new Date(dateStr);
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    return lastChange < sixMonthsAgo;
-  };
-
   return (
-     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-20">
+     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
-                <button onClick={handleNewPlayer} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"><Plus size={18} /> Nouveau Joueur</button>
+                <button onClick={handleNewPlayer} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
             </div>
         )}
         
         {!currentPlayer && !newPlayerMode && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {players.map(player => {
-                    const equipmentWarning = isEquipmentOld(player.equipment?.last_change_date);
-                    return (
-                        <div key={player.id} onClick={() => { setCurrentPlayer(player); loadPlayerEvaluations(player.id); }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-accent cursor-pointer transition-all group relative">
-                            {equipmentWarning && (
-                              <div className="absolute top-4 right-4 text-amber-500 bg-amber-50 p-1.5 rounded-full" title="Plaques usées (+6 mois)">
-                                <ShieldAlert size={16} />
-                              </div>
-                            )}
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-orange-100 group-hover:text-accent transition-colors">
-                                    {player.first_name[0]}{player.last_name[0]}
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                        <span className="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase">{player.level}</span>
-                                        <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{player.ranking_points || 500} PTS</span>
-                                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded uppercase">{player.hand === 'Gaucher' ? 'Gauche' : 'Droit'}</span>
-                                    </div>
-                                </div>
+                {players.map(player => (
+                    <div key={player.id} onClick={() => { setCurrentPlayer(player); loadPlayerEvaluations(player.id); }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-accent cursor-pointer transition-all group">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-orange-100 group-hover:text-accent transition-colors">
+                                {player.first_name[0]}{player.last_name[0]}
                             </div>
-                            <div className="flex items-center justify-between text-sm text-slate-500 border-t pt-4 mt-2">
-                              <span className="text-xs italic truncate max-w-[150px]">{player.equipment?.blade || 'Pas de bois défini'}</span>
-                              <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/>
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
+                                <div className="flex gap-2 mt-1">
+                                    <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span>
+                                    {player.age && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">{player.age} ans</span>}
+                                </div>
                             </div>
                         </div>
-                    );
-                })}
+                        <div className="flex items-center justify-between text-sm text-slate-500"><span>Voir progression</span><ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/></div>
+                    </div>
+                ))}
                 {players.length === 0 && (<div className="col-span-full text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300"><p className="text-slate-500 mb-4">Aucun joueur enregistré.</p></div>)}
             </div>
         )}
@@ -123,9 +91,9 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
             <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-start">
                     <div className="flex gap-4 items-center">
-                        <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition"><ArrowRight className="rotate-180" size={20}/></button>
+                        <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100"><ArrowRight className="rotate-180" size={20}/></button>
                         <div>
-                            {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level} • {currentPlayer?.ranking_points || 500} pts</p></>}
+                            {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level} {currentPlayer?.age ? `• ${currentPlayer.age} ans` : ''}</p></>}
                         </div>
                     </div>
                     {!newPlayerMode && currentPlayer && (
@@ -140,100 +108,56 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                 </div>
 
                 <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                     <div className="lg:col-span-4 space-y-8">
-                        {/* INFOS DE BASE */}
-                        <section className="space-y-4">
-                          <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><User size={18} className="text-accent"/> Infos de base</h4>
-                          <div className="grid grid-cols-2 gap-3">
-                              <div className="col-span-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prénom</label>
-                                  <input type="text" className="w-full p-2.5 border rounded-xl text-sm" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
-                              </div>
-                              <div className="col-span-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nom</label>
-                                  <input type="text" className="w-full p-2.5 border rounded-xl text-sm" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
-                              </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                              <div className="col-span-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Année Naissance</label>
-                                  <input 
-                                      type="number" 
-                                      className="w-full p-2.5 border rounded-xl text-sm" 
-                                      value={currentPlayer?.birth_year || ''} 
-                                      onChange={e => setCurrentPlayer(prev => prev ? {...prev, birth_year: parseInt(e.target.value) || undefined} : null)} 
-                                      placeholder="Ex: 2008" 
-                                  />
-                              </div>
-                              <div className="col-span-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Classement (Pts)</label>
-                                  <input 
-                                      type="number" 
-                                      className="w-full p-2.5 border rounded-xl text-sm font-bold text-blue-600" 
-                                      value={currentPlayer?.ranking_points || ''} 
-                                      onChange={e => setCurrentPlayer(prev => prev ? {...prev, ranking_points: parseInt(e.target.value) || undefined} : null)} 
-                                      placeholder="Ex: 1245" 
-                                  />
-                              </div>
-                          </div>
-                          <div>
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Niveau</label>
-                              <select className="w-full p-2.5 border rounded-xl bg-white text-sm" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
-                                  <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
-                              </select>
-                          </div>
-                        </section>
+                     <div className="lg:col-span-4 space-y-4">
+                        <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><User size={18}/> Informations</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2 sm:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Prénom</label>
+                                <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
+                            </div>
+                            <div className="col-span-2 sm:col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Nom</label>
+                                <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Age</label>
+                                <input 
+                                    type="number" 
+                                    className="w-full p-3 border rounded-xl" 
+                                    value={currentPlayer?.age || ''} 
+                                    onChange={e => {
+                                        const val = parseInt(e.target.value);
+                                        setCurrentPlayer(prev => prev ? {...prev, age: isNaN(val) ? undefined : val} : null);
+                                    }} 
+                                    placeholder="Ans" 
+                                />
+                            </div>
+                            <div className="col-span-1">
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Date de naissance</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full p-3 border rounded-xl bg-white text-sm" 
+                                    value={currentPlayer?.birth_date || ''} 
+                                    onChange={e => setCurrentPlayer(prev => prev ? {...prev, birth_date: e.target.value} : null)} 
+                                />
+                            </div>
+                        </div>
 
-                        {/* SPECIFICITÉS TECHNIQUES */}
-                        <section className="space-y-4">
-                          <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><Zap size={18} className="text-amber-500"/> Spécificités</h4>
-                          <div className="grid grid-cols-2 gap-3">
-                              <div className="col-span-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Main</label>
-                                  <select className="w-full p-2.5 border rounded-xl bg-white text-sm" value={currentPlayer?.hand} onChange={e => setCurrentPlayer(prev => prev ? {...prev, hand: e.target.value as any} : null)}>
-                                      <option value="Droitier">Droitier</option>
-                                      <option value="Gaucher">Gaucher</option>
-                                  </select>
-                              </div>
-                              <div className="col-span-1">
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prise</label>
-                                  <select className="w-full p-2.5 border rounded-xl bg-white text-sm" value={currentPlayer?.grip} onChange={e => setCurrentPlayer(prev => prev ? {...prev, grip: e.target.value as any} : null)}>
-                                      <option value="Européenne">Européenne</option>
-                                      <option value="Porte-plume">Porte-plume</option>
-                                  </select>
-                              </div>
-                          </div>
-                        </section>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Niveau</label>
+                            <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
+                                <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
+                            </select>
+                        </div>
 
-                        {/* MATÉRIEL */}
-                        <section className="space-y-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                          <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><Settings2 size={18} className="text-slate-500"/> Matériel</h4>
-                          <div className="space-y-3">
-                              <div>
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bois</label>
-                                  <input type="text" placeholder="Ex: Butterfly Viscaria" className="w-full p-2 border rounded-lg text-xs" value={currentPlayer?.equipment?.blade || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, blade: e.target.value }} : null)} />
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plaque CD</label>
-                                      <input type="text" placeholder="Ex: Tenergy 05" className="w-full p-2 border rounded-lg text-xs" value={currentPlayer?.equipment?.forehand_rubber || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, forehand_rubber: e.target.value }} : null)} />
-                                  </div>
-                                  <div>
-                                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plaque RV</label>
-                                      <input type="text" placeholder="Ex: Dignics 09c" className="w-full p-2 border rounded-lg text-xs" value={currentPlayer?.equipment?.backhand_rubber || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, backhand_rubber: e.target.value }} : null)} />
-                                  </div>
-                              </div>
-                              <div>
-                                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dernier changement</label>
-                                  <input type="date" className="w-full p-2 border rounded-lg text-xs bg-white" value={currentPlayer?.equipment?.last_change_date || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, last_change_date: e.target.value }} : null)} />
-                                  {isEquipmentOld(currentPlayer?.equipment?.last_change_date) && (
-                                    <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1"><ShieldAlert size={12}/> Attention : Plaques usées (+6 mois)</p>
-                                  )}
-                              </div>
-                          </div>
-                        </section>
-
-                        <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition shadow-lg"><Save size={18}/> Enregistrer le profil</button>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label>
+                            <textarea placeholder="Particularités, style de jeu..." rows={4} className="w-full p-3 border rounded-xl" value={currentPlayer?.notes || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)}></textarea>
+                        </div>
+                        <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition"><Save size={18}/> Enregistrer</button>
                      </div>
 
                      {!newPlayerMode && (
@@ -243,9 +167,9 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                  <div className="h-[300px] w-full">
                                      <ResponsiveContainer width="100%" height="100%">
                                          <RadarChart key={JSON.stringify(radarData)} cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                                             <PolarGrid stroke="#e2e8f0" /><PolarAngleAxis dataKey="subject" tick={{fontSize: 12, fill: '#64748b', fontWeight: 600}} /><PolarRadiusAxis angle={30} domain={[0, 5]} tick={false} axisLine={false} />
-                                             <Radar name={currentPlayer?.first_name} dataKey="A" stroke="#f97316" strokeWidth={2} fill="#f97316" fillOpacity={0.4} />
-                                             <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
+                                             <PolarGrid /><PolarAngleAxis dataKey="subject" /><PolarRadiusAxis angle={30} domain={[0, 5]} />
+                                             <Radar name={currentPlayer?.first_name} dataKey="A" stroke="#f97316" fill="#f97316" fillOpacity={0.6} />
+                                             <Tooltip />
                                          </RadarChart>
                                      </ResponsiveContainer>
                                  </div>
@@ -255,16 +179,17 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-blue-600"/> Évaluation des Compétences</h4>
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                      {DEFAULT_SKILLS.map(skill => {
+                                         // Find latest score for this skill for THIS player
                                          const skillEvals = playerEvals.filter(e => e.skill_id === skill.id && e.player_id === currentPlayer?.id);
                                          const sortedEvals = skillEvals.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                                          const currentScore = sortedEvals[0]?.score || 0;
                                          
                                          return (
-                                             <div key={skill.id} className="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-white hover:border-blue-300 transition-all shadow-sm">
-                                                 <div><div className="font-bold text-slate-800 text-sm">{skill.name}</div><div className="text-[10px] text-slate-400 font-bold uppercase">{skill.category}</div></div>
+                                             <div key={skill.id} className="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-white hover:border-blue-300 transition-colors">
+                                                 <div><div className="font-bold text-slate-800">{skill.name}</div><div className="text-xs text-slate-500">{skill.category}</div></div>
                                                  <div className="flex gap-1">
                                                      {[1, 2, 3, 4, 5].map(star => (
-                                                         <button key={star} onClick={() => currentPlayer && saveEvaluation(currentPlayer.id, skill.id, star)} className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs transition-all ${currentScore >= star ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-100 text-slate-300 hover:bg-slate-200'}`}>{star}</button>
+                                                         <button key={star} onClick={() => currentPlayer && saveEvaluation(currentPlayer.id, skill.id, star)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-all ${currentScore >= star ? 'bg-orange-500 text-white scale-110' : 'bg-slate-100 text-slate-300 hover:bg-slate-200'}`}>{star}</button>
                                                      ))}
                                                  </div>
                                              </div>
@@ -272,13 +197,6 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                      })}
                                  </div>
                              </div>
-
-                             {currentPlayer?.notes && (
-                               <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl">
-                                  <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2"><Info size={16}/> Notes du coach</h4>
-                                  <p className="text-sm text-blue-700 leading-relaxed italic">"{currentPlayer.notes}"</p>
-                               </div>
-                             )}
                          </div>
                      )}
                 </div>

@@ -70,19 +70,9 @@ export interface Player {
     id: string;
     first_name: string;
     last_name: string;
-    birth_date?: string; // Keep for compatibility if needed, but we use birth_year
-    birth_year?: number;
-    ranking_points?: number;
+    birth_date?: string;
     age?: number;
     level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
-    hand?: 'Droitier' | 'Gaucher';
-    grip?: 'Européenne' | 'Porte-plume';
-    equipment?: {
-      blade: string;
-      forehand_rubber: string;
-      backhand_rubber: string;
-      last_change_date: string;
-    };
     notes?: string;
     user_id?: string;
 }

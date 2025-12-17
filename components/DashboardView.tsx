@@ -15,8 +15,6 @@ interface DashboardViewProps {
   activeCycleData: any;
   setView: (view: View) => void;
   setCurrentSession: (session: Session) => void;
-  // Added setCurrentPlayer to props to resolve TS error in App.tsx
-  setCurrentPlayer: (player: Player | null) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
@@ -27,9 +25,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   cycles,
   activeCycleData,
   setView,
-  setCurrentSession,
-  // Added setCurrentPlayer to destructuring
-  setCurrentPlayer
+  setCurrentSession
 }) => {
   const hasUser = session && session.user;
   

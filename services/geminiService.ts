@@ -2,8 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AIConfig } from "../types";
 
 // Default configuration values
-// Updated to gemini-3-flash-preview as per guidelines for Basic Text Tasks
-const DEFAULT_GOOGLE_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
 const DEFAULT_OPENROUTER_MODEL = 'mistralai/mistral-7b-instruct:free'; // Example free model
 
 // Helper to get config from LocalStorage or Environment
@@ -186,7 +185,7 @@ export const generateCyclePlan = async (promptText: string, numWeeks: number): P
   const prompt = `
         En te basant sur l'objectif suivant pour un cycle d'entraînement de tennis de table : "${promptText}", crée un plan structuré pour ${numWeeks} semaines.
         Pour chaque semaine, fournis un "theme" principal (un focus technique ou tactique) et de brèves "notes" (points clés ou objectifs pour cette semaine).
-        Retourne le résultat sous forme d'objet JSON avec une seule clé "weeks", qui est un tableau d'objects. Chaque objet doit avoir "weekNumber", "theme", et "notes".
+        Retourne le résultat sous forme d'objet JSON avec une seule clé "weeks", qui est un tableau d'objets. Chaque objet doit avoir "weekNumber", "theme", et "notes".
     `;
 
   try {
