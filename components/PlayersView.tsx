@@ -1,8 +1,8 @@
 
 import React, { useMemo } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, ShieldAlert, Zap, MousePointer2, Settings2, Info, Users } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, ShieldAlert, Zap, MousePointer2, Settings2, Info } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Player, PlayerEvaluation, Skill, PlayerGroup } from '../types';
+import { Player, PlayerEvaluation, Skill } from '../types';
 import { DEFAULT_SKILLS } from '../constants';
 
 interface PlayersViewProps {
@@ -14,11 +14,9 @@ interface PlayersViewProps {
   savePlayer: (player: Player) => void;
   deletePlayer: (playerId: string) => void;
   playerEvals: PlayerEvaluation[];
-  saveEvaluation: (playerId: string, skill_id: string, score: number) => void;
+  saveEvaluation: (playerId: string, skillId: string, score: number) => void;
   loadPlayerEvaluations: (playerId: string) => void;
 }
-
-const PLAYER_GROUPS: PlayerGroup[] = ['Initiation', 'Débutant', 'Perfectionnement', 'Loisir', 'Compétition'];
 
 export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   players,
@@ -54,7 +52,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
         id: newId, 
         first_name: '', 
         last_name: '', 
-        level: 'Initiation',
+        level: 'Debutants',
         hand: 'Droitier',
         grip: 'Européenne',
         ranking_points: 500,
@@ -81,8 +79,8 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-20">
         {!currentPlayer && !newPlayerMode && (
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Gestion des Joueurs</h2>
-                <button onClick={handleNewPlayer} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"><Plus size={18} /> Ajouter un joueur</button>
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
+                <button onClick={handleNewPlayer} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"><Plus size={18} /> Nouveau Joueur</button>
             </div>
         )}
         
@@ -104,13 +102,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                 <div>
                                     <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
                                     <div className="flex flex-wrap gap-2 mt-1">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${player.level === 'Compétition' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>{player.level}</span>
+                                        <span className="text-[10px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase">{player.level}</span>
                                         <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase">{player.ranking_points || 500} PTS</span>
+                                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded uppercase">{player.hand === 'Gaucher' ? 'Gauche' : 'Droit'}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between text-sm text-slate-500 border-t pt-4 mt-2">
-                              <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1"><Users size={12}/> {player.level}</span>
+                              <span className="text-xs italic truncate max-w-[150px]">{player.equipment?.blade || 'Pas de bois défini'}</span>
                               <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/>
                             </div>
                         </div>
@@ -148,11 +147,11 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                           <div className="grid grid-cols-2 gap-3">
                               <div className="col-span-1">
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prénom</label>
-                                  <input type="text" className="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
+                                  <input type="text" className="w-full p-2.5 border rounded-xl text-sm" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
                               </div>
                               <div className="col-span-1">
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nom</label>
-                                  <input type="text" className="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
+                                  <input type="text" className="w-full p-2.5 border rounded-xl text-sm" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
                               </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
@@ -160,7 +159,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Année Naissance</label>
                                   <input 
                                       type="number" 
-                                      className="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-accent outline-none" 
+                                      className="w-full p-2.5 border rounded-xl text-sm" 
                                       value={currentPlayer?.birth_year || ''} 
                                       onChange={e => setCurrentPlayer(prev => prev ? {...prev, birth_year: parseInt(e.target.value) || undefined} : null)} 
                                       placeholder="Ex: 2008" 
@@ -170,7 +169,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Classement (Pts)</label>
                                   <input 
                                       type="number" 
-                                      className="w-full p-2.5 border rounded-xl text-sm font-bold text-blue-600 focus:ring-2 focus:ring-accent outline-none" 
+                                      className="w-full p-2.5 border rounded-xl text-sm font-bold text-blue-600" 
                                       value={currentPlayer?.ranking_points || ''} 
                                       onChange={e => setCurrentPlayer(prev => prev ? {...prev, ranking_points: parseInt(e.target.value) || undefined} : null)} 
                                       placeholder="Ex: 1245" 
@@ -178,11 +177,9 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                               </div>
                           </div>
                           <div>
-                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Groupe d'entraînement</label>
-                              <select className="w-full p-2.5 border rounded-xl bg-white text-sm focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as PlayerGroup} : null)}>
-                                  {PLAYER_GROUPS.map(group => (
-                                    <option key={group} value={group}>{group}</option>
-                                  ))}
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Niveau</label>
+                              <select className="w-full p-2.5 border rounded-xl bg-white text-sm" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
+                                  <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
                               </select>
                           </div>
                         </section>
@@ -193,14 +190,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                           <div className="grid grid-cols-2 gap-3">
                               <div className="col-span-1">
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Main</label>
-                                  <select className="w-full p-2.5 border rounded-xl bg-white text-sm focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.hand} onChange={e => setCurrentPlayer(prev => prev ? {...prev, hand: e.target.value as any} : null)}>
+                                  <select className="w-full p-2.5 border rounded-xl bg-white text-sm" value={currentPlayer?.hand} onChange={e => setCurrentPlayer(prev => prev ? {...prev, hand: e.target.value as any} : null)}>
                                       <option value="Droitier">Droitier</option>
                                       <option value="Gaucher">Gaucher</option>
                                   </select>
                               </div>
                               <div className="col-span-1">
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prise</label>
-                                  <select className="w-full p-2.5 border rounded-xl bg-white text-sm focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.grip} onChange={e => setCurrentPlayer(prev => prev ? {...prev, grip: e.target.value as any} : null)}>
+                                  <select className="w-full p-2.5 border rounded-xl bg-white text-sm" value={currentPlayer?.grip} onChange={e => setCurrentPlayer(prev => prev ? {...prev, grip: e.target.value as any} : null)}>
                                       <option value="Européenne">Européenne</option>
                                       <option value="Porte-plume">Porte-plume</option>
                                   </select>
@@ -214,21 +211,21 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                           <div className="space-y-3">
                               <div>
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bois</label>
-                                  <input type="text" placeholder="Ex: Butterfly Viscaria" className="w-full p-2 border rounded-lg text-xs focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.equipment?.blade || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, blade: e.target.value }} : null)} />
+                                  <input type="text" placeholder="Ex: Butterfly Viscaria" className="w-full p-2 border rounded-lg text-xs" value={currentPlayer?.equipment?.blade || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, blade: e.target.value }} : null)} />
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                   <div>
                                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plaque CD</label>
-                                      <input type="text" placeholder="Ex: Tenergy 05" className="w-full p-2 border rounded-lg text-xs focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.equipment?.forehand_rubber || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, forehand_rubber: e.target.value }} : null)} />
+                                      <input type="text" placeholder="Ex: Tenergy 05" className="w-full p-2 border rounded-lg text-xs" value={currentPlayer?.equipment?.forehand_rubber || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, forehand_rubber: e.target.value }} : null)} />
                                   </div>
                                   <div>
                                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Plaque RV</label>
-                                      <input type="text" placeholder="Ex: Dignics 09c" className="w-full p-2 border rounded-lg text-xs focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.equipment?.backhand_rubber || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, backhand_rubber: e.target.value }} : null)} />
+                                      <input type="text" placeholder="Ex: Dignics 09c" className="w-full p-2 border rounded-lg text-xs" value={currentPlayer?.equipment?.backhand_rubber || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, backhand_rubber: e.target.value }} : null)} />
                                   </div>
                               </div>
                               <div>
                                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dernier changement</label>
-                                  <input type="date" className="w-full p-2 border rounded-lg text-xs bg-white focus:ring-2 focus:ring-accent outline-none" value={currentPlayer?.equipment?.last_change_date || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, last_change_date: e.target.value }} : null)} />
+                                  <input type="date" className="w-full p-2 border rounded-lg text-xs bg-white" value={currentPlayer?.equipment?.last_change_date || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, equipment: { ...prev.equipment!, last_change_date: e.target.value }} : null)} />
                                   {isEquipmentOld(currentPlayer?.equipment?.last_change_date) && (
                                     <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1"><ShieldAlert size={12}/> Attention : Plaques usées (+6 mois)</p>
                                   )}

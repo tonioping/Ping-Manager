@@ -66,17 +66,15 @@ export interface AIConfig {
 
 export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings' | 'players' | 'subscription';
 
-export type PlayerGroup = 'Débutant' | 'Initiation' | 'Perfectionnement' | 'Loisir' | 'Compétition';
-
 export interface Player {
     id: string;
     first_name: string;
     last_name: string;
-    birth_date?: string; 
+    birth_date?: string; // Keep for compatibility if needed, but we use birth_year
     birth_year?: number;
     ranking_points?: number;
     age?: number;
-    level: PlayerGroup;
+    level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
     hand?: 'Droitier' | 'Gaucher';
     grip?: 'Européenne' | 'Porte-plume';
     equipment?: {
