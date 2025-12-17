@@ -18,13 +18,8 @@ export const storage = {
       if (error) throw error;
       return data || [];
     } else {
-      try {
-          const item = localStorage.getItem(LOCAL_KEYS[table]);
-          return item ? JSON.parse(item) : [];
-      } catch (e) {
-          console.warn(`Error parsing local storage for ${table}`, e);
-          return [];
-      }
+      const item = localStorage.getItem(LOCAL_KEYS[table]);
+      return item ? JSON.parse(item) : [];
     }
   },
 

@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
@@ -32,35 +33,17 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   
   const radarData = useMemo(() => { 
       if (!playerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); 
-      
-      // Filter for current player explicitly to avoid ghost data
-      const relevantEvals = currentPlayer 
-        ? playerEvals.filter(e => e.player_id === currentPlayer.id)
-        : playerEvals;
-
-      // Sort by date to ensure we use the latest evaluation
-      const sorted = [...relevantEvals].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      
       const latestScores: Record<string, number> = {}; 
-      sorted.forEach(ev => { latestScores[ev.skill_id] = ev.score; }); 
-      
+      playerEvals.forEach(ev => { latestScores[ev.skill_id] = ev.score; }); 
       return DEFAULT_SKILLS.map(skill => ({ subject: skill.name, A: latestScores[skill.id] || 0, fullMark: 5 })); 
-  }, [playerEvals, currentPlayer]);
-
-  const handleNewPlayer = () => {
-      const newId = crypto.randomUUID();
-      setCurrentPlayer({ id: newId, first_name: '', last_name: '', birth_date: undefined, age: undefined, level: 'Debutants' });
-      setNewPlayerMode(true);
-      // Critical: Clear evaluations for the new ID so we don't see previous player's data
-      loadPlayerEvaluations(newId);
-  };
+  }, [playerEvals]);
 
   return (
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
-                <button onClick={handleNewPlayer} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
+                <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', birth_date: undefined, age: undefined, level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
             </div>
         )}
         
@@ -166,7 +149,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Activity size={18} className="text-accent"/> Profil Technique (Radar)</h4>
                                  <div className="h-[300px] w-full">
                                      <ResponsiveContainer width="100%" height="100%">
-                                         <RadarChart key={JSON.stringify(radarData)} cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                                              <PolarGrid /><PolarAngleAxis dataKey="subject" /><PolarRadiusAxis angle={30} domain={[0, 5]} />
                                              <Radar name={currentPlayer?.first_name} dataKey="A" stroke="#f97316" fill="#f97316" fillOpacity={0.6} />
                                              <Tooltip />
@@ -179,11 +162,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-blue-600"/> Évaluation des Compétences</h4>
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                      {DEFAULT_SKILLS.map(skill => {
-                                         // Find latest score for this skill for THIS player
-                                         const skillEvals = playerEvals.filter(e => e.skill_id === skill.id && e.player_id === currentPlayer?.id);
-                                         const sortedEvals = skillEvals.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                                         const currentScore = sortedEvals[0]?.score || 0;
-                                         
+                                         const currentScore = playerEvals.find(e => e.skill_id === skill.id)?.score || 0;
                                          return (
                                              <div key={skill.id} className="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-white hover:border-blue-300 transition-colors">
                                                  <div><div className="font-bold text-slate-800">{skill.name}</div><div className="text-xs text-slate-500">{skill.category}</div></div>
