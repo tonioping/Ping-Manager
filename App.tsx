@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } fr
 import { 
   Calendar as CalendarIcon, Plus, Save, Filter, X, 
   Clock, Target, Bot, Search, Menu, SaveAll, Sparkles, User, CheckCircle, AlertCircle,
-  CreditCard, Award, UserCircle, Minus, Check, Settings, LogIn, LogOut, Loader2
+  CreditCard, Award, UserCircle, Minus, Check, Settings, LogIn, LogOut, Loader2, Box
 } from 'lucide-react';
 
 import { Exercise, Session, Cycle, View, PhaseId, AIConfig, CoachProfile, CycleType, Player, PlayerEvaluation, Skill } from './types';
@@ -54,7 +54,7 @@ export default function App() {
   const [playerEvals, setPlayerEvals] = useState<PlayerEvaluation[]>([]); 
   const [newPlayerMode, setNewPlayerMode] = useState(false); 
 
-  const [aiConfig, setAiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-2.5-flash' });
+  const [aiConfig, setAiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-3-flash-preview' });
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
   
   // Feedback State
@@ -64,6 +64,10 @@ export default function App() {
   const [newExercise, setNewExercise] = useState<Omit<Exercise, 'id'> | null>(null);
   const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
   const [cycleToDelete, setCycleToDelete] = useState<number | null>(null);
+  
+  // Library Filtering
+  const [libSearch, setLibSearch] = useState('');
+  const [libFilterPanier, setLibFilterPanier] = useState(false);
   
   // AI State
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -219,18 +223,15 @@ export default function App() {
       setPlayers(updatedPlayers);
       
       if (supabase && session) {
-          // STRICT SANITIZATION
-          // We manually verify the date field. If it's an empty string, we FORCE it to null.
           const rawDate = player.birth_date;
           const sanitizedDate = (rawDate && typeof rawDate === 'string' && rawDate.trim().length > 0) ? rawDate : null;
 
-          // We construct the payload manually to avoid spreading any "ghost" properties
           const playerPayload = {
               id: player.id,
               first_name: player.first_name,
               last_name: player.last_name,
               level: player.level,
-              age: player.age || null, // Convert 0 or undefined to null if needed, though 0 is valid age, usually input gives NaN if empty
+              age: player.age || null, 
               birth_date: sanitizedDate,
               notes: player.notes || null,
               user_id: session.user.id
@@ -277,12 +278,10 @@ export default function App() {
           const { data } = await supabase.from('player_evaluations').select('*').eq('player_id', playerId).order('date', { ascending: false });
           setPlayerEvals(data || []);
       } else {
-          // MODE LOCAL : Chargement depuis localStorage
           try {
              const allEvalsJSON = localStorage.getItem('pingmanager_evaluations');
              const allEvals: PlayerEvaluation[] = allEvalsJSON ? JSON.parse(allEvalsJSON) : [];
              const playerSpecificEvals = allEvals.filter(e => e.player_id === playerId);
-             // Tri par date décroissante pour afficher le plus récent en premier (comme le Radar prend le 1er trouvé)
              playerSpecificEvals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
              setPlayerEvals(playerSpecificEvals);
           } catch(e) {
@@ -308,29 +307,20 @@ export default function App() {
           
           evalToSave.user_id = user.id;
           
-          // Mise à jour optimiste de l'état
-          // On retire l'ancienne éval pour ce skill si elle existe (pour l'affichage immédiat du bon score sur le radar)
           const otherEvals = playerEvals.filter(e => e.skill_id !== skillId);
           setPlayerEvals([evalToSave, ...otherEvals]);
 
           await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
           showToast("Évaluation sauvegardée (Cloud)");
       } else {
-          // MODE LOCAL
           try {
               const allEvalsJSON = localStorage.getItem('pingmanager_evaluations');
               let allEvals: PlayerEvaluation[] = allEvalsJSON ? JSON.parse(allEvalsJSON) : [];
-              
-              // On supprime l'éventuelle évaluation déjà existante pour ce joueur/skill/date pour la remplacer (mise à jour du jour)
               allEvals = allEvals.filter(e => !(e.player_id === playerId && e.skill_id === skillId && e.date === today));
-              
               allEvals.push(evalToSave);
               localStorage.setItem('pingmanager_evaluations', JSON.stringify(allEvals));
 
-              // Mise à jour de l'état local pour rafraîchir l'interface
-              // On garde les évaluations du joueur courant, on retire l'ancienne du skill pour mettre la nouvelle
               const otherCurrentPlayerEvals = playerEvals.filter(e => e.skill_id !== skillId);
-              // On met la nouvelle en premier pour qu'elle soit prise en compte par le .find() du radar/stars
               setPlayerEvals([evalToSave, ...otherCurrentPlayerEvals]);
               
               showToast("Évaluation sauvegardée (Local)");
@@ -393,6 +383,15 @@ export default function App() {
         return allExercises.filter(e => e).reduce((sum, ex) => sum + (ex?.duration || 0), 0); 
     } catch (e) { return 0; } 
   }, [currentSession.exercises]);
+  
+  // Filter logic for Library View
+  const filteredLibrary = useMemo(() => {
+      return exercises.filter(ex => {
+          if (libFilterPanier && ex.material !== 'Panier de balles') return false;
+          if (libSearch && !ex.name.toLowerCase().includes(libSearch.toLowerCase())) return false;
+          return true;
+      });
+  }, [exercises, libSearch, libFilterPanier]);
 
   const activeCycleData = useMemo(() => {
     const now = new Date(); now.setHours(0, 0, 0, 0); 
@@ -447,6 +446,7 @@ export default function App() {
                 activeCycleData={activeCycleData}
                 setView={setView}
                 setCurrentSession={setCurrentSession}
+                setCurrentPlayer={setCurrentPlayer}
               />
             )}
 
@@ -501,136 +501,233 @@ export default function App() {
           {view === 'history' && (<div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><h2 className="text-2xl font-bold text-slate-800 mb-6">Historique</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-4">{savedSessions.map(session => (<div key={session.id} className="border rounded-xl p-5 hover:border-accent cursor-pointer" onClick={() => { setCurrentSession({...session}); setView('sessions'); }}><h3 className="font-bold text-slate-800 line-clamp-1">{session.name}</h3><p className="text-xs text-slate-500 mb-4 flex items-center gap-2"><CalendarIcon size={12}/> {new Date(session.date).toLocaleDateString()}</p><div className="flex gap-2"><span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md">{totalDuration} min</span></div></div>))}</div></div>)}
           
           {/* LIBRARY */}
-          {view === 'library' && (<div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6"><div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-800">Bibliothèque</h2><button onClick={() => setNewExercise({ name: '', phase: 'technique', theme: null, duration: 15, description: '', material: '' })} className="bg-accent text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18} /> Créer</button></div>{newExercise && (<div className="mb-8 p-6 bg-slate-50 rounded-xl border animate-fade-in"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input type="text" placeholder="Nom" className="p-3 border rounded-lg col-span-2 text-slate-900" value={newExercise.name} onChange={e => setNewExercise({...newExercise, name: e.target.value})}/><select className="p-3 border rounded-lg text-slate-900" value={newExercise.phase} onChange={e => setNewExercise({...newExercise, phase: e.target.value as PhaseId})}>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select><input type="number" placeholder="Durée" className="p-3 border rounded-lg text-slate-900" value={newExercise.duration} onChange={e => setNewExercise({...newExercise, duration: parseInt(e.target.value)||0})}/><textarea className="col-span-2 p-3 border rounded-lg text-slate-900" rows={3} placeholder="Description" value={newExercise.description} onChange={e => setNewExercise({...newExercise, description: e.target.value})}></textarea><div className="col-span-2 flex justify-between items-center"><GeminiButton onClick={handleRefineDescription} isLoading={isLoadingAI}>Améliorer</GeminiButton><div className="flex gap-2"><button onClick={() => setNewExercise(null)} className="px-4 py-2 text-slate-500">Annuler</button><button onClick={addNewExercise} className="px-4 py-2 bg-slate-900 text-white rounded-lg">Sauvegarder</button></div></div></div></div>)}<div className="space-y-3">{exercises.map(ex => (<div key={ex.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition"><div><h4 className="font-bold text-slate-800">{ex.name}</h4><p className="text-sm text-slate-500 mt-1">{ex.description}</p></div><span className={`text-xs font-bold px-2 py-1 rounded uppercase ${PHASES.find(p => p.id === ex.phase)?.color.split(' ')[2]}`}>{PHASES.find(p => p.id === ex.phase)?.label}</span></div>))}</div></div>)}
-
-          {/* SUBSCRIPTION VIEW */}
-          {view === 'subscription' && (
-             <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-                <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-slate-800 mb-3">Passez au niveau supérieur 🚀</h2>
-                    <p className="text-slate-500 max-w-xl mx-auto">Débloquez tout le potentiel de PingManager pour gérer votre club comme un pro. Joueurs illimités, IA avancée et support prioritaire.</p>
+          {view === 'library' && (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2"><Filter className="text-accent" /> Bibliothèque d'exercices</h2>
+                    <button onClick={() => setNewExercise({ name: '', phase: 'technique', theme: null, duration: 15, description: '', material: 'Balles' })} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"><Plus size={18} /> Créer un exercice</button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-slate-200"></div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">Découverte</h3>
-                        <div className="text-4xl font-bold text-slate-900 mb-6">0€<span className="text-base font-normal text-slate-500">/mois</span></div>
-                        <ul className="space-y-3 text-slate-600 mb-8">
-                            <li className="flex items-center gap-2"><Check size={18} className="text-green-500"/> Jusqu'à 3 joueurs</li>
-                            <li className="flex items-center gap-2"><Check size={18} className="text-green-500"/> Création de séances illimitée</li>
-                            <li className="flex items-center gap-2"><Check size={18} className="text-green-500"/> Bibliothèque d'exercices</li>
-                            <li className="flex items-center gap-2 opacity-50"><Minus size={18}/> Pas de statistiques avancées</li>
-                        </ul>
-                        <button className="w-full py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 cursor-default">Votre plan actuel</button>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4 items-center">
+                    <div className="relative flex-1 w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input 
+                            type="text" 
+                            placeholder="Rechercher par nom..." 
+                            value={libSearch}
+                            onChange={e => setLibSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none"
+                        />
                     </div>
-                    <div className="bg-slate-900 p-8 rounded-3xl shadow-xl relative overflow-hidden text-white transform md:scale-105">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-pink-500"></div>
-                        <div className="absolute top-4 right-4 px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">POPULAIRE</div>
-                        <h3 className="text-xl font-bold mb-2">Coach Pro</h3>
-                        <div className="text-4xl font-bold mb-6">9.99€<span className="text-base font-normal text-slate-400">/mois</span></div>
-                        <ul className="space-y-3 text-slate-300 mb-8">
-                            <li className="flex items-center gap-2"><Check size={18} className="text-orange-400"/> Joueurs illimités</li>
-                            <li className="flex items-center gap-2"><Check size={18} className="text-orange-400"/> Suivi de progression (Graphiques)</li>
-                            <li className="flex items-center gap-2"><Check size={18} className="text-orange-400"/> Générateur de cycles IA</li>
-                            <li className="flex items-center gap-2"><Check size={18} className="text-orange-400"/> Export PDF</li>
-                        </ul>
-                        {coachProfile.is_pro ? (
-                            <button className="w-full py-3 rounded-xl font-bold bg-green-500 text-white cursor-default">Abonnement Actif ✅</button>
-                        ) : (
-                            <button onClick={() => handleSubscribe('monthly')} className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-orange-500 to-pink-500 hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/30">Passer Pro maintenant</button>
-                        )}
-                    </div>
+                    <button 
+                        onClick={() => setLibFilterPanier(!libFilterPanier)}
+                        className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all border ${libFilterPanier ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                    >
+                        <Box size={16} /> {libFilterPanier ? 'Panier (Actif)' : 'Voir Panier de balles'}
+                    </button>
                 </div>
-                <div className="text-center text-xs text-slate-400 mt-8">Paiement sécurisé via Stripe • Annulation à tout moment</div>
-             </div>
-          )}
 
-          {/* SETTINGS VIEW */}
-          {view === 'settings' && (
-             <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                    <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><UserCircle size={24} /></div><h2 className="text-2xl font-bold text-slate-800">Profil Coach</h2></div>
-                    <div className="space-y-4">
-                        <div><label className="block text-sm font-bold text-slate-700 mb-2">Nom complet</label><input type="text" value={coachProfile.name} onChange={(e) => setCoachProfile({...coachProfile, name: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900" placeholder="Ex: Antoine Dupont" /></div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Award size={16}/> Club</label><input type="text" value={coachProfile.club} onChange={(e) => setCoachProfile({...coachProfile, club: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900" placeholder="Ex: Ping Paris 12" /></div>
-                            <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><CreditCard size={16}/> Licence</label><input type="text" value={coachProfile.license} onChange={(e) => setCoachProfile({...coachProfile, license: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl text-slate-900" placeholder="Numéro" /></div>
+                {newExercise && (
+                    <div className="mb-8 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 animate-fade-in shadow-inner">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Nouvel Exercice</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" placeholder="Nom de l'exercice" className="p-3 border rounded-lg col-span-2 text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none" value={newExercise.name} onChange={e => setNewExercise({...newExercise, name: e.target.value})}/>
+                            <select className="p-3 border rounded-lg text-slate-900 bg-white" value={newExercise.phase} onChange={e => setNewExercise({...newExercise, phase: e.target.value as PhaseId})}>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
+                            <input type="number" placeholder="Durée (min)" className="p-3 border rounded-lg text-slate-900" value={newExercise.duration} onChange={e => setNewExercise({...newExercise, duration: parseInt(e.target.value)||0})}/>
+                            <select className="p-3 border rounded-lg text-slate-900 bg-white col-span-2 md:col-span-1" value={newExercise.material || 'Balles'} onChange={e => setNewExercise({...newExercise, material: e.target.value})}>
+                                <option value="Balles">Balles simples</option>
+                                <option value="Panier de balles">Panier de balles</option>
+                                <option value="Plots">Plots / Cibles</option>
+                                <option value="Aucun">Aucun matériel</option>
+                            </select>
+                            <textarea 
+                                className="col-span-2 p-3 border rounded-lg text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none h-32 resize-none" 
+                                placeholder="Description détaillée de l'exercice..." 
+                                value={newExercise.description} 
+                                onChange={e => setNewExercise({...newExercise, description: e.target.value})}
+                            />
+                            <div className="col-span-2 flex justify-between items-center mt-2">
+                                <GeminiButton onClick={handleRefineDescription} isLoading={isLoadingAI} className="!text-xs !py-2 !px-3">Améliorer (IA)</GeminiButton>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setNewExercise(null)} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium transition">Annuler</button>
+                                    <button onClick={addNewExercise} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold shadow-lg hover:bg-slate-800 transition">Enregistrer</button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="pt-4 flex justify-end"><button onClick={saveProfile} className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2"><Save size={18} /> Sauvegarder Profil</button></div>
                     </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredLibrary.map(ex => (
+                        <div key={ex.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition-all group relative overflow-hidden">
+                            {ex.material === 'Panier de balles' && (
+                                <div className="absolute -right-4 -top-4 bg-blue-600 text-white p-8 rotate-45 transform origin-center shadow-lg">
+                                    <Box size={20} className="-rotate-45 relative top-1 left-[-2px]" />
+                                </div>
+                            )}
+                            
+                            <div className="mb-4">
+                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mb-2 inline-block ${PHASES.find(p => p.id === ex.phase)?.color}`}>
+                                    {PHASES.find(p => p.id === ex.phase)?.label}
+                                </span>
+                                <h3 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-accent transition-colors">{ex.name}</h3>
+                            </div>
+                            
+                            <p className="text-sm text-slate-500 mb-6 line-clamp-3 leading-relaxed">{ex.description}</p>
+                            
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-auto">
+                                <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                                    <Target size={14} className="text-slate-400"/>
+                                    {ex.theme || 'Général'}
+                                </div>
+                                <div className="flex items-center gap-1 text-xs font-bold text-slate-400">
+                                    <Clock size={14}/> {ex.duration} min
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                    <div className="flex items-center gap-3 mb-8 border-b pb-4"><div className="p-3 bg-slate-100 rounded-full"><Settings size={24} className="text-slate-600"/></div><h2 className="text-2xl font-bold text-slate-800">Configuration IA</h2></div>
-                    <div className="space-y-6">
-                    <div><label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"><Target size={16} className="text-accent"/> Fournisseur</label><div className="grid grid-cols-2 gap-4"><button onClick={() => setAiConfig({...aiConfig, provider: 'google', model: 'gemini-2.5-flash'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'google' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">Google</span></button><button onClick={() => setAiConfig({...aiConfig, provider: 'openrouter', model: 'mistralai/mistral-7b-instruct:free'})} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 ${aiConfig.provider === 'openrouter' ? 'border-accent bg-orange-50 text-accent' : 'border-slate-200'}`}><span className="font-bold">OpenRouter</span></button></div></div>
-                    
-                    {aiConfig.provider === 'google' && (
-                        <div className="p-4 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center gap-3"><Sparkles size={20} /><div><p className="font-bold text-sm">Mode Google Gemini natif</p><p className="text-xs opacity-80">L'application utilise la clé API sécurisée du serveur.</p></div></div>
-                    )}
-
-                    <div className="pt-6 border-t flex justify-end"><button onClick={saveAIConfig} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center gap-2"><SaveAll size={20} /> Enregistrer Config IA</button></div>
+                {filteredLibrary.length === 0 && (
+                    <div className="text-center py-20 opacity-50">
+                        <Box size={48} className="mx-auto mb-4 text-slate-400"/>
+                        <p className="font-bold text-slate-500">Aucun exercice trouvé.</p>
                     </div>
-                </div>
-             </div>
+                )}
+              </div>
           )}
+
+            {/* SETTINGS */}
+            {view === 'settings' && (
+                <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800"><Settings className="text-slate-400"/> Paramètres</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Nom du Coach</label>
+                            <input className="w-full p-3 border rounded-xl" value={coachProfile.name} onChange={e => setCoachProfile({...coachProfile, name: e.target.value})}/>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Club</label>
+                            <input className="w-full p-3 border rounded-xl" value={coachProfile.club} onChange={e => setCoachProfile({...coachProfile, club: e.target.value})}/>
+                        </div>
+                         <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Numéro de Licence</label>
+                            <input className="w-full p-3 border rounded-xl" value={coachProfile.license} onChange={e => setCoachProfile({...coachProfile, license: e.target.value})}/>
+                        </div>
+                        <div className="pt-4 border-t border-slate-100">
+                            <h3 className="font-bold text-slate-800 mb-3">Configuration IA</h3>
+                            <div className="grid grid-cols-1 gap-4">
+                                <select 
+                                    value={aiConfig.provider} 
+                                    onChange={e => setAiConfig({...aiConfig, provider: e.target.value as any})}
+                                    className="w-full p-3 border rounded-xl"
+                                >
+                                    <option value="google">Google Gemini</option>
+                                    <option value="openrouter">OpenRouter (Mistral, etc.)</option>
+                                </select>
+                                {aiConfig.provider === 'openrouter' && (
+                                    <input 
+                                        type="password" 
+                                        placeholder="Clé API OpenRouter" 
+                                        className="w-full p-3 border rounded-xl"
+                                        value={aiConfig.apiKey}
+                                        onChange={e => setAiConfig({...aiConfig, apiKey: e.target.value})}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button onClick={saveAIConfig} className="px-4 py-2 text-indigo-600 font-bold hover:bg-indigo-50 rounded-lg">Sauvegarder Config IA</button>
+                            <button onClick={saveProfile} className="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg shadow-lg hover:bg-slate-800">Enregistrer Profil</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* SUBSCRIPTION */}
+            {view === 'subscription' && (
+                 <div className="max-w-4xl mx-auto space-y-8 animate-fade-in text-center">
+                    <h2 className="text-3xl font-bold text-slate-800">Passez au niveau supérieur 🚀</h2>
+                    <p className="text-slate-500 max-w-lg mx-auto">Débloquez des fonctionnalités avancées pour gérer votre club comme un pro.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                            <h3 className="text-xl font-bold text-slate-800">Gratuit</h3>
+                            <div className="text-4xl font-black text-slate-900 my-4">0€<span className="text-sm font-medium text-slate-400">/mois</span></div>
+                            <ul className="text-left space-y-3 mb-8 text-slate-600">
+                                <li className="flex gap-2"><Check size={18} className="text-green-500"/> Gestion basique</li>
+                                <li className="flex gap-2"><Check size={18} className="text-green-500"/> 50 exercices max</li>
+                                <li className="flex gap-2"><Check size={18} className="text-green-500"/> Mode Local uniquement</li>
+                            </ul>
+                            <button disabled className="w-full py-3 bg-slate-100 text-slate-400 font-bold rounded-xl cursor-not-allowed">Actuel</button>
+                        </div>
+                        <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl border border-slate-800 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 bg-accent text-white text-xs font-bold px-3 py-1 rounded-bl-xl">POPULAIRE</div>
+                            <h3 className="text-xl font-bold">Coach Pro</h3>
+                            <div className="text-4xl font-black text-white my-4">9.99€<span className="text-sm font-medium text-slate-400">/mois</span></div>
+                            <ul className="text-left space-y-3 mb-8 text-slate-300">
+                                <li className="flex gap-2"><Check size={18} className="text-accent"/> Cloud Sync (Supabase)</li>
+                                <li className="flex gap-2"><Check size={18} className="text-accent"/> IA Illimitée</li>
+                                <li className="flex gap-2"><Check size={18} className="text-accent"/> Suivi Joueurs Avancé</li>
+                            </ul>
+                            <button onClick={() => handleSubscribe('monthly')} className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition shadow-lg shadow-orange-500/30">Choisir Pro</button>
+                        </div>
+                    </div>
+                 </div>
+            )}
+
+            {/* AI SUGGESTIONS MODAL */}
+            {showSuggestionsModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fade-in">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
+                            <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                                <Sparkles className="text-accent"/> Suggestions IA
+                            </h3>
+                            <button onClick={() => setShowSuggestionsModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition">
+                                <X size={20} className="text-slate-400 hover:text-slate-600"/>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1 bg-slate-50/30">
+                            {suggestedExercises.map((ex, i) => (
+                                <div key={i} className="group bg-white p-6 rounded-2xl border border-slate-200 hover:border-accent hover:shadow-lg transition-all relative">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">{i+1}</span>
+                                            <h4 className="font-bold text-lg text-slate-800">{ex.name}</h4>
+                                        </div>
+                                        <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase tracking-wider">{ex.theme}</span>
+                                    </div>
+                                    <p className="text-sm text-slate-600 mb-6 leading-relaxed pl-8">{ex.description}</p>
+                                    <div className="flex justify-end gap-3 pl-8">
+                                        <div className="mr-auto flex items-center gap-2 text-xs font-bold text-slate-400">
+                                            <Clock size={14}/> {ex.duration} min
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                const phase = 'technique';
+                                                const newEx: Exercise = { ...ex, phase, id: `ai_${Date.now()}_${i}`, instanceId: Date.now() };
+                                                setCurrentSession(prev => ({
+                                                    ...prev, exercises: { ...prev.exercises, [phase]: [...(prev.exercises[phase]||[]), newEx] }
+                                                }));
+                                                showToast("Exercice ajouté !");
+                                            }}
+                                            className="px-5 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-md flex items-center gap-2"
+                                        >
+                                            <Plus size={16}/> Ajouter
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-slate-100 bg-white text-center">
+                            <button onClick={() => setShowSuggestionsModal(false)} className="text-slate-500 font-bold hover:text-slate-800 text-sm">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
       </main>
-
-      {/* MODAL: EXERCISE SUGGESTIONS */}
-      {showSuggestionsModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-orange-50 to-white">
-              <div className="flex items-center gap-3">
-                <div className="bg-orange-100 p-2 rounded-lg text-accent"><Sparkles size={20} /></div>
-                <h3 className="text-xl font-bold text-slate-800">Suggestions IA</h3>
-              </div>
-              <button onClick={() => setShowSuggestionsModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
-            </div>
-            <div className="p-6 overflow-y-auto bg-slate-50/30">
-              <p className="text-slate-600 mb-4">Voici des exercices créatifs basés sur votre séance actuelle :</p>
-              <div className="space-y-4">
-                {suggestedExercises.map((ex, i) => (
-                   <div key={i} className="bg-white border border-slate-200 p-5 rounded-xl hover:shadow-md transition-all group hover:border-accent">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-slate-800 text-lg">{ex.name}</h4>
-                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{ex.theme}</span>
-                      </div>
-                      <p className="text-slate-600 text-sm mb-3 leading-relaxed">{ex.description}</p>
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50">
-                          <div className="flex gap-4 text-xs font-medium text-slate-500">
-                             <span className="flex items-center gap-1"><Clock size={12}/> {ex.duration} min</span>
-                             <span className="flex items-center gap-1"><Target size={12}/> {ex.material}</span>
-                          </div>
-                          <button 
-                            onClick={() => {
-                                const phaseToAddTo = 'technique';
-                                setCurrentSession(prev => ({
-                                    ...prev,
-                                    exercises: {
-                                        ...prev.exercises,
-                                        [phaseToAddTo]: [...(prev.exercises[phaseToAddTo] || []), { ...ex, id: `ai_added_${Date.now()}_${i}`, phase: phaseToAddTo, instanceId: Date.now() } as Exercise]
-                                    }
-                                }));
-                                showToast("Exercice ajouté !");
-                            }}
-                            className="text-accent font-bold text-sm hover:underline flex items-center gap-1"
-                          >
-                             <Plus size={16}/> Ajouter
-                          </button>
-                      </div>
-                   </div>
-                ))}
-              </div>
-            </div>
-            <div className="p-4 border-t border-slate-100 bg-white flex justify-end">
-               <button onClick={() => setShowSuggestionsModal(false)} className="px-5 py-2 text-slate-600 font-semibold hover:bg-slate-50 rounded-lg transition">Fermer</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers } from 'lucide-react';
+import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box } from 'lucide-react';
 import { Exercise, Session, PhaseId } from '../types';
 import { PHASES } from '../constants';
 import { GeminiButton } from './GeminiButton';
@@ -55,6 +55,11 @@ const PhaseDropZone = React.memo(({ phase, exercises, onDrop, onRemove }: any) =
                     <span className="text-xs font-bold text-accent flex items-center gap-1 bg-orange-50 px-2 py-0.5 rounded">
                       <Clock size={12} /> {ex.duration} min
                     </span>
+                    {ex.material === 'Panier de balles' && (
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded flex items-center gap-1 border border-blue-100">
+                        <Box size={10} /> Panier
+                      </span>
+                    )}
                  </div>
                </div>
                <button 
@@ -83,6 +88,7 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   // Local state for filtering and Mobile UI
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPhase, setFilterPhase] = useState('all');
+  const [filterMaterial, setFilterMaterial] = useState<'all' | 'panier'>('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   
   // Tooltip State
@@ -95,6 +101,7 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
     return exercises.filter(ex => { 
         if (!ex) return false; 
         if (filterPhase !== 'all' && ex.phase !== filterPhase) return false; 
+        if (filterMaterial === 'panier' && ex.material !== 'Panier de balles') return false;
         if (searchTerm) { 
             const term = searchTerm.toLowerCase(); 
             const matchName = ex.name ? ex.name.toLowerCase().includes(term) : false; 
@@ -103,7 +110,7 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
         } 
         return true; 
     });
-  }, [exercises, filterPhase, searchTerm]);
+  }, [exercises, filterPhase, filterMaterial, searchTerm]);
 
   const handleDragStart = (exercise: Exercise) => setDraggedExercise(exercise);
   
@@ -176,8 +183,8 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
         
         {/* LEFT PANEL: LIBRARY (Hidden on mobile if tab is session) */}
         <div className={`w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${activeTab === 'session' ? 'hidden lg:flex' : 'flex'}`}>
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-            <div className="relative mb-3">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-2">
+            <div className="relative">
                 <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
                 <input 
                 type="text" 
@@ -187,14 +194,23 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                 className="w-full pl-9 pr-3 py-2 bg-white border rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none" 
                 />
             </div>
-            <select 
-                value={filterPhase} 
-                onChange={(e) => setFilterPhase(e.target.value)} 
-                className="w-full text-xs p-2 border rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none"
-            >
-                <option value="all">Toutes phases</option>
-                {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
+            <div className="flex gap-2">
+                <select 
+                    value={filterPhase} 
+                    onChange={(e) => setFilterPhase(e.target.value)} 
+                    className="flex-1 text-xs p-2 border rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none"
+                >
+                    <option value="all">Toutes phases</option>
+                    {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+                <button 
+                    onClick={() => setFilterMaterial(prev => prev === 'all' ? 'panier' : 'all')}
+                    className={`p-2 border rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${filterMaterial === 'panier' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                    title="Filtrer Panier de balles"
+                >
+                    <Box size={14} /> Panier
+                </button>
+            </div>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
             {filteredExercises.map(ex => (
@@ -211,8 +227,11 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                     <div className="flex justify-between items-start mb-1">
                         <span className="font-semibold text-sm text-slate-800 group-hover:text-accent transition-colors">{ex.name}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 items-center">
                         <span className="text-[10px] px-1.5 bg-slate-100 rounded text-slate-500">{PHASES.find(p => p.id === ex.phase)?.label}</span>
+                        {ex.material === 'Panier de balles' && (
+                             <span className="text-[10px] px-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded font-bold flex items-center gap-0.5"><Box size={8}/> PB</span>
+                        )}
                     </div>
                 </div>
                 {/* Mobile 'Add' Button because Drag&Drop is hard on touch */}
