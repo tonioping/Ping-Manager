@@ -75,6 +75,17 @@ export interface Player {
     level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
     notes?: string;
     user_id?: string;
+    
+    // Ping Specifics
+    ranking?: number; // Points (ex: 1250)
+    hand?: 'Droitier' | 'Gaucher';
+    grip?: 'Europeenne' | 'Porte-Plume';
+    
+    // Equipment
+    blade?: string;
+    rubber_fh?: string;
+    rubber_bh?: string;
+    last_equipment_change?: string; // Date
 }
 
 export interface Skill {

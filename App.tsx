@@ -234,7 +234,16 @@ export default function App() {
               age: player.age || null, 
               birth_date: sanitizedDate,
               notes: player.notes || null,
-              user_id: session.user.id
+              user_id: session.user.id,
+              
+              // New Fields
+              ranking: player.ranking || null,
+              hand: player.hand || null,
+              grip: player.grip || null,
+              blade: player.blade || null,
+              rubber_fh: player.rubber_fh || null,
+              rubber_bh: player.rubber_bh || null,
+              last_equipment_change: player.last_equipment_change || null
           };
           
           const { error } = await supabase.from('players').upsert(playerPayload);

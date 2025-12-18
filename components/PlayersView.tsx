@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2 } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Player, PlayerEvaluation, Skill } from '../types';
 import { DEFAULT_SKILLS } from '../constants';
@@ -38,6 +38,15 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
       return DEFAULT_SKILLS.map(skill => ({ subject: skill.name, A: latestScores[skill.id] || 0, fullMark: 5 })); 
   }, [playerEvals]);
 
+  // Check if equipment is old (> 6 months)
+  const isEquipmentOld = useMemo(() => {
+    if (!currentPlayer?.last_equipment_change) return false;
+    const changeDate = new Date(currentPlayer.last_equipment_change);
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    return changeDate < sixMonthsAgo;
+  }, [currentPlayer?.last_equipment_change]);
+
   return (
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
@@ -57,9 +66,9 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                             </div>
                             <div>
                                 <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
-                                <div className="flex gap-2 mt-1">
+                                <div className="flex gap-2 mt-1 flex-wrap">
                                     <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span>
-                                    {player.age && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-medium">{player.age} ans</span>}
+                                    {player.ranking && <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-bold">{player.ranking} pts</span>}
                                 </div>
                             </div>
                         </div>
@@ -76,7 +85,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                     <div className="flex gap-4 items-center">
                         <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100"><ArrowRight className="rotate-180" size={20}/></button>
                         <div>
-                            {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level} {currentPlayer?.age ? `• ${currentPlayer.age} ans` : ''}</p></>}
+                            {newPlayerMode ? <h3 className="text-xl font-bold text-slate-800">Nouveau Joueur</h3> : <><h3 className="text-2xl font-bold text-slate-800">{currentPlayer?.first_name} {currentPlayer?.last_name}</h3><p className="text-slate-500 text-sm">{currentPlayer?.level} {currentPlayer?.ranking ? `• ${currentPlayer.ranking} pts` : ''}</p></>}
                         </div>
                     </div>
                     {!newPlayerMode && currentPlayer && (
@@ -91,65 +100,137 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                 </div>
 
                 <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                     <div className="lg:col-span-4 space-y-4">
-                        <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2"><User size={18}/> Informations</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Prénom</label>
-                                <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
+                     {/* LEFT COLUMN: INFO & MATERIAL */}
+                     <div className="lg:col-span-5 space-y-8">
+                        {/* BASIC INFO */}
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-slate-700 flex items-center gap-2"><User size={18}/> État Civil & Niveau</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="col-span-2 sm:col-span-1">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Prénom</label>
+                                    <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
+                                </div>
+                                <div className="col-span-2 sm:col-span-1">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Nom</label>
+                                    <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
+                                </div>
                             </div>
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Nom</label>
-                                <input type="text" className="w-full p-3 border rounded-xl" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Naissance (Année)</label>
+                                    <input 
+                                        type="date" 
+                                        className="w-full p-3 border rounded-xl bg-white text-sm" 
+                                        value={currentPlayer?.birth_date || ''} 
+                                        onChange={e => setCurrentPlayer(prev => prev ? {...prev, birth_date: e.target.value} : null)} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Classement (Pts)</label>
+                                    <div className="relative">
+                                        <Trophy size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+                                        <input 
+                                            type="number" 
+                                            className="w-full p-3 pl-10 border rounded-xl" 
+                                            placeholder="Ex: 1250"
+                                            value={currentPlayer?.ranking || ''} 
+                                            onChange={e => setCurrentPlayer(prev => prev ? {...prev, ranking: parseInt(e.target.value) || 0} : null)} 
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Age</label>
-                                <input 
-                                    type="number" 
-                                    className="w-full p-3 border rounded-xl" 
-                                    value={currentPlayer?.age || ''} 
-                                    onChange={e => {
-                                        const val = parseInt(e.target.value);
-                                        setCurrentPlayer(prev => prev ? {...prev, age: isNaN(val) ? undefined : val} : null);
-                                    }} 
-                                    placeholder="Ans" 
-                                />
-                            </div>
-                            <div className="col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Date de naissance</label>
-                                <input 
-                                    type="date" 
-                                    className="w-full p-3 border rounded-xl bg-white text-sm" 
-                                    value={currentPlayer?.birth_date || ''} 
-                                    onChange={e => setCurrentPlayer(prev => prev ? {...prev, birth_date: e.target.value} : null)} 
-                                />
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Niveau</label>
+                                    <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
+                                        <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Main & Prise</label>
+                                    <div className="flex gap-2">
+                                        <select className="w-1/2 p-3 border rounded-xl bg-white text-sm" value={currentPlayer?.hand || 'Droitier'} onChange={e => setCurrentPlayer(prev => prev ? {...prev, hand: e.target.value as any} : null)}>
+                                            <option value="Droitier">Droitier</option>
+                                            <option value="Gaucher">Gaucher</option>
+                                        </select>
+                                        <select className="w-1/2 p-3 border rounded-xl bg-white text-sm" value={currentPlayer?.grip || 'Europeenne'} onChange={e => setCurrentPlayer(prev => prev ? {...prev, grip: e.target.value as any} : null)}>
+                                            <option value="Europeenne">Euro</option>
+                                            <option value="Porte-Plume">Plume</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">Niveau</label>
-                            <select className="w-full p-3 border rounded-xl bg-white" value={currentPlayer?.level} onChange={e => setCurrentPlayer(prev => prev ? {...prev, level: e.target.value as any} : null)}>
-                                <option value="Debutants">Débutant</option><option value="Intermediaire">Intermédiaire</option><option value="Avance">Avancé</option><option value="Elite">Elite</option>
-                            </select>
+                        {/* EQUIPMENT SECTION (The Killer Feature) */}
+                        <div className="bg-slate-900 text-slate-200 p-6 rounded-2xl shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><Sword size={100} /></div>
+                            <h4 className="font-bold text-white mb-4 flex items-center gap-2 relative z-10"><Sword size={18}/> Matériel Actuel</h4>
+                            
+                            <div className="space-y-4 relative z-10">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Bois (Blade)</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ex: Butterfly Viscaria" 
+                                        className="w-full bg-slate-800 border-none text-white p-2 rounded-lg text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-accent"
+                                        value={currentPlayer?.blade || ''}
+                                        onChange={e => setCurrentPlayer(prev => prev ? {...prev, blade: e.target.value} : null)}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Circle size={8} fill="currentColor"/> Coup Droit</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Ex: Tenergy 05" 
+                                            className="w-full bg-slate-800 border-none text-white p-2 rounded-lg text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-red-500"
+                                            value={currentPlayer?.rubber_fh || ''}
+                                            onChange={e => setCurrentPlayer(prev => prev ? {...prev, rubber_fh: e.target.value} : null)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-900 bg-slate-200 px-1 rounded w-fit uppercase tracking-wider mb-1 flex items-center gap-1"><Circle size={8} fill="black"/> Revers</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Ex: Dignics 09c" 
+                                            className="w-full bg-slate-800 border-none text-white p-2 rounded-lg text-sm placeholder:text-slate-600 focus:ring-1 focus:ring-slate-400"
+                                            value={currentPlayer?.rubber_bh || ''}
+                                            onChange={e => setCurrentPlayer(prev => prev ? {...prev, rubber_bh: e.target.value} : null)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="pt-2 border-t border-slate-700">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dernier changement</label>
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="date" 
+                                            className="bg-slate-800 text-white p-2 rounded-lg text-xs border-none w-full"
+                                            value={currentPlayer?.last_equipment_change || ''}
+                                            onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_equipment_change: e.target.value} : null)}
+                                        />
+                                        {isEquipmentOld && (
+                                            <div className="flex items-center gap-1 text-orange-500 text-xs font-bold bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20 whitespace-nowrap">
+                                                <AlertTriangle size={12}/> > 6 mois
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label>
-                            <textarea placeholder="Particularités, style de jeu..." rows={4} className="w-full p-3 border rounded-xl" value={currentPlayer?.notes || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)}></textarea>
-                        </div>
-                        <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition"><Save size={18}/> Enregistrer</button>
+                        <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition shadow-lg"><Save size={18}/> Sauvegarder Fiche</button>
                      </div>
 
                      {!newPlayerMode && (
-                         <div className="lg:col-span-8 space-y-8">
+                         <div className="lg:col-span-7 space-y-8">
                              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Activity size={18} className="text-accent"/> Profil Technique (Radar)</h4>
                                  <div className="h-[300px] w-full">
                                      <ResponsiveContainer width="100%" height="100%">
-                                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                         <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                                              <PolarGrid /><PolarAngleAxis dataKey="subject" /><PolarRadiusAxis angle={30} domain={[0, 5]} />
                                              <Radar name={currentPlayer?.first_name} dataKey="A" stroke="#f97316" fill="#f97316" fillOpacity={0.6} />
                                              <Tooltip />
@@ -175,6 +256,11 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                          );
                                      })}
                                  </div>
+                             </div>
+                             
+                             <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2">Notes Générales</label>
+                                <textarea placeholder="Style de jeu, points forts/faibles, objectifs..." rows={4} className="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white transition-colors" value={currentPlayer?.notes || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)}></textarea>
                              </div>
                          </div>
                      )}
