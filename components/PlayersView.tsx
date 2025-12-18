@@ -213,7 +213,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                         />
                                         {isEquipmentOld && (
                                             <div className="flex items-center gap-1 text-orange-500 text-xs font-bold bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20 whitespace-nowrap">
-                                                <AlertTriangle size={12}/> > 6 mois
+                                                <AlertTriangle size={12}/> &gt; 6 mois
                                             </div>
                                         )}
                                     </div>
