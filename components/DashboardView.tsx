@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Plus, BookOpen, Users, ArrowRight, CalendarDays, Target, Calendar as CalendarIcon, Sparkles 
@@ -27,14 +28,12 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   setView,
   setCurrentSession
 }) => {
-  const hasUser = session && session.user;
-  
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-slate-800">Bonjour, {coachProfile.name || 'Coach'} 👋</h2>
-          <p className="text-slate-500 mt-1">{hasUser ? "Mode Cloud actif." : "Mode Local."}</p>
+          <p className="text-slate-500 mt-1">{session ? "Mode Cloud actif." : "Mode Local."}</p>
         </div>
         <button onClick={() => setView('sessions')} className="bg-accent hover:bg-accent-hover text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2">
           <Plus size={20} /> Nouvelle Séance
