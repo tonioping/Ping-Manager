@@ -130,7 +130,8 @@ export default function App() {
                 const { data: allSkills } = await supabase.from('skills').select('*').order('name', { ascending: true });
                 setSkills(allSkills && allSkills.length > 0 ? allSkills : DEFAULT_SKILLS);
 
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+                // Use maybeSingle instead of single to avoid 406 errors if profile doesn't exist yet
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
                 if (profile) {
                     setCoachProfile({ 
                         name: profile.full_name || '', 
@@ -336,20 +337,21 @@ export default function App() {
           // STRATÉGIE ROBUSTE : Vérifier si l'évaluation existe déjà pour ce jour/joueur/skill
           // Cela contourne les problèmes de configuration de contrainte UNIQUE (Error 409) et garantit la mise à jour
           try {
+              // CHANGE: Utilisation de maybeSingle() au lieu de single() pour éviter l'erreur 406
               const { data: existingEval } = await supabase
                   .from('player_evaluations')
                   .select('id')
                   .eq('player_id', playerId)
                   .eq('skill_id', skillId)
                   .eq('date', today)
-                  .single();
+                  .maybeSingle(); 
 
               if (existingEval) {
                   // Si elle existe, on assigne l'ID pour forcer l'UPDATE
                   evalToSave.id = existingEval.id;
               }
 
-              // On effectue l'upsert sans spécifier onConflict (car on gère l'ID manuellement)
+              // On effectue l'upsert
               const { error } = await supabase
                   .from('player_evaluations')
                   .upsert(evalToSave); 
