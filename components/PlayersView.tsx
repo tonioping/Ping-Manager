@@ -34,8 +34,17 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   
   const radarData = useMemo(() => { 
       if (!playerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); 
+      
       const latestScores: Record<string, number> = {}; 
-      playerEvals.forEach(ev => { latestScores[ev.skill_id] = ev.score; }); 
+      
+      // FIX: On parcourt les évaluations. Comme playerEvals est trié par date décroissante (le plus récent en premier),
+      // on ne garde que la première occurrence rencontrée pour chaque compétence.
+      playerEvals.forEach(ev => { 
+          if (latestScores[ev.skill_id] === undefined) {
+              latestScores[ev.skill_id] = ev.score; 
+          }
+      }); 
+      
       return DEFAULT_SKILLS.map(skill => ({ subject: skill.name, A: latestScores[skill.id] || 0, fullMark: 5 })); 
   }, [playerEvals]);
 
@@ -297,13 +306,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><TrendingUp size={18} className="text-blue-600"/> Évaluation des Compétences</h4>
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                      {DEFAULT_SKILLS.map(skill => {
-                                         const currentScore = playerEvals.find(e => e.skill_id === skill.id)?.score || 0;
+                                         // FIX: Utiliser la même logique que radarData pour trouver la note la plus récente
+                                         const latestScore = playerEvals.find(e => e.skill_id === skill.id)?.score || 0;
                                          return (
                                              <div key={skill.id} className="p-4 border border-slate-200 rounded-xl flex justify-between items-center bg-white hover:border-blue-300 transition-colors">
                                                  <div><div className="font-bold text-slate-800">{skill.name}</div><div className="text-xs text-slate-500">{skill.category}</div></div>
                                                  <div className="flex gap-1">
                                                      {[1, 2, 3, 4, 5].map(star => (
-                                                         <button key={star} onClick={() => currentPlayer && saveEvaluation(currentPlayer.id, skill.id, star)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-all ${currentScore >= star ? 'bg-orange-500 text-white scale-110' : 'bg-slate-100 text-slate-300 hover:bg-slate-200'}`}>{star}</button>
+                                                         <button key={star} onClick={() => currentPlayer && saveEvaluation(currentPlayer.id, skill.id, star)} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold transition-all ${latestScore >= star ? 'bg-orange-500 text-white scale-110' : 'bg-slate-100 text-slate-300 hover:bg-slate-200'}`}>{star}</button>
                                                      ))}
                                                  </div>
                                              </div>

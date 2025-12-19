@@ -330,21 +330,30 @@ export default function App() {
           
           evalToSave.user_id = user.id;
           
-          const otherEvals = playerEvals.filter(e => e.skill_id !== skillId);
-          setPlayerEvals([evalToSave, ...otherEvals]);
+          // Mise à jour de l'état local : On insère la nouvelle évaluation en haut de la pile
+          // Note : On ne filtre PAS les anciennes évaluations ici pour garder l'historique dans l'état local
+          setPlayerEvals(prev => [evalToSave, ...prev]);
 
-          await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
-          showToast("Évaluation sauvegardée (Cloud)");
+          // Sauvegarde en base de données avec gestion d'erreur
+          const { error } = await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
+          
+          if (error) {
+              console.error("Erreur Supabase:", error);
+              showToast("Erreur sauvegarde: " + error.message, 'error');
+              // Optionnel : Revert state update if needed, but keeping it simple for now
+          } else {
+              showToast("Évaluation sauvegardée (Cloud)");
+          }
       } else {
           try {
               const allEvalsJSON = localStorage.getItem('pingmanager_evaluations');
               let allEvals: PlayerEvaluation[] = allEvalsJSON ? JSON.parse(allEvalsJSON) : [];
+              // En local, on écrase l'évaluation du même jour
               allEvals = allEvals.filter(e => !(e.player_id === playerId && e.skill_id === skillId && e.date === today));
               allEvals.push(evalToSave);
               localStorage.setItem('pingmanager_evaluations', JSON.stringify(allEvals));
 
-              const otherCurrentPlayerEvals = playerEvals.filter(e => e.skill_id !== skillId);
-              setPlayerEvals([evalToSave, ...otherCurrentPlayerEvals]);
+              setPlayerEvals(prev => [evalToSave, ...prev]);
               
               showToast("Évaluation sauvegardée (Local)");
           } catch(e) {
