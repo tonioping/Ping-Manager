@@ -324,25 +324,44 @@ export default function App() {
           comment 
       };
 
+      // Optimistic Update: Mise à jour immédiate de l'interface
+      setPlayerEvals(prev => [evalToSave, ...prev]);
+
       if (supabase && session) {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) { showToast("Veuillez vous connecter.", 'error'); return; }
           
           evalToSave.user_id = user.id;
-          
-          // Mise à jour de l'état local : On insère la nouvelle évaluation en haut de la pile
-          // Note : On ne filtre PAS les anciennes évaluations ici pour garder l'historique dans l'état local
-          setPlayerEvals(prev => [evalToSave, ...prev]);
 
-          // Sauvegarde en base de données avec gestion d'erreur
-          const { error } = await supabase.from('player_evaluations').upsert(evalToSave, { onConflict: 'player_id, skill_id, date' }); 
-          
-          if (error) {
-              console.error("Erreur Supabase:", error);
-              showToast("Erreur sauvegarde: " + error.message, 'error');
-              // Optionnel : Revert state update if needed, but keeping it simple for now
-          } else {
+          // STRATÉGIE ROBUSTE : Vérifier si l'évaluation existe déjà pour ce jour/joueur/skill
+          // Cela contourne les problèmes de configuration de contrainte UNIQUE (Error 409) et garantit la mise à jour
+          try {
+              const { data: existingEval } = await supabase
+                  .from('player_evaluations')
+                  .select('id')
+                  .eq('player_id', playerId)
+                  .eq('skill_id', skillId)
+                  .eq('date', today)
+                  .single();
+
+              if (existingEval) {
+                  // Si elle existe, on assigne l'ID pour forcer l'UPDATE
+                  evalToSave.id = existingEval.id;
+              }
+
+              // On effectue l'upsert sans spécifier onConflict (car on gère l'ID manuellement)
+              const { error } = await supabase
+                  .from('player_evaluations')
+                  .upsert(evalToSave); 
+              
+              if (error) throw error;
               showToast("Évaluation sauvegardée (Cloud)");
+
+          } catch (error: any) {
+              console.error("Erreur Supabase:", error);
+              // Si erreur, on recharge les données réelles pour annuler l'update optimiste erroné
+              loadPlayerEvaluations(playerId); 
+              showToast("Erreur sauvegarde: " + error.message, 'error');
           }
       } else {
           try {
@@ -352,9 +371,6 @@ export default function App() {
               allEvals = allEvals.filter(e => !(e.player_id === playerId && e.skill_id === skillId && e.date === today));
               allEvals.push(evalToSave);
               localStorage.setItem('pingmanager_evaluations', JSON.stringify(allEvals));
-
-              setPlayerEvals(prev => [evalToSave, ...prev]);
-              
               showToast("Évaluation sauvegardée (Local)");
           } catch(e) {
               console.error("Erreur sauvegarde eval local", e);
