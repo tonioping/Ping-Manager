@@ -1,9 +1,9 @@
 
-import React, { useMemo } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Player, PlayerEvaluation, Skill } from '../types';
-import { DEFAULT_SKILLS } from '../constants';
+import { DEFAULT_SKILLS, GROUPS } from '../constants';
 
 interface PlayersViewProps {
   players: Player[];
@@ -30,6 +30,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   saveEvaluation,
   loadPlayerEvaluations
 }) => {
+  const [filterGroup, setFilterGroup] = useState<string>('all');
   
   const radarData = useMemo(() => { 
       if (!playerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); 
@@ -47,35 +48,69 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
     return changeDate < sixMonthsAgo;
   }, [currentPlayer?.last_equipment_change]);
 
+  const filteredPlayers = useMemo(() => {
+      if (filterGroup === 'all') return players;
+      return players.filter(p => p.group === filterGroup);
+  }, [players, filterGroup]);
+
   return (
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
-                <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', birth_date: undefined, age: undefined, level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><GraduationCap className="text-accent"/> Joueurs</h2>
+                    <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', birth_date: undefined, age: undefined, level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"><Plus size={18} /> Nouveau Joueur</button>
+                </div>
+
+                {/* GROUPS FILTER BAR */}
+                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <button 
+                        onClick={() => setFilterGroup('all')}
+                        className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${filterGroup === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                    >
+                        Tous
+                    </button>
+                    {GROUPS.map(g => (
+                        <button 
+                            key={g.id}
+                            onClick={() => setFilterGroup(g.id)}
+                            className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${filterGroup === g.id ? `${g.color.split(' ')[0]} ${g.color.split(' ')[1]} ring-1 ring-offset-1` : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                        >
+                            {g.label}
+                        </button>
+                    ))}
+                </div>
             </div>
         )}
         
         {!currentPlayer && !newPlayerMode && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {players.map(player => (
-                    <div key={player.id} onClick={() => { setCurrentPlayer(player); loadPlayerEvaluations(player.id); }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-accent cursor-pointer transition-all group">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-orange-100 group-hover:text-accent transition-colors">
-                                {player.first_name[0]}{player.last_name[0]}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
-                                <div className="flex gap-2 mt-1 flex-wrap">
-                                    <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span>
-                                    {player.ranking && <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-bold">{player.ranking} pts</span>}
+                {filteredPlayers.map(player => {
+                    const playerGroup = GROUPS.find(g => g.id === player.group);
+                    return (
+                        <div key={player.id} onClick={() => { setCurrentPlayer(player); loadPlayerEvaluations(player.id); }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-accent cursor-pointer transition-all group relative">
+                            {playerGroup && (
+                                <div className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${playerGroup.color}`}>
+                                    {playerGroup.label}
+                                </div>
+                            )}
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-orange-100 group-hover:text-accent transition-colors">
+                                    {player.first_name[0]}{player.last_name[0]}
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-slate-800">{player.first_name} {player.last_name}</h3>
+                                    <div className="flex gap-2 mt-1 flex-wrap">
+                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{player.level}</span>
+                                        {player.ranking && <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded font-bold">{player.ranking} pts</span>}
+                                    </div>
                                 </div>
                             </div>
+                            <div className="flex items-center justify-between text-sm text-slate-500"><span>Voir progression</span><ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/></div>
                         </div>
-                        <div className="flex items-center justify-between text-sm text-slate-500"><span>Voir progression</span><ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent"/></div>
-                    </div>
-                ))}
-                {players.length === 0 && (<div className="col-span-full text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300"><p className="text-slate-500 mb-4">Aucun joueur enregistré.</p></div>)}
+                    );
+                })}
+                {filteredPlayers.length === 0 && (<div className="col-span-full text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-300"><p className="text-slate-500 mb-4">Aucun joueur trouvé dans ce groupe.</p></div>)}
             </div>
         )}
 
@@ -137,6 +172,25 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                             value={currentPlayer?.ranking || ''} 
                                             onChange={e => setCurrentPlayer(prev => prev ? {...prev, ranking: parseInt(e.target.value) || 0} : null)} 
                                         />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Groupe d'entraînement</label>
+                                    <div className="relative">
+                                        <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+                                        <select 
+                                            className="w-full p-3 pl-10 border rounded-xl bg-white text-sm" 
+                                            value={currentPlayer?.group || ''} 
+                                            onChange={e => setCurrentPlayer(prev => prev ? {...prev, group: e.target.value} : null)}
+                                        >
+                                            <option value="">-- Aucun groupe --</option>
+                                            {GROUPS.map(g => (
+                                                <option key={g.id} value={g.id}>{g.label}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>

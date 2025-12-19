@@ -46,6 +46,7 @@ export interface Cycle {
   type: CycleType;
   objectives: string;
   user_id?: string;
+  group?: string; // Ajout du groupe cible
 }
 
 export interface CoachProfile {
@@ -73,6 +74,7 @@ export interface Player {
     birth_date?: string;
     age?: number;
     level: 'Debutants' | 'Intermediaire' | 'Avance' | 'Elite';
+    group?: string; 
     notes?: string;
     user_id?: string;
     

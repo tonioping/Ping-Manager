@@ -119,7 +119,8 @@ export default function App() {
                     startDate: c.start_date, 
                     weeks: c.weeks,
                     type: c.type || 'developpement',
-                    objectives: c.objectives || ''
+                    objectives: c.objectives || '',
+                    group: c.group || ''
                 }));
                 setCycles(mappedCycles);
 
@@ -157,7 +158,7 @@ export default function App() {
                 setSavedSessions(sessResult ? JSON.parse(sessResult) : []);
                 
                 const loadedCycles = cyclesResult ? JSON.parse(cyclesResult) : [];
-                setCycles(loadedCycles.map((c: any) => ({ ...c, type: c.type || 'developpement', objectives: c.objectives || '' })));
+                setCycles(loadedCycles.map((c: any) => ({ ...c, type: c.type || 'developpement', objectives: c.objectives || '', group: c.group || '' })));
                 
                 setPlayers(playersResult ? JSON.parse(playersResult) : []);
                 if (aiConfigResult) setAiConfig(JSON.parse(aiConfigResult));
@@ -195,7 +196,19 @@ export default function App() {
       setCycles(newCycles);
       if (supabase && currentCyc) {
            const { data: { user } } = await supabase.auth.getUser();
-           if (user) { await supabase.from('cycles').upsert({ id: currentCyc.id, name: currentCyc.name, start_date: currentCyc.startDate, weeks: currentCyc.weeks, type: currentCyc.type, objectives: currentCyc.objectives, user_id: user.id }); showToast("Cycle sauvegardé (Cloud)"); } 
+           if (user) { 
+               await supabase.from('cycles').upsert({ 
+                   id: currentCyc.id, 
+                   name: currentCyc.name, 
+                   start_date: currentCyc.startDate, 
+                   weeks: currentCyc.weeks, 
+                   type: currentCyc.type, 
+                   objectives: currentCyc.objectives, 
+                   group: currentCyc.group,
+                   user_id: user.id 
+               }); 
+               showToast("Cycle sauvegardé (Cloud)"); 
+           } 
            else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
       } else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
   };
@@ -231,6 +244,7 @@ export default function App() {
               first_name: player.first_name,
               last_name: player.last_name,
               level: player.level,
+              group: player.group || null,
               age: player.age || null, 
               birth_date: sanitizedDate,
               notes: player.notes || null,
@@ -363,7 +377,8 @@ export default function App() {
           ...currentCycle, 
           id: cycleId, 
           type: (currentCycle as any).type || 'developpement', 
-          objectives: (currentCycle as any).objectives || '' 
+          objectives: (currentCycle as any).objectives || '',
+          group: (currentCycle as any).group || '' 
       } as Cycle; 
       
       const exists = cycles.find(c => c.id === cycleId); 

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { CalendarDays, Plus, X, Bot, Save, Minus, Pencil, Trash2, Calendar as CalendarIcon, Edit3, Link, Check, BookOpen } from 'lucide-react';
 import { GeminiButton } from './GeminiButton';
 import { Cycle, CycleType, Session } from '../types';
-import { CYCLE_TYPES } from '../constants';
+import { CYCLE_TYPES, GROUPS } from '../constants';
 
 interface CyclesViewProps {
   cycles: Cycle[];
@@ -74,7 +74,7 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
           <CalendarDays className="text-accent"/> Planification Annuel
         </h2>
         <button 
-          onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '' })} 
+          onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '', group: '' })} 
           className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"
         >
           <Plus size={18} /> Nouveau
@@ -131,17 +131,28 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
             </div>
             <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                <div className="md:col-span-6">
+                <div className="md:col-span-8">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Nom du Cycle</label>
                   <input type="text" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle({...currentCycle, name: e.target.value})} />
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-4">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Groupe Cible</label>
+                  <select 
+                    value={(currentCycle as any).group || ''} 
+                    onChange={(e) => setCurrentCycle({...currentCycle, group: e.target.value})} 
+                    className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 bg-white focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium"
+                  >
+                    <option value="">-- Tous --</option>
+                    {GROUPS.map(g => (<option key={g.id} value={g.id}>{g.label}</option>))}
+                  </select>
+                </div>
+                <div className="md:col-span-6">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Type</label>
                   <select value={(currentCycle as any).type || 'developpement'} onChange={(e) => setCurrentCycle({...currentCycle, type: e.target.value as CycleType})} className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 bg-white focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium">
                     {Object.entries(CYCLE_TYPES).map(([key, val]) => (<option key={key} value={key}>{val.icon} {val.label}</option>))}
                   </select>
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-6">
                   <label className="block text-sm font-bold text-slate-700 mb-2">Début</label>
                   <input ref={dateInputRef} type="date" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium cursor-pointer" value={currentCycle.startDate} onClick={showCalendarPicker} onChange={(e) => setCurrentCycle({...currentCycle, startDate: e.target.value})} />
                 </div>
@@ -218,11 +229,15 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                       <span className={`text-xl`}>{cycleTypeConfig.icon}</span>
                       <h3 className="text-lg font-bold text-slate-800">{cycle.name}</h3>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-3 text-xs text-slate-500 font-medium flex-wrap">
                       <span className="flex items-center gap-1"><CalendarIcon size={12}/> {new Date(cycle.startDate).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>{cycle.weeks.length} semaines</span>
                       <span className={`px-2 py-0.5 rounded-full ${cycleTypeConfig.color}`}>{cycleTypeConfig.label}</span>
+                      {cycle.group && (() => {
+                          const grp = GROUPS.find(g => g.id === cycle.group);
+                          return grp ? <span className={`px-2 py-0.5 rounded-full ${grp.color} text-xs ml-2 border`}>{grp.label}</span> : null;
+                      })()}
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
