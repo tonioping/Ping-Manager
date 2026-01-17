@@ -3,23 +3,23 @@ import { Phase, Exercise, Session, Skill } from './types';
 
 // Couleurs modernisées : Plus douces pour le fond, bordures claires
 export const PHASES: Phase[] = [
-  { id: 'echauffement', label: 'ÉCHAUFFEMENT', duration: 15, color: 'bg-orange-50 border-orange-200 text-orange-900' },
-  { id: 'regularite', label: 'RÉGULARITÉ', duration: 20, color: 'bg-sky-50 border-sky-200 text-sky-900' },
-  { id: 'technique', label: 'TECHNIQUE', duration: 25, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
-  { id: 'deplacement', label: 'DÉPLACEMENT', duration: 20, color: 'bg-fuchsia-50 border-fuchsia-200 text-fuchsia-900' },
-  { id: 'schema', label: 'SCHÉMA DE JEU', duration: 15, color: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
-  { id: 'matchs', label: 'MATCHS VARIÉS', duration: 15, color: 'bg-rose-50 border-rose-200 text-rose-900' }
+  { id: 'echauffement', label: 'ÉCHAUFFEMENT', duration: 15, color: 'bg-orange-50 border-orange-200 text-slate-900' },
+  { id: 'regularite', label: 'RÉGULARITÉ', duration: 20, color: 'bg-sky-50 border-sky-200 text-slate-900' },
+  { id: 'technique', label: 'TECHNIQUE', duration: 25, color: 'bg-indigo-50 border-indigo-200 text-slate-900' },
+  { id: 'deplacement', label: 'DÉPLACEMENT', duration: 20, color: 'bg-fuchsia-50 border-fuchsia-200 text-slate-900' },
+  { id: 'schema', label: 'SCHÉMA DE JEU', duration: 15, color: 'bg-emerald-50 border-emerald-200 text-slate-900' },
+  { id: 'matchs', label: 'MATCHS VARIÉS', duration: 15, color: 'bg-rose-50 border-rose-200 text-slate-900' }
 ];
 
 export const THEMES: string[] = ['Coup Droit (CD)', 'Revers (RV)', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Contre-initiative', 'Flip', 'Remise de service', 'Incertitude'];
 
 export const GROUPS = [
-    { id: 'debutant', label: 'Débutant', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    { id: 'college', label: 'Collège', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    { id: 'perfectionnement', label: 'Perfectionnement', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-    { id: 'competition', label: 'Compétition', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-    { id: 'adultes-loisir', label: 'Adultes Loisir', color: 'bg-teal-100 text-teal-800 border-teal-200' },
-    { id: 'adultes-competition', label: 'Adultes Compétition', color: 'bg-rose-100 text-rose-800 border-rose-200' }
+    { id: 'debutant', label: 'Débutant', color: 'bg-emerald-100 text-slate-900 border-emerald-200' },
+    { id: 'college', label: 'Collège', color: 'bg-yellow-100 text-slate-900 border-yellow-200' },
+    { id: 'perfectionnement', label: 'Perfectionnement', color: 'bg-blue-100 text-slate-900 border-blue-200' },
+    { id: 'competition', label: 'Compétition', color: 'bg-purple-100 text-slate-900 border-purple-200' },
+    { id: 'adultes-loisir', label: 'Adultes Loisir', color: 'bg-teal-100 text-slate-900 border-teal-200' },
+    { id: 'adultes-competition', label: 'Adultes Compétition', color: 'bg-rose-100 text-slate-900 border-rose-200' }
 ];
 
 export const INITIAL_EXERCISES: Exercise[] = [
@@ -102,12 +102,12 @@ export const INITIAL_EXERCISES: Exercise[] = [
   { id: 't22', name: 'Liaison CD / RV Aléatoire', phase: 'technique', theme: 'Incertitude', duration: 20, description: 'Panier : Le coach envoie aléatoirement à droite ou à gauche. Le joueur doit décider instantanément quel coup jouer.', material: 'Panier de balles' },
   { id: 't23', name: 'Apprentissage Topspin CD (Panier)', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Panier balle coupée. Focus sur l\'action "bas vers haut". Le joueur doit toucher la balle devant lui et la frotter.', material: 'Panier de balles' },
   { id: 't24', name: 'Apprentissage Topspin RV (Panier)', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Panier balle coupée. Focus sur l\'utilisation du poignet ("accélération finale") et le coude qui reste stable.', material: 'Panier de balles' },
-  { id: 't25', name: 'Régularité Topspin CD sur Bloc', phase: 'technique', theme: 'Coup Droit (CD)', duration: 15, description: 'Diagonale CD. L\'attaquant enchaîne les topspins rotation sans forcer. Le bloqueur assure la balle.', material: 'Balles' },
-  { id: 't26', name: 'Régularité Topspin RV sur Bloc', phase: 'technique', theme: 'Revers (RV)', duration: 15, description: 'Diagonale RV. Rythme lent. Le joueur doit maintenir une hauteur de balle sécurisante (filet + 10cm).', material: 'Balles' },
+  { id: 't25', name: 'Régularité Topspin CD on Bloc', phase: 'technique', theme: 'Coup Droit (CD)', duration: 15, description: 'Diagonale CD. L\'attaquant enchaîne les topspins rotation sans forcer. Le bloqueur assure la balle.', material: 'Balles' },
+  { id: 't26', name: 'Régularité Topspin RV on Bloc', phase: 'technique', theme: 'Revers (RV)', duration: 15, description: 'Diagonale RV. Rythme lent. Le joueur doit maintenir une hauteur de balle sécurisante (filet + 10cm).', material: 'Balles' },
   { id: 't27', name: 'Topspin CD "Ligne droite"', phase: 'technique', theme: 'Topspin', duration: 12, description: 'Jouer le topspin le long de la ligne. Nécessite d\'orienter les épaules et de frapper la balle un peu plus tard.', material: 'Balles' },
   { id: 't28', name: 'Topspin RV "Ligne droite"', phase: 'technique', theme: 'Topspin', duration: 12, description: 'Jouer le topspin RV ligne droite. Nécessite de fermer l\'angle du poignet au moment de l\'impact.', material: 'Balles' },
-  { id: 't29', name: 'Démarrage Topspin CD sur Poussette', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Séquence : 1 Poussette CD -> Le relanceur pousse long -> Démarrage en Topspin CD rotation.', material: 'Balles' },
-  { id: 't30', name: 'Démarrage Topspin RV sur Poussette', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Séquence : 1 Poussette RV -> Le relanceur pousse long -> Démarrage en Topspin RV (action poignet).', material: 'Balles' },
+  { id: 't29', name: 'Démarrage Topspin CD on Poussette', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Séquence : 1 Poussette CD -> Le relanceur pousse long -> Démarrage en Topspin CD rotation.', material: 'Balles' },
+  { id: 't30', name: 'Démarrage Topspin RV on Poussette', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Séquence : 1 Poussette RV -> Le relanceur pousse long -> Démarrage en Topspin RV (action poignet).', material: 'Balles' },
 
 
   // --- DÉPLACEMENT (D1-D20) ---
@@ -173,10 +173,10 @@ export const EMPTY_SESSION: Session = {
 };
 
 export const CYCLE_TYPES: Record<string, { value: string; label: string; color: string; icon: string }> = {
-    'developpement': { value: 'developpement', label: 'Développement', color: 'bg-blue-500 text-blue-800 border-blue-200', icon: '📈' },
-    'competition': { value: 'competition', label: 'Compétition', color: 'bg-orange-500 text-orange-800 border-orange-200', icon: '🏆' },
-    'recuperation': { value: 'recuperation', label: 'Récupération', color: 'bg-emerald-500 text-emerald-800 border-emerald-200', icon: '🔋' },
-    'pre-saison': { value: 'pre-saison', label: 'Pré-saison', color: 'bg-purple-500 text-purple-800 border-purple-200', icon: '🏋️' }
+    'developpement': { value: 'developpement', label: 'Développement', color: 'bg-blue-100 text-slate-900 border-blue-200', icon: '📈' },
+    'competition': { value: 'competition', label: 'Compétition', color: 'bg-orange-100 text-slate-900 border-orange-200', icon: '🏆' },
+    'recuperation': { value: 'recuperation', label: 'Récupération', color: 'bg-emerald-100 text-slate-900 border-emerald-200', icon: '🔋' },
+    'pre-saison': { value: 'pre-saison', label: 'Pré-saison', color: 'bg-purple-100 text-slate-900 border-purple-200', icon: '🏋️' }
 };
 
 export const DEFAULT_SKILLS: Skill[] = [

@@ -37,15 +37,10 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       now.setHours(0, 0, 0, 0);
 
       return GROUPS.map(group => {
-          const activeCycle = cycles.find(c => {
-              if (c.group !== group.id) return false;
-              if (!c.startDate) return false;
-              const [y, m, d] = c.startDate.split('-').map(Number);
-              const start = new Date(y, m - 1, d);
-              const diffTime = now.getTime() - start.getTime();
-              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-              return diffDays >= 0 && Math.floor(diffDays / 7) < c.weeks.length;
-          });
+          // Trouver le cycle le plus récent pour ce groupe qui n'est pas encore terminé depuis trop longtemps
+          const activeCycle = [...cycles]
+            .filter(c => c.group === group.id && c.startDate)
+            .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
 
           let currentWeekData = null;
           if (activeCycle) {
@@ -55,14 +50,27 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
               const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
               const weekIdx = Math.floor(diffDays / 7);
               
-              if (weekIdx < activeCycle.weeks.length) {
+              const totalWeeks = activeCycle.weeks.length;
+              
+              if (weekIdx >= 0 && weekIdx < totalWeeks) {
                   currentWeekData = {
                       cycleName: activeCycle.name,
                       weekNum: weekIdx + 1,
-                      totalWeeks: activeCycle.weeks.length,
+                      totalWeeks: totalWeeks,
                       theme: activeCycle.weeks[weekIdx].theme,
                       notes: activeCycle.weeks[weekIdx].notes,
-                      progress: Math.round(((weekIdx + 1) / activeCycle.weeks.length) * 100)
+                      progress: Math.round(((weekIdx + 1) / totalWeeks) * 100)
+                  };
+              } else if (weekIdx >= totalWeeks) {
+                  // Cycle terminé
+                  currentWeekData = {
+                      cycleName: activeCycle.name,
+                      weekNum: totalWeeks,
+                      totalWeeks: totalWeeks,
+                      theme: "Cycle Terminé",
+                      notes: "Planifiez un nouveau cycle",
+                      progress: 100,
+                      isFinished: true
                   };
               }
           }
@@ -158,7 +166,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             </div>
             <ChevronRight className="text-slate-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
           </div>
-          <h3 className="font-black text-slate-800 text-lg mb-1">Matériel</h3>
+          <h3 className="font-black text-slate-800 text-lg mb-1 text-slate-900">Matériel</h3>
           <p className="text-sm text-slate-500">
             {equipmentAlerts > 0 ? `${equipmentAlerts} joueurs nécessitent une révision.` : 'Tout le matériel est opérationnel.'}
           </p>
@@ -175,7 +183,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             </div>
             <ChevronRight className="text-slate-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
           </div>
-          <h3 className="font-black text-slate-800 text-lg mb-1">Inspiration</h3>
+          <h3 className="font-black text-slate-900 text-lg mb-1">Inspiration</h3>
           <p className="text-sm text-slate-500 truncate">{dailyExercise.name}</p>
         </div>
 
@@ -209,26 +217,28 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             <div key={group.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col md:flex-row">
               <div className={`md:w-32 flex items-center justify-center p-6 ${group.color.split(' ')[0]}`}>
                 <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-inner">
-                  <span className="text-2xl font-bold">{group.label[0]}</span>
+                  <span className="text-2xl font-bold text-slate-900">{group.label[0]}</span>
                 </div>
               </div>
               <div className="flex-1 p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-xl font-black text-slate-800">{group.label}</h4>
+                    <h4 className="text-xl font-black text-slate-900">{group.label}</h4>
                     {group.activeData ? (
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black border border-emerald-100">CYCLE ACTIF</span>
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black border ${group.activeData.isFinished ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-emerald-50 text-slate-900 border-emerald-100'}`}>
+                        {group.activeData.isFinished ? 'CYCLE TERMINÉ' : 'CYCLE ACTIF'}
+                      </span>
                     ) : (
-                      <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-full text-[10px] font-black">EN ATTENTE</span>
+                      <span className="px-3 py-1 bg-slate-50 text-slate-500 rounded-full text-[10px] font-black">EN ATTENTE</span>
                     )}
                   </div>
                   
                   {group.activeData ? (
                     <div className="space-y-4">
                       <div>
-                        <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                          <span>{group.activeData.cycleName}</span>
-                          <span>{group.activeData.weekNum} / {group.activeData.totalWeeks}</span>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                          <span className="truncate max-w-[150px]">{group.activeData.cycleName}</span>
+                          <span>Semaine {group.activeData.weekNum} / {group.activeData.totalWeeks}</span>
                         </div>
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div 
@@ -239,8 +249,8 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex-1">
-                          <p className="text-sm font-bold text-slate-700 truncate">{group.activeData.theme}</p>
-                          <p className="text-xs text-slate-400 line-clamp-1">{group.activeData.notes}</p>
+                          <p className="text-sm font-bold text-slate-900 truncate">{group.activeData.theme}</p>
+                          <p className="text-xs text-slate-500 line-clamp-1">{group.activeData.notes}</p>
                         </div>
                         <button 
                           onClick={() => { setCurrentSession({...EMPTY_SESSION, name: `${group.label} - S${group.activeData?.weekNum} - ${group.activeData?.theme || 'Entraînement'}`}); setView('sessions'); }}
@@ -287,11 +297,11 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                   className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-accent cursor-pointer transition-all flex items-center gap-4 group"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-accent transition-colors">
-                    <span className="text-lg font-black leading-none">{new Date(sess.date).getDate()}</span>
+                    <span className="text-lg font-black leading-none text-slate-900">{new Date(sess.date).getDate()}</span>
                     <span className="text-[10px] font-black uppercase tracking-widest">{new Date(sess.date).toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-800 truncate">{sess.name}</h4>
+                    <h4 className="font-bold text-slate-900 truncate">{sess.name}</h4>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs text-slate-400 flex items-center gap-1 font-medium"><Box size={10}/> {(Object.values(sess.exercises).flat() as Exercise[]).length} exos</span>
                       <span className="text-xs text-slate-400 flex items-center gap-1 font-medium"><Clock size={10}/> {(Object.values(sess.exercises).flat() as Exercise[]).reduce((acc, ex) => acc + (ex?.duration || 0), 0)} min</span>
@@ -320,12 +330,12 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                   onClick={() => { setCurrentPlayer(player); setView('players'); }}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
                 >
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 font-bold text-xs">
                     {player.first_name[0]}{player.last_name[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-slate-700 text-sm truncate">{player.first_name} {player.last_name}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{player.level}</p>
+                    <h4 className="font-bold text-slate-900 text-sm truncate">{player.first_name} {player.last_name}</h4>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{player.level}</p>
                   </div>
                 </div>
               ))
