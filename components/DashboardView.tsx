@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { 
   Plus, Users, Target, Calendar as CalendarIcon, Sparkles, 
   Clock, Zap, ChevronRight, PlayCircle, Lightbulb, Wrench, RefreshCw, Box,
-  Trophy, TrendingUp, LayoutGrid, Activity, Star
+  Trophy, TrendingUp, LayoutGrid, Activity, Star, BookOpen
 } from 'lucide-react';
 import { Session, Cycle, Player, CoachProfile, View, Exercise } from '../types';
 import { EMPTY_SESSION, GROUPS, INITIAL_EXERCISES } from '../constants';
@@ -37,7 +37,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       now.setHours(0, 0, 0, 0);
 
       return GROUPS.map(group => {
-          // Trouver le cycle le plus récent pour ce groupe qui n'est pas encore terminé depuis trop longtemps
+          // Trouver le cycle le plus récent pour ce groupe
           const activeCycle = [...cycles]
             .filter(c => c.group === group.id && c.startDate)
             .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
@@ -53,16 +53,18 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
               const totalWeeks = activeCycle.weeks.length;
               
               if (weekIdx >= 0 && weekIdx < totalWeeks) {
+                  const currentWeek = activeCycle.weeks[weekIdx];
                   currentWeekData = {
                       cycleName: activeCycle.name,
                       weekNum: weekIdx + 1,
                       totalWeeks: totalWeeks,
-                      theme: activeCycle.weeks[weekIdx].theme,
-                      notes: activeCycle.weeks[weekIdx].notes,
+                      theme: currentWeek.theme,
+                      notes: currentWeek.notes,
+                      nextSessionId: currentWeek.sessionId,
+                      nextSessionName: currentWeek.sessionName,
                       progress: Math.round(((weekIdx + 1) / totalWeeks) * 100)
                   };
               } else if (weekIdx >= totalWeeks) {
-                  // Cycle terminé
                   currentWeekData = {
                       cycleName: activeCycle.name,
                       weekNum: totalWeeks,
@@ -91,6 +93,23 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       return players.filter(p => p.last_equipment_change && new Date(p.last_equipment_change) < sixMonthsAgo).length;
   }, [players]);
+
+  const handleLaunchSession = (group: any) => {
+    if (group.activeData?.nextSessionId) {
+        const linkedSess = savedSessions.find(s => s.id === group.activeData.nextSessionId);
+        if (linkedSess) {
+            setCurrentSession({...linkedSess});
+            setView('sessions');
+            return;
+        }
+    }
+    // Fallback: créer une nouvelle séance avec le titre par défaut
+    setCurrentSession({
+        ...EMPTY_SESSION, 
+        name: `${group.label} - S${group.activeData?.weekNum} - ${group.activeData?.theme || 'Entraînement'}`
+    }); 
+    setView('sessions');
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12">
@@ -155,7 +174,6 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
 
       {/* --- SECTION DEUX : ACTIONS RAPIDES & ALERTES --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Alerte Matériel */}
         <div 
           onClick={() => setView('players')}
           className={`p-6 rounded-[2rem] border shadow-sm transition-all cursor-pointer group ${equipmentAlerts > 0 ? 'bg-orange-50 border-orange-200' : 'bg-white border-slate-100 hover:border-slate-300'}`}
@@ -166,13 +184,12 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             </div>
             <ChevronRight className="text-slate-300 group-hover:text-accent group-hover:translate-x-1 transition-all" />
           </div>
-          <h3 className="font-black text-slate-800 text-lg mb-1 text-slate-900">Matériel</h3>
+          <h3 className="font-black text-slate-900 text-lg mb-1">Matériel</h3>
           <p className="text-sm text-slate-500">
             {equipmentAlerts > 0 ? `${equipmentAlerts} joueurs nécessitent une révision.` : 'Tout le matériel est opérationnel.'}
           </p>
         </div>
 
-        {/* Exercice du jour */}
         <div 
           onClick={() => setView('library')}
           className="p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm hover:border-accent cursor-pointer transition-all group"
@@ -187,7 +204,6 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
           <p className="text-sm text-slate-500 truncate">{dailyExercise.name}</p>
         </div>
 
-        {/* Assistant IA */}
         <div 
           onClick={() => { setCurrentSession({...EMPTY_SESSION, name: 'Séance Surprise IA'}); setView('sessions'); }}
           className="p-6 rounded-[2rem] bg-slate-900 text-white shadow-xl hover:bg-slate-800 cursor-pointer transition-all group"
@@ -248,13 +264,20 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-900 truncate">{group.activeData.theme}</p>
-                          <p className="text-xs text-slate-500 line-clamp-1">{group.activeData.notes}</p>
+                          {group.activeData.nextSessionName && (
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg mt-1 border border-orange-100 w-fit max-w-full">
+                                  <BookOpen size={12} className="flex-shrink-0" />
+                                  <span className="truncate">Séance : {group.activeData.nextSessionName}</span>
+                              </div>
+                          )}
+                          <p className="text-xs text-slate-500 line-clamp-1 mt-1 italic">{group.activeData.notes}</p>
                         </div>
                         <button 
-                          onClick={() => { setCurrentSession({...EMPTY_SESSION, name: `${group.label} - S${group.activeData?.weekNum} - ${group.activeData?.theme || 'Entraînement'}`}); setView('sessions'); }}
-                          className="p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-90"
+                          onClick={() => handleLaunchSession(group)}
+                          title={group.activeData.nextSessionName ? `Lancer : ${group.activeData.nextSessionName}` : "Lancer l'entraînement"}
+                          className="p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-90 flex-shrink-0"
                         >
                           <PlayCircle size={20} />
                         </button>
