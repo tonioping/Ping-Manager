@@ -33,12 +33,15 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
   onUpdateCycle
 }) => {
   const [editingWeek, setEditingWeek] = useState<{cycle: Cycle, weekIndex: number} | null>(null);
+  
+  // États pour l'édition directe (inline)
+  const [editingCycleTitleId, setEditingCycleTitleId] = useState<number | null>(null);
+  const [editingWeekTheme, setEditingWeekTheme] = useState<{cycleId: number, weekIdx: number, val: string} | null>(null);
 
   const handleLinkSession = (session: Session) => {
     if (!editingWeek) return;
     const { cycle, weekIndex } = editingWeek;
     
-    // Create updated weeks array
     const updatedWeeks = [...cycle.weeks];
     updatedWeeks[weekIndex] = {
       ...updatedWeeks[weekIndex],
@@ -67,7 +70,25 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
     setEditingWeek(null);
   };
 
-  // Helper to calculate week date range
+  const saveInlineCycleName = (cycle: Cycle, newName: string) => {
+    if (newName.trim() && newName !== cycle.name) {
+      onUpdateCycle({ ...cycle, name: newName.trim() });
+    }
+    setEditingCycleTitleId(null);
+  };
+
+  const saveInlineWeekTheme = (cycle: Cycle) => {
+    if (!editingWeekTheme) return;
+    const { weekIdx, val } = editingWeekTheme;
+    
+    if (val !== cycle.weeks[weekIdx].theme) {
+        const updatedWeeks = [...cycle.weeks];
+        updatedWeeks[weekIdx] = { ...updatedWeeks[weekIdx], theme: val.trim() };
+        onUpdateCycle({ ...cycle, weeks: updatedWeeks });
+    }
+    setEditingWeekTheme(null);
+  };
+
   const getWeekRange = (startDateStr: string, weekIndex: number) => {
     if (!startDateStr) return '';
     const [y, m, d] = startDateStr.split('-').map(Number);
@@ -85,17 +106,16 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-          <CalendarDays className="text-accent"/> Planification Annuel
+          <CalendarDays className="text-accent"/> Planification Annuelle
         </h2>
         <button 
           onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '', group: '' })} 
-          className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg"
+          className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"
         >
-          <Plus size={18} /> Nouveau
+          <Plus size={18} /> Nouveau Cycle
         </button>
       </div>
 
-      {/* MODAL SELECTION SEANCE */}
       {editingWeek && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
@@ -243,10 +263,26 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
               <div className={`absolute -left-[29px] top-6 w-6 h-6 rounded-full border-4 border-white shadow-sm ${cycleTypeConfig.color.split(' ')[0]} z-10`}></div>
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all group">
                 <div className={`p-4 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-start ${cycleTypeConfig.color.replace('text-', 'bg-').replace('800', '50')}`}>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <span className={`text-xl`}>{cycleTypeConfig.icon}</span>
-                      <h3 className="text-lg font-bold text-slate-800">{cycle.name}</h3>
+                      {editingCycleTitleId === cycle.id ? (
+                        <input 
+                            autoFocus
+                            className="text-lg font-bold text-slate-800 bg-white border border-accent rounded px-2 outline-none w-full max-w-md shadow-inner"
+                            defaultValue={cycle.name}
+                            onBlur={(e) => saveInlineCycleName(cycle, e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && saveInlineCycleName(cycle, e.currentTarget.value)}
+                        />
+                      ) : (
+                        <h3 
+                            onClick={() => setEditingCycleTitleId(cycle.id)}
+                            className="text-lg font-bold text-slate-800 cursor-pointer hover:text-accent flex items-center gap-2 group/title"
+                        >
+                            {cycle.name}
+                            <Pencil size={12} className="opacity-0 group-hover/title:opacity-100 text-slate-400 transition-opacity" />
+                        </h3>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500 font-medium flex-wrap">
                       <span className="flex items-center gap-1"><CalendarIcon size={12}/> {new Date(cycle.startDate).toLocaleDateString()}</span>
@@ -266,7 +302,6 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                 </div>
                 {cycle.objectives && (<div className="px-6 py-3 bg-slate-50/50 border-b border-slate-100 text-sm text-slate-600 italic">"{cycle.objectives}"</div>)}
                 <div className="p-4">
-                  {/* GRID SYSTEM: 6 WEEKS PER LINE */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {cycle.weeks.map((week, i) => (
                       <div 
@@ -286,7 +321,33 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                             {getWeekRange(cycle.startDate, i)}
                           </span>
                         </div>
-                        <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight" title={week.theme}>{week.theme || 'Non défini'}</p>
+                        
+                        <div className="relative group/theme flex-1 mt-1 flex flex-col">
+                            {editingWeekTheme?.cycleId === cycle.id && editingWeekTheme?.weekIdx === i ? (
+                                <input 
+                                    autoFocus
+                                    className="text-xs font-bold text-slate-800 bg-white border border-accent rounded px-1 outline-none w-full"
+                                    value={editingWeekTheme.val}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => setEditingWeekTheme({...editingWeekTheme, val: e.target.value})}
+                                    onBlur={() => saveInlineWeekTheme(cycle)}
+                                    onKeyDown={(e) => e.key === 'Enter' && saveInlineWeekTheme(cycle)}
+                                />
+                            ) : (
+                                <div 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingWeekTheme({ cycleId: cycle.id, weekIdx: i, val: week.theme });
+                                    }}
+                                    className="flex items-start justify-between gap-1 group/text"
+                                >
+                                    <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight" title={week.theme}>
+                                        {week.theme || 'Non défini'}
+                                    </p>
+                                    <Pencil size={10} className="text-slate-300 opacity-0 group-hover/text:opacity-100 transition-opacity flex-shrink-0 mt-1" />
+                                </div>
+                            )}
+                        </div>
                         
                         {week.sessionName ? (
                             <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded border border-orange-200 truncate">
