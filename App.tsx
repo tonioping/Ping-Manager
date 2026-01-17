@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } fr
 import { 
   Calendar as CalendarIcon, Plus, Save, Filter, X, 
   Clock, Target, Bot, Search, Menu, SaveAll, Sparkles, User, CheckCircle, AlertCircle,
-  CreditCard, Award, UserCircle, Minus, Check, Settings, LogIn, LogOut, Loader2, Box
+  CreditCard, Award, UserCircle, Minus, Check, Settings, LogIn, LogOut, Loader2, Box, Pencil
 } from 'lucide-react';
 
 import { Exercise, Session, Cycle, View, PhaseId, AIConfig, CoachProfile, CycleType, Player, PlayerEvaluation, Skill } from './types';
@@ -61,13 +61,16 @@ export default function App() {
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
 
   // Forms State
-  const [newExercise, setNewExercise] = useState<Omit<Exercise, 'id'> | null>(null);
+  // CHANGED: Allow partial exercise (for creation) or full exercise (for edit)
+  const [newExercise, setNewExercise] = useState<Partial<Exercise> | null>(null);
   const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
   const [cycleToDelete, setCycleToDelete] = useState<number | null>(null);
   
   // Library Filtering
   const [libSearch, setLibSearch] = useState('');
   const [libFilterPanier, setLibFilterPanier] = useState(false);
+  const [libFilterPhase, setLibFilterPhase] = useState<string>('all');
+  const [libFilterSub, setLibFilterSub] = useState<string>('all');
   
   // AI State
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -76,6 +79,7 @@ export default function App() {
 
   // Refs
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null); // Pour le scroll automatique
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -177,11 +181,15 @@ export default function App() {
   }, [session, showAuth]);
 
   // --- PERSISTENCE LOGIC (Condensed) ---
-  const persistExercises = async (newExercises: Exercise[], newItem?: Exercise) => {
+  const persistExercises = async (newExercises: Exercise[], itemToSave?: Exercise) => {
      setExercises(newExercises); 
-     if (supabase && newItem) {
+     if (supabase && itemToSave) {
          const { data: { user } } = await supabase.auth.getUser();
-         if (user) { await supabase.from('custom_exercises').insert({ ...newItem, user_id: user.id }); showToast("Exercice sauvegardé (Cloud)"); } 
+         if (user) { 
+             // CHANGED: Use upsert instead of insert to handle edits
+             await supabase.from('custom_exercises').upsert({ ...itemToSave, user_id: user.id }); 
+             showToast("Exercice sauvegardé (Cloud)"); 
+         } 
          else { localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises)); showToast("Exercice sauvegardé (Local)"); }
      } else { localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises)); showToast("Exercice sauvegardé (Local)"); }
   };
@@ -419,7 +427,30 @@ export default function App() {
     await persistCycles(updatedCycles, updatedCycle);
   }, [cycles]);
 
-  const addNewExercise = async () => { if (!newExercise || !newExercise.name) { showToast("Nom requis.", 'error'); return; } const exercise: Exercise = { ...newExercise, id: `custom_${Date.now()}` } as Exercise; await persistExercises([...exercises, exercise], exercise); setNewExercise(null); };
+  // CHANGED: Unified function to Create OR Update exercise
+  const handleSaveExercise = async () => { 
+      if (!newExercise || !newExercise.name) { 
+          showToast("Nom requis.", 'error'); 
+          return; 
+      } 
+      
+      let exerciseToSave: Exercise;
+      let updatedList: Exercise[];
+
+      if ('id' in newExercise && newExercise.id) {
+          // UPDATE EXISTING
+          exerciseToSave = newExercise as Exercise;
+          updatedList = exercises.map(ex => ex.id === exerciseToSave.id ? exerciseToSave : ex);
+      } else {
+          // CREATE NEW
+          exerciseToSave = { ...newExercise, id: `custom_${Date.now()}` } as Exercise;
+          updatedList = [...exercises, exerciseToSave];
+      }
+
+      await persistExercises(updatedList, exerciseToSave); 
+      setNewExercise(null); 
+  };
+
   const handleRefineDescription = async () => { if (!newExercise?.description) return; setIsLoadingAI(true); const refinedDesc = await refineExerciseDescription(newExercise.description); setNewExercise(prev => prev ? {...prev, description: refinedDesc} : null); setIsLoadingAI(false); };
   const handleSuggestExercises = async () => { if (!currentSession.name) { showToast("Nommez la séance d'abord !", 'error'); return; } setIsLoadingAI(true); try { const allExercises = Object.values(currentSession.exercises).flat().filter(e => e) as Exercise[]; const suggestions = await suggestExercises(currentSession.name, allExercises.map(e => e.name)); if (suggestions) { setSuggestedExercises(suggestions.map((s: SuggestedExercise) => ({ ...s, phase: 'technique', id: `ai_${Date.now()}_${Math.random()}` }))); setShowSuggestionsModal(true); } else { showToast("Aucune suggestion IA.", 'error'); } } catch (error) { console.error(error); showToast("Erreur IA: " + (error as Error).message, 'error'); } finally { setIsLoadingAI(false); } };
   
@@ -438,11 +469,31 @@ export default function App() {
   // Filter logic for Library View
   const filteredLibrary = useMemo(() => {
       return exercises.filter(ex => {
+          // 1. Filter Phase
+          if (libFilterPhase !== 'all' && ex.phase !== libFilterPhase) return false;
+          
+          // 2. Filter Panier
           if (libFilterPanier && ex.material !== 'Panier de balles') return false;
+          
+          // 3. Filter Search (Text)
           if (libSearch && !ex.name.toLowerCase().includes(libSearch.toLowerCase())) return false;
+
+          // 4. NEW: Filter Sub-Categories (Technique specific)
+          if (libFilterPhase === 'technique' && libFilterSub !== 'all') {
+             const searchStr = (ex.name + ' ' + (ex.theme || '') + ' ' + ex.description).toLowerCase();
+             
+             if (libFilterSub === 'cd') return searchStr.includes('coup droit') || searchStr.includes(' cd ') || searchStr.endsWith(' cd'); 
+             if (libFilterSub === 'rv') return searchStr.includes('revers') || searchStr.includes(' rv ') || searchStr.endsWith(' rv');
+             if (libFilterSub === 'bloc') return searchStr.includes('bloc');
+             if (libFilterSub === 'poussette') return searchStr.includes('poussette');
+             if (libFilterSub === 'flip') return searchStr.includes('flip') || searchStr.includes('chiquita') || searchStr.includes('banane');
+             if (libFilterSub === 'defense') return searchStr.includes('défense') || searchStr.includes('contre-initiative') || searchStr.includes('balle haute');
+             if (libFilterSub === 'pivot') return searchStr.includes('pivot');
+          }
+
           return true;
       });
-  }, [exercises, libSearch, libFilterPanier]);
+  }, [exercises, libSearch, libFilterPanier, libFilterPhase, libFilterSub]);
 
   const activeCycleData = useMemo(() => {
     const now = new Date(); now.setHours(0, 0, 0, 0); 
@@ -570,17 +621,48 @@ export default function App() {
                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none"
                         />
                     </div>
+                    
+                    <select
+                        value={libFilterPhase}
+                        onChange={(e) => { setLibFilterPhase(e.target.value); setLibFilterSub('all'); }}
+                        className="w-full sm:w-auto p-2 border border-slate-200 rounded-lg text-slate-700 bg-white focus:ring-2 focus:ring-accent/20 outline-none text-sm font-medium h-[42px]"
+                    >
+                        <option value="all">Toutes les phases</option>
+                        {PHASES.map(p => (
+                            <option key={p.id} value={p.id}>{p.label}</option>
+                        ))}
+                    </select>
+                    
+                    {libFilterPhase === 'technique' && (
+                        <select
+                            value={libFilterSub}
+                            onChange={(e) => setLibFilterSub(e.target.value)}
+                            className="w-full sm:w-auto p-2 border border-slate-200 rounded-lg text-slate-700 bg-white focus:ring-2 focus:ring-accent/20 outline-none text-sm font-medium h-[42px] animate-fade-in"
+                        >
+                            <option value="all">Tout Technique</option>
+                            <option value="cd">Coup Droit</option>
+                            <option value="rv">Revers</option>
+                            <option value="bloc">Bloc</option>
+                            <option value="poussette">Poussette</option>
+                            <option value="flip">Flip</option>
+                            <option value="defense">Défense</option>
+                            <option value="pivot">Pivot</option>
+                        </select>
+                    )}
+
                     <button 
                         onClick={() => setLibFilterPanier(!libFilterPanier)}
-                        className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all border ${libFilterPanier ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                        className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all border whitespace-nowrap h-[42px] ${libFilterPanier ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
                     >
-                        <Box size={16} /> {libFilterPanier ? 'Panier (Actif)' : 'Voir Panier de balles'}
+                        <Box size={16} /> {libFilterPanier ? 'Panier (Actif)' : 'Voir Panier'}
                     </button>
                 </div>
 
                 {newExercise && (
-                    <div className="mb-8 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 animate-fade-in shadow-inner">
-                        <h3 className="font-bold text-lg text-slate-800 mb-4">Nouvel Exercice</h3>
+                    <div ref={formRef} className="mb-8 p-6 bg-slate-50 rounded-xl border border-dashed border-slate-300 animate-fade-in shadow-inner scroll-mt-24">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">
+                            {('id' in newExercise && newExercise.id) ? 'Modifier l\'exercice' : 'Nouvel Exercice'}
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <input type="text" placeholder="Nom de l'exercice" className="p-3 border rounded-lg col-span-2 text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none" value={newExercise.name} onChange={e => setNewExercise({...newExercise, name: e.target.value})}/>
                             <select className="p-3 border rounded-lg text-slate-900 bg-white" value={newExercise.phase} onChange={e => setNewExercise({...newExercise, phase: e.target.value as PhaseId})}>{PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
@@ -601,7 +683,9 @@ export default function App() {
                                 <GeminiButton onClick={handleRefineDescription} isLoading={isLoadingAI} className="!text-xs !py-2 !px-3">Améliorer (IA)</GeminiButton>
                                 <div className="flex gap-2">
                                     <button onClick={() => setNewExercise(null)} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium transition">Annuler</button>
-                                    <button onClick={addNewExercise} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold shadow-lg hover:bg-slate-800 transition">Enregistrer</button>
+                                    <button onClick={handleSaveExercise} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold shadow-lg hover:bg-slate-800 transition">
+                                        {('id' in newExercise && newExercise.id) ? 'Modifier' : 'Enregistrer'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -610,7 +694,7 @@ export default function App() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredLibrary.map(ex => (
-                        <div key={ex.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition-all group relative overflow-hidden">
+                        <div key={ex.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg transition-all group relative overflow-hidden flex flex-col">
                             {ex.material === 'Panier de balles' && (
                                 <div className="absolute -right-4 -top-4 bg-blue-600 text-white p-8 rotate-45 transform origin-center shadow-lg">
                                     <Box size={20} className="-rotate-45 relative top-1 left-[-2px]" />
@@ -618,13 +702,26 @@ export default function App() {
                             )}
                             
                             <div className="mb-4">
-                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mb-2 inline-block ${PHASES.find(p => p.id === ex.phase)?.color}`}>
-                                    {PHASES.find(p => p.id === ex.phase)?.label}
-                                </span>
+                                <div className="flex justify-between items-start">
+                                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mb-2 inline-block ${PHASES.find(p => p.id === ex.phase)?.color}`}>
+                                        {PHASES.find(p => p.id === ex.phase)?.label}
+                                    </span>
+                                    <button 
+                                        onClick={() => {
+                                            setNewExercise(ex);
+                                            // Scroll smoothly to form
+                                            setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                                        }}
+                                        className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-full hover:text-accent transition"
+                                        title="Modifier"
+                                    >
+                                        <Pencil size={16} />
+                                    </button>
+                                </div>
                                 <h3 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-accent transition-colors">{ex.name}</h3>
                             </div>
                             
-                            <p className="text-sm text-slate-500 mb-6 line-clamp-3 leading-relaxed">{ex.description}</p>
+                            <p className="text-sm text-slate-500 mb-6 line-clamp-3 leading-relaxed flex-1">{ex.description}</p>
                             
                             <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-auto">
                                 <div className="flex items-center gap-2 text-xs font-bold text-slate-600">

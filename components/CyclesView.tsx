@@ -67,6 +67,20 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
     setEditingWeek(null);
   };
 
+  // Helper to calculate week date range
+  const getWeekRange = (startDateStr: string, weekIndex: number) => {
+    if (!startDateStr) return '';
+    const [y, m, d] = startDateStr.split('-').map(Number);
+    const start = new Date(y, m - 1, d);
+    start.setDate(start.getDate() + (weekIndex * 7));
+    
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+
+    const f = (date: Date) => `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    return `du ${f(start)} au ${f(end)}`;
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
@@ -176,20 +190,25 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
               <div className="space-y-4">
                 {currentCycle.weeks.map((week, idx) => (
                   <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:border-accent/50">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div>
-                      <h4 className="font-bold text-slate-700 text-lg">Semaine {week.weekNumber}</h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div>
+                        <h4 className="font-bold text-slate-700 text-lg">Semaine {week.weekNumber}</h4>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 italic">
+                        {getWeekRange(currentCycle.startDate, idx)}
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Thème Technique</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Thème Technique</label>
                         <div className="relative">
                           <input type="text" placeholder="Ex: Topspin Revers" value={week.theme} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], theme: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"/>
                           <Edit3 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Notes & Objectifs</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Notes & Objectifs</label>
                         <textarea placeholder="Points clés à travailler..." value={week.notes} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], notes: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} rows={2} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all resize-none"/>
                       </div>
                     </div>
@@ -253,14 +272,19 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                       <div 
                         key={i} 
                         onClick={() => setEditingWeek({cycle, weekIndex: i})}
-                        className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col h-28 justify-between hover:border-accent hover:bg-white hover:shadow-sm cursor-pointer transition-all relative group/week"
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col h-32 justify-between hover:border-accent hover:bg-white hover:shadow-sm cursor-pointer transition-all relative group/week"
                       >
                         <div className="absolute top-2 right-2 text-slate-300 group-hover/week:text-accent transition-colors">
                             <Link size={14} />
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sem {week.weekNumber}</span>
-                          {week.theme && <div className={`w-1.5 h-1.5 rounded-full ${cycleTypeConfig.color.split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></div>}
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sem {week.weekNumber}</span>
+                            {week.theme && <div className={`w-1.5 h-1.5 rounded-full ${cycleTypeConfig.color.split(' ')[0].replace('bg-', 'bg-').replace('100', '500')}`}></div>}
+                          </div>
+                          <span className="text-[9px] text-slate-400 font-medium">
+                            {getWeekRange(cycle.startDate, i)}
+                          </span>
                         </div>
                         <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight" title={week.theme}>{week.theme || 'Non défini'}</p>
                         
