@@ -117,17 +117,11 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
     setView('sessions');
   };
 
-  const dailyExercise = useMemo(() => {
-      const today = new Date();
-      const index = (today.getFullYear() * 1000 + today.getDay()) % INITIAL_EXERCISES.length;
-      return INITIAL_EXERCISES[index];
-  }, []);
-
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12 px-2 md:px-0">
       
       {/* --- HEADER --- */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm overflow-visible">
         <div className="flex items-center gap-6">
           <FashionLogo />
           <div>
@@ -153,9 +147,9 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
 
       {/* --- ACCÈS DIRECT 1-CLIC (HERO) --- */}
       {priorityAction && (
-        <div className="relative group overflow-hidden bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl border border-slate-800 transition-all hover:shadow-orange-500/10">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
-            <Rocket size={200} className="rotate-12" />
+        <div className="relative group bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl border border-slate-800 transition-all hover:shadow-orange-500/10 overflow-visible">
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700 overflow-hidden rounded-[3rem] w-full h-full">
+            <Rocket size={200} className="rotate-12 absolute -right-10 top-0" />
           </div>
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="text-center md:text-left space-y-4">
@@ -198,8 +192,8 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groupsStatus.map((group) => (
-            <div key={group.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:shadow-xl transition-all group/card">
-              <div className={`h-24 flex items-center justify-between px-8 ${group.color.split(' ')[0]}`}>
+            <div key={group.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col hover:shadow-xl transition-all group/card overflow-visible">
+              <div className={`h-24 flex items-center justify-between px-8 rounded-t-[2.5rem] ${group.color.split(' ')[0]}`}>
                 <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-lg group-hover/card:scale-110 transition-transform">
                   <span className="text-xl font-black text-slate-900">{group.label[0]}</span>
                 </div>
@@ -262,10 +256,10 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
           <button 
             key={i} 
             onClick={() => setView(item.view as View)} 
-            className={`relative p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:border-accent transition-all flex flex-col gap-4 group text-left ${item.color === 'slate' ? 'bg-slate-900 text-white border-slate-800' : ''}`}
+            className={`relative p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:border-accent transition-all flex flex-col gap-4 group text-left overflow-visible ${item.color === 'slate' ? 'bg-slate-900 text-white border-slate-800' : ''}`}
           >
-            <div className="absolute top-4 right-4">
-              <InfoBubble content={item.help} />
+            <div className="absolute top-4 right-4 z-20">
+              <InfoBubble content={item.help} position="top" />
             </div>
             <div className={`p-4 rounded-2xl w-fit group-hover:scale-110 transition-transform ${item.color === 'slate' ? 'bg-accent text-white' : `bg-${item.color}-50 text-${item.color}-600`}`}>
               <item.icon size={24}/>
