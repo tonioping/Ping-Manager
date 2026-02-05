@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Session, Cycle, Player, CoachProfile, View, Exercise } from '../types';
 import { EMPTY_SESSION, GROUPS, INITIAL_EXERCISES } from '../constants';
+import { InfoBubble } from './InfoBubble';
 
 interface DashboardViewProps {
   coachProfile: CoachProfile;
@@ -93,10 +94,8 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   }, [cycles]);
 
   const priorityAction = useMemo(() => {
-    // On cherche d'abord s'il y a une séance prête
     const ready = groupsStatus.find(g => g.activeData && g.activeData.nextSessionId);
     if (ready) return ready;
-    // Sinon on cherche un cycle en cours sans séance liée
     return groupsStatus.find(g => g.activeData && !g.activeData.isFinished) || null;
   }, [groupsStatus]);
 
@@ -109,7 +108,6 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             return;
         }
     }
-    // Création 1-clic intelligente
     const newSessionName = `${group.label} - Semaine ${group.activeData?.weekNum} - ${group.activeData?.theme || 'Entraînement'}`;
     setCurrentSession({
         ...EMPTY_SESSION, 
@@ -163,6 +161,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             <div className="text-center md:text-left space-y-4">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white text-[10px] font-black tracking-widest uppercase">
                 <Zap size={12} fill="currentColor" /> Action Prioritaire
+                <InfoBubble content="Cette carte détecte automatiquement la séance prévue dans votre planning pour aujourd'hui." position="right" className="ml-1" />
               </div>
               <h2 className="text-4xl font-black leading-none tracking-tight">
                 {priorityAction.label} <span className="text-accent italic">Sem. {priorityAction.activeData?.weekNum}</span>
@@ -180,7 +179,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
               </div>
               <div className="text-left">
                  <div className="leading-none tracking-tighter uppercase">{priorityAction.activeData?.nextSessionId ? 'LANCER' : 'PRÉPARER'}</div>
-                 <div className="text-[10px] opacity-70 font-black tracking-[0.2em] mt-1 uppercase">1-CLIC ACCÈS</div>
+                 <div className="text-[10px] opacity-70 font-black tracking-[0.2em] mt-1 uppercase">ACCÈS DIRECT</div>
               </div>
             </button>
           </div>
@@ -190,7 +189,10 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       {/* --- GRILLE DES GROUPES --- */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-4">
-          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Suivi des cycles</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Suivi des cycles</h2>
+            <InfoBubble content="Suivez ici l'avancement de vos groupes par rapport à vos objectifs annuels." />
+          </div>
           <button onClick={() => setView('calendar')} className="text-[10px] font-black text-slate-400 hover:text-accent tracking-widest uppercase">Voir planning complet</button>
         </div>
 
@@ -252,16 +254,19 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       {/* --- RACCOURCIS RAPIDES --- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Exercices', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo' },
-          { label: 'Joueurs', sub: `${players.length} suivis`, icon: Users, view: 'players', color: 'emerald' },
-          { label: 'Historique', sub: 'Archives', icon: Clock, view: 'history', color: 'blue' },
-          { label: 'Version Pro', sub: 'Cloud & IA', icon: Trophy, view: 'subscription', color: 'slate' },
+          { label: 'Exercices', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo', help: 'Retrouvez tous les exercices classiques et vos propres créations.' },
+          { label: 'Joueurs', sub: `${players.length} suivis`, icon: Users, view: 'players', color: 'emerald', help: 'Gérez les fiches techniques, le matériel et la progression de vos joueurs.' },
+          { label: 'Historique', sub: 'Archives', icon: Clock, view: 'history', color: 'blue', help: 'Consultez et réutilisez vos anciennes séances d\'entraînement.' },
+          { label: 'Version Pro', sub: 'Cloud & IA', icon: Trophy, view: 'subscription', color: 'slate', help: 'Débloquez la synchronisation cloud et les outils avancés de Gemini.' },
         ].map((item, i) => (
           <button 
             key={i} 
             onClick={() => setView(item.view as View)} 
-            className={`p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:border-accent transition-all flex flex-col gap-4 group text-left ${item.color === 'slate' ? 'bg-slate-900 text-white border-slate-800' : ''}`}
+            className={`relative p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:border-accent transition-all flex flex-col gap-4 group text-left ${item.color === 'slate' ? 'bg-slate-900 text-white border-slate-800' : ''}`}
           >
+            <div className="absolute top-4 right-4">
+              <InfoBubble content={item.help} />
+            </div>
             <div className={`p-4 rounded-2xl w-fit group-hover:scale-110 transition-transform ${item.color === 'slate' ? 'bg-accent text-white' : `bg-${item.color}-50 text-${item.color}-600`}`}>
               <item.icon size={24}/>
             </div>

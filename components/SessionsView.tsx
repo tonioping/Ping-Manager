@@ -4,6 +4,7 @@ import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box }
 import { Exercise, Session, PhaseId } from '../types';
 import { PHASES } from '../constants';
 import { GeminiButton } from './GeminiButton';
+import { InfoBubble } from './InfoBubble';
 
 interface SessionsViewProps {
   exercises: Exercise[];
@@ -36,38 +37,19 @@ const PhaseDropZone = React.memo(({ phase, exercises, onDrop, onRemove }: any) =
           {safeExercises.reduce((acc: number, ex: Exercise) => acc + (ex?.duration || 0), 0)} / {phase.duration} min
         </span>
       </div>
-
       <div className="space-y-3">
         {safeExercises.length === 0 ? (
-          <div className="h-16 flex items-center justify-center text-slate-400 italic text-sm">
-            Glissez des exercices ici
-          </div>
+          <div className="h-16 flex items-center justify-center text-slate-400 italic text-sm">Glissez des exercices ici</div>
         ) : (
           safeExercises.filter((ex: Exercise) => ex).map((ex: Exercise) => (
-            <div key={ex.instanceId} className="group bg-white p-3 rounded-xl shadow-sm border border-slate-100 hover:border-orange-200 hover:shadow-md transition-all flex items-start gap-3 relative">
-               <div className="mt-1 p-1.5 bg-slate-50 rounded-lg text-slate-400">
-                  <Target size={14} />
-               </div>
+            <div key={ex.instanceId} className="group bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex items-start gap-3 relative">
                <div className="flex-1 min-w-0 pr-6">
                  <div className="font-semibold text-slate-800 truncate">{ex.name}</div>
-                 <div className="text-xs text-slate-500 line-clamp-2 mt-0.5">{ex.description}</div>
                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-xs font-bold text-accent flex items-center gap-1 bg-orange-50 px-2 py-0.5 rounded">
-                      <Clock size={12} /> {ex.duration} min
-                    </span>
-                    {ex.material === 'Panier de balles' && (
-                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded flex items-center gap-1 border border-blue-100">
-                        <Box size={10} /> Panier
-                      </span>
-                    )}
+                    <span className="text-xs font-bold text-accent flex items-center gap-1 bg-orange-50 px-2 py-0.5 rounded"><Clock size={12} /> {ex.duration} min</span>
                  </div>
                </div>
-               <button 
-                onClick={() => onRemove(phase.id, ex.instanceId)}
-                className="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition-colors p-1"
-               >
-                 <X size={18} />
-               </button>
+               <button onClick={() => onRemove(phase.id, ex.instanceId)} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition-colors p-1"><X size={18} /></button>
             </div>
           ))
         )}
@@ -85,16 +67,10 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   isLoadingAI,
   totalDuration
 }) => {
-  // Local state for filtering and Mobile UI
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPhase, setFilterPhase] = useState('all');
   const [filterMaterial, setFilterMaterial] = useState<'all' | 'panier'>('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
-  
-  // Tooltip State
-  const [tooltip, setTooltip] = useState<{x: number, y: number, content: string} | null>(null);
-  
-  // Mobile Tab State: 'session' displayed by default to see content immediately
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
 
   const filteredExercises = useMemo(() => {
@@ -104,9 +80,7 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
         if (filterMaterial === 'panier' && ex.material !== 'Panier de balles') return false;
         if (searchTerm) { 
             const term = searchTerm.toLowerCase(); 
-            const matchName = ex.name ? ex.name.toLowerCase().includes(term) : false; 
-            const matchTheme = ex.theme ? ex.theme.toLowerCase().includes(term) : false; 
-            if (!matchName && !matchTheme) return false; 
+            if (!ex.name.toLowerCase().includes(term)) return false; 
         } 
         return true; 
     });
@@ -116,179 +90,62 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   
   const handleDrop = useCallback((phaseId: PhaseId) => { 
       if (draggedExercise) { 
-          setCurrentSession(prev => ({ 
-            ...prev, 
-            exercises: { 
-              ...prev.exercises, 
-              [phaseId]: [...(prev.exercises[phaseId] || []), { ...draggedExercise, instanceId: Date.now() }] 
-            } 
-          })); 
+          setCurrentSession(prev => ({ ...prev, exercises: { ...prev.exercises, [phaseId]: [...(prev.exercises[phaseId] || []), { ...draggedExercise, instanceId: Date.now() }] } })); 
           setDraggedExercise(null); 
       } 
   }, [draggedExercise, setCurrentSession]);
 
-  // Mobile: Add exercise directly to its default phase on click
   const handleDirectAdd = (exercise: Exercise) => {
-     setCurrentSession(prev => ({
-         ...prev,
-         exercises: {
-             ...prev.exercises,
-             [exercise.phase]: [...(prev.exercises[exercise.phase] || []), { ...exercise, instanceId: Date.now() }]
-         }
-     }));
-     // Optional: Feedback or switch tab
-     // setActiveTab('session'); 
+     setCurrentSession(prev => ({ ...prev, exercises: { ...prev.exercises, [exercise.phase]: [...(prev.exercises[exercise.phase] || []), { ...exercise, instanceId: Date.now() }] } }));
   };
 
   const removeExerciseFromSession = useCallback((phaseId: PhaseId, instanceId: number) => { 
-      setCurrentSession(prev => ({ 
-        ...prev, 
-        exercises: { 
-          ...prev.exercises, 
-          [phaseId]: (prev.exercises[phaseId] || []).filter(ex => ex.instanceId !== instanceId) 
-        } 
-      })); 
+      setCurrentSession(prev => ({ ...prev, exercises: { ...prev.exercises, [phaseId]: (prev.exercises[phaseId] || []).filter(ex => ex.instanceId !== instanceId) } })); 
   }, [setCurrentSession]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] lg:h-[calc(100vh-100px)] relative">
-      
-      {/* TOOLTIP RENDERER */}
-      {tooltip && (
-        <div 
-          className="fixed z-[100] bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl max-w-xs pointer-events-none animate-fade-in border border-slate-700 leading-relaxed"
-          style={{ top: tooltip.y + 15, left: Math.min(tooltip.x + 15, window.innerWidth - 320) }}
-        >
-          {tooltip.content}
-        </div>
-      )}
-
-      {/* MOBILE TABS */}
       <div className="lg:hidden flex p-1 mx-4 mb-2 bg-slate-200 rounded-xl">
-        <button 
-            onClick={() => setActiveTab('library')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${activeTab === 'library' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-            <List size={16}/> Bibliothèque
-        </button>
-        <button 
-            onClick={() => setActiveTab('session')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${activeTab === 'session' ? 'bg-white text-accent shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-            <Layers size={16}/> Ma Séance
-        </button>
+        <button onClick={() => setActiveTab('library')} className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-2 ${activeTab === 'library' ? 'bg-white shadow-sm' : 'text-slate-500'}`}><List size={16}/> Biblio</button>
+        <button onClick={() => setActiveTab('session')} className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-2 ${activeTab === 'session' ? 'bg-white shadow-sm' : 'text-slate-500'}`}><Layers size={16}/> Séance</button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden">
-        
-        {/* LEFT PANEL: LIBRARY (Hidden on mobile if tab is session) */}
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden px-4 md:px-0">
         <div className={`w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${activeTab === 'session' ? 'hidden lg:flex' : 'flex'}`}>
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-2">
-            <div className="relative">
-                <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                <input 
-                type="text" 
-                placeholder="Rechercher..." 
-                value={searchTerm} 
-                onChange={(e) => setSearchTerm(e.target.value)} 
-                className="w-full pl-9 pr-3 py-2 bg-white border rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none" 
-                />
-            </div>
-            <div className="flex gap-2">
-                <select 
-                    value={filterPhase} 
-                    onChange={(e) => setFilterPhase(e.target.value)} 
-                    className="flex-1 text-xs p-2 border rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-accent/20 outline-none"
-                >
-                    <option value="all">Toutes phases</option>
-                    {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                </select>
-                <button 
-                    onClick={() => setFilterMaterial(prev => prev === 'all' ? 'panier' : 'all')}
-                    className={`p-2 border rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${filterMaterial === 'panier' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                    title="Filtrer Panier de balles"
-                >
-                    <Box size={14} /> Panier
-                </button>
-            </div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bibliothèque</span>
+                <InfoBubble content="Maintenez un exercice et glissez-le dans une zone à droite pour l'ajouter." />
+              </div>
+              <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-2 bg-white border rounded-lg text-sm text-slate-900 outline-none" />
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
             {filteredExercises.map(ex => (
-                <div 
-                key={ex.id} 
-                draggable 
-                onDragStart={() => { handleDragStart(ex); setTooltip(null); }}
-                onMouseEnter={(e) => !draggedExercise && setTooltip({x: e.clientX, y: e.clientY, content: ex.description})}
-                onMouseMove={(e) => !draggedExercise && setTooltip({x: e.clientX, y: e.clientY, content: ex.description})}
-                onMouseLeave={() => setTooltip(null)}
-                className="p-3 bg-white border rounded-xl hover:border-accent cursor-grab active:cursor-grabbing transition-colors group flex justify-between items-center"
-                >
-                <div className="flex-1">
-                    <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-sm text-slate-800 group-hover:text-accent transition-colors">{ex.name}</span>
-                    </div>
-                    <div className="flex gap-1 items-center">
-                        <span className="text-[10px] px-1.5 bg-slate-100 rounded text-slate-500">{PHASES.find(p => p.id === ex.phase)?.label}</span>
-                        {ex.material === 'Panier de balles' && (
-                             <span className="text-[10px] px-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded font-bold flex items-center gap-0.5"><Box size={8}/> PB</span>
-                        )}
-                    </div>
-                </div>
-                {/* Mobile 'Add' Button because Drag&Drop is hard on touch */}
-                <button 
-                    onClick={() => handleDirectAdd(ex)}
-                    className="lg:hidden p-2 bg-slate-50 text-accent rounded-lg border border-slate-200 active:bg-accent active:text-white"
-                >
-                    <Plus size={18}/>
-                </button>
+                <div key={ex.id} draggable onDragStart={() => handleDragStart(ex)} className="p-3 bg-white border rounded-xl hover:border-accent cursor-grab active:cursor-grabbing flex justify-between items-center group">
+                <div className="flex-1"><span className="font-semibold text-sm text-slate-800">{ex.name}</span></div>
+                <button onClick={() => handleDirectAdd(ex)} className="lg:hidden p-2 text-accent"><Plus size={18}/></button>
                 <div className="hidden lg:block text-slate-300"><GripVertical size={16}/></div>
                 </div>
             ))}
             </div>
         </div>
 
-        {/* RIGHT PANEL: SESSION (Hidden on mobile if tab is library) */}
         <div className={`flex-1 flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-slate-200 ${activeTab === 'library' ? 'hidden lg:flex' : 'flex'}`}>
-            <div className="p-4 border-b border-slate-100 bg-white z-10 flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-3 w-full items-start md:items-center">
-                <input 
-                type="text" 
-                placeholder="Nom de la séance" 
-                value={currentSession.name} 
-                onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} 
-                className="flex-1 w-full p-2 text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-accent outline-none text-slate-900 transition-colors placeholder:text-slate-300" 
-                />
-                <input 
-                type="date" 
-                value={currentSession.date} 
-                onChange={(e) => setCurrentSession(prev => ({ ...prev, date: e.target.value }))} 
-                className="w-full md:w-auto p-2 bg-slate-50 rounded-lg text-sm text-slate-600 outline-none border border-transparent focus:border-accent/50 cursor-pointer" 
-                />
+            <div className="p-4 border-b border-slate-100 bg-white z-10">
+              <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-4">
+                  <input type="text" placeholder="Nom de la séance" value={currentSession.name} onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} className="flex-1 w-full p-2 text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-accent outline-none text-slate-900 transition-colors" />
+                  <div className="flex gap-2">
+                      <div className="flex items-center gap-1">
+                        <GeminiButton onClick={handleSuggestExercises} isLoading={isLoadingAI} className="!py-2 !px-3 !text-sm">IA Suggest</GeminiButton>
+                        <InfoBubble content="L'IA analyse le titre de votre séance pour vous proposer 3 exercices originaux et complémentaires." position="left" />
+                      </div>
+                      <button onClick={saveSession} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 shadow-md flex items-center gap-2"><Save size={20}/></button>
+                  </div>
+              </div>
             </div>
-            <div className="flex justify-between items-center w-full">
-                <div className="text-left">
-                    <div className="text-[10px] text-slate-400 uppercase font-bold">Durée</div>
-                    <div className="text-lg font-bold text-emerald-600">{totalDuration} min</div>
-                </div>
-                <div className="flex gap-2">
-                    <GeminiButton onClick={handleSuggestExercises} isLoading={isLoadingAI} className="!py-2 !px-3 !text-sm whitespace-nowrap">
-                    IA Suggest
-                    </GeminiButton>
-                    <button onClick={saveSession} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
-                    <Save size={20}/> <span className="hidden sm:inline font-bold text-sm">Sauvegarder</span>
-                    </button>
-                </div>
-            </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 custom-scrollbar pb-20 lg:pb-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 custom-scrollbar">
             {PHASES.map(phase => (
-                <PhaseDropZone 
-                key={phase.id} 
-                phase={phase} 
-                exercises={currentSession.exercises?.[phase.id] || []} 
-                onDrop={handleDrop} 
-                onRemove={removeExerciseFromSession}
-                />
+                <PhaseDropZone key={phase.id} phase={phase} exercises={currentSession.exercises?.[phase.id] || []} onDrop={handleDrop} onRemove={removeExerciseFromSession} />
             ))}
             </div>
         </div>
