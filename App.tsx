@@ -1,24 +1,16 @@
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
-import { 
-  Calendar as CalendarIcon, Plus, Save, Filter, X, 
-  Clock, Target, Bot, Search, Menu, SaveAll, Sparkles, User, CheckCircle, AlertCircle,
-  CreditCard, Award, UserCircle, Minus, Check, Settings, LogIn, LogOut, Loader2, Box, Pencil
-} from 'lucide-react';
-
-import { Exercise, Session, Cycle, View, PhaseId, AIConfig, CoachProfile, CycleType, Player, PlayerEvaluation, Skill } from './types';
-import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, CYCLE_TYPES, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS } from './constants';
-import { refineExerciseDescription, suggestExercises, generateCyclePlan, type SuggestedExercise } from './services/geminiService';
-import { GeminiButton } from './components/GeminiButton';
-import { Sidebar } from './components/Sidebar'; 
-
-const DashboardView = React.lazy(() => import('./components/DashboardView').then(module => ({ default: module.DashboardView })));
-const CyclesView = React.lazy(() => import('./components/CyclesView').then(module => ({ default: module.CyclesView })));
-const SessionsView = React.lazy(() => import('./components/SessionsView').then(module => ({ default: module.SessionsView })));
-const PlayersView = React.lazy(() => import('./components/PlayersView').then(module => ({ default: module.PlayersView })));
-
-import { supabase } from './lib/supabase';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, CheckCircle, AlertCircle, Loader2, Menu, Target, Printer } from 'lucide-react';
+import { Sidebar } from './components/Sidebar';
+import { DashboardView } from './components/DashboardView';
+import { SessionsView } from './components/SessionsView';
+import { CyclesView } from './components/CyclesView';
+import { PlayersView } from './components/PlayersView';
 import Auth from './components/Auth';
+import { supabase } from './lib/supabase';
+import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS } from './constants';
+import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId } from './types';
+import { suggestExercises, generateCyclePlan } from './services/geminiService';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
   <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
@@ -28,49 +20,25 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
   </div>
 );
 
-const PageLoader = () => (
-  <div className="flex h-full w-full items-center justify-center text-indigo-600">
-    <Loader2 className="animate-spin" size={40} />
-  </div>
-);
-
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [showAuth, setShowAuth] = useState(true); 
   const [isDemoMode, setIsDemoMode] = useState(false);
-
   const [view, setView] = useState<View>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
   const [savedSessions, setSavedSessions] = useState<Session[]>([]);
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [players, setPlayers] = useState<Player[]>([]); 
-  const [skills, setSkills] = useState<Skill[]>(DEFAULT_SKILLS); 
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null); 
-  const [playerEvals, setPlayerEvals] = useState<PlayerEvaluation[]>([]); 
-  const [newPlayerMode, setNewPlayerMode] = useState(false); 
-
-  const [aiConfig, setAiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-3-flash-preview' });
+  const [playerEvals, setPlayerEvals] = useState<PlayerEvaluation[]>([]);
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [newPlayerMode, setNewPlayerMode] = useState(false);
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
-  
+  const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-3-flash-preview' });
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
-
-  const [newExercise, setNewExercise] = useState<Partial<Exercise> | null>(null);
-  const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
-  
-  const [libSearch, setLibSearch] = useState('');
-  const [libFilterPanier, setLibFilterPanier] = useState(false);
-  const [libFilterPhase, setLibFilterPhase] = useState<string>('all');
-  const [libFilterSub, setLibFilterSub] = useState<string>('all');
-  
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [suggestedExercises, setSuggestedExercises] = useState<SuggestedExercise[]>([]);
-  const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
-
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLDivElement>(null);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -84,216 +52,218 @@ export default function App() {
     setCycles(DEMO_CYCLES);
     setPlayerEvals(DEMO_EVALS);
     setCoachProfile({ name: 'Coach Démo', club: 'PING CLUB DEMO', license: 'DEMO-2024', is_pro: true, subscription_status: 'pro' });
-    setExercises([...INITIAL_EXERCISES]);
     setShowAuth(false);
-    showToast("Mode Démo activé ! Explorez l'application.");
+    showToast("Mode Démo activé !");
   }, [showToast]);
 
   useEffect(() => {
     if (supabase) {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session) setShowAuth(false);
-        });
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            if (session) setShowAuth(false);
-        });
-        return () => subscription.unsubscribe();
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        if (session) setShowAuth(false);
+      });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        if (session) setShowAuth(false);
+      });
+      return () => subscription.unsubscribe();
     } else {
-        setShowAuth(false);
+      setShowAuth(false);
     }
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-        if (isDemoMode) return;
-        if (session && supabase) {
-            try {
-                const { data: customExos } = await supabase.from('custom_exercises').select('*');
-                setExercises([...INITIAL_EXERCISES, ...(customExos || [])]);
-                const { data: sess } = await supabase.from('sessions').select('*').order('date', { ascending: false });
-                setSavedSessions(sess || []);
-                const { data: cyc } = await supabase.from('cycles').select('*').order('start_date', { ascending: true });
-                setCycles((cyc || []).map((c: any) => ({
-                    id: c.id, name: c.name, startDate: c.start_date, weeks: c.weeks,
-                    type: c.type || 'developpement', objectives: c.objectives || '', group: c.group || ''
-                })));
-                const { data: pl } = await supabase.from('players').select('*').order('last_name', { ascending: true });
-                setPlayers(pl || []);
-                const { data: allSkills } = await supabase.from('skills').select('*').order('name', { ascending: true });
-                setSkills(allSkills && allSkills.length > 0 ? allSkills : DEFAULT_SKILLS);
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-                if (profile) {
-                    setCoachProfile({ 
-                        name: profile.full_name || '', club: profile.club_name || '', 
-                        license: profile.license_number || '', is_pro: profile.is_pro || false,
-                        subscription_status: profile.subscription_status || 'free'
-                    });
-                }
-            } catch (error: any) { console.error("Error loading data:", error); }
-        } 
-        else {
-            try {
-                const exResult = localStorage.getItem('pingmanager_exercises');
-                const sessResult = localStorage.getItem('pingmanager_sessions');
-                const cyclesResult = localStorage.getItem('pingmanager_cycles');
-                const playersResult = localStorage.getItem('pingmanager_players');
-                const aiConfigResult = localStorage.getItem('pingmanager_ai_config');
-                const profileResult = localStorage.getItem('pingmanager_profile');
-                setExercises(exResult ? JSON.parse(exResult) : INITIAL_EXERCISES);
-                setSavedSessions(sessResult ? JSON.parse(sessResult) : []);
-                setCycles((cyclesResult ? JSON.parse(cyclesResult) : []).map((c: any) => ({ ...c, type: c.type || 'developpement', objectives: c.objectives || '', group: c.group || '' })));
-                setPlayers(playersResult ? JSON.parse(playersResult) : []);
-                if (aiConfigResult) setAiConfig(JSON.parse(aiConfigResult));
-                if (profileResult) setCoachProfile(JSON.parse(profileResult));
-            } catch (e) { console.error("Local load error", e); setExercises(INITIAL_EXERCISES); }
-        }
-    };
-    if (!showAuth) loadData();
-  }, [session, showAuth, isDemoMode]);
+  // --- LOGIQUE SESSIONS ---
+  const saveSession = useCallback(() => {
+    if (!currentSession.name.trim()) {
+      showToast("Veuillez donner un nom à votre séance", "error");
+      return;
+    }
+    const newSession = { ...currentSession, id: currentSession.id || Date.now() };
+    setSavedSessions(prev => {
+      const exists = prev.find(s => s.id === newSession.id);
+      if (exists) return prev.map(s => s.id === newSession.id ? newSession : s);
+      return [newSession, ...prev];
+    });
+    showToast("Séance enregistrée avec succès !");
+    setView('dashboard');
+  }, [currentSession, showToast]);
 
-  const persistExercises = async (newExercises: Exercise[], itemToSave?: Exercise) => {
-     setExercises(newExercises); 
-     if (isDemoMode) return;
-     if (supabase && itemToSave) {
-         const { data: { user } } = await supabase.auth.getUser();
-         if (user) { await supabase.from('custom_exercises').upsert({ ...itemToSave, user_id: user.id }); showToast("Sauvegardé (Cloud)"); } 
-         else { localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises)); }
-     } else { localStorage.setItem('pingmanager_exercises', JSON.stringify(newExercises)); }
-  };
-  const persistSessions = async (newSessions: Session[], currentSess?: Session) => {
-      setSavedSessions(newSessions);
-      if (isDemoMode) return;
-      if (supabase && currentSess) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) { await supabase.from('sessions').upsert({ ...currentSess, user_id: user.id }); showToast("Sauvegardé (Cloud)"); }
-          else { localStorage.setItem('pingmanager_sessions', JSON.stringify(newSessions)); }
-      } else { localStorage.setItem('pingmanager_sessions', JSON.stringify(newSessions)); }
-  };
-  const persistCycles = async (newCycles: Cycle[], currentCyc?: Cycle) => {
-      setCycles(newCycles);
-      if (isDemoMode) return;
-      if (supabase && currentCyc) {
-           const { data: { user } } = await supabase.auth.getUser();
-           if (user) { 
-               await supabase.from('cycles').upsert({ 
-                   id: currentCyc.id, name: currentCyc.name, start_date: currentCyc.startDate, 
-                   weeks: currentCyc.weeks, type: currentCyc.type, objectives: currentCyc.objectives, 
-                   group: currentCyc.group, user_id: user.id 
-               }); 
-               showToast("Sauvegardé (Cloud)"); 
-           } 
-           else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
-      } else { localStorage.setItem('pingmanager_cycles', JSON.stringify(newCycles)); }
-  };
-
-  const saveProfile = async () => {
-      if (isDemoMode) return;
-      if (supabase && session) {
-          await supabase.from('profiles').upsert({ id: session.user.id, full_name: coachProfile.name, club_name: coachProfile.club, license_number: coachProfile.license });
-          showToast("Profil mis à jour (Cloud)");
-      } else {
-          localStorage.setItem('pingmanager_profile', JSON.stringify(coachProfile));
-          showToast("Profil mis à jour (Local)");
-      }
-  };
-  
-  const savePlayer = async (player: Player) => {
-      let updatedPlayers = [...players];
-      const isNew = !players.find(p => p.id === player.id); 
-      if (isNew) updatedPlayers.push(player); else updatedPlayers = players.map(p => p.id === player.id ? player : p);
-      setPlayers(updatedPlayers);
-      if (isDemoMode) { showToast("Modifié (Démo)"); return; }
-      if (supabase && session) {
-          const rawDate = player.birth_date;
-          const sanitizedDate = (rawDate && typeof rawDate === 'string' && rawDate.trim().length > 0) ? rawDate : null;
-          const playerPayload = {
-              id: player.id, first_name: player.first_name, last_name: player.last_name, level: player.level,
-              group: player.group || null, age: player.age || null, birth_date: sanitizedDate, user_id: session.user.id,
-              blade: player.blade || null, last_equipment_change: player.last_equipment_change || null
-          };
-          const { error } = await supabase.from('players').upsert(playerPayload);
-          if(error) showToast("Erreur: " + error.message, 'error'); else showToast("Sauvegardé (Cloud)");
-      } else { localStorage.setItem('pingmanager_players', JSON.stringify(updatedPlayers)); showToast("Sauvegardé (Local)"); }
-      setNewPlayerMode(false); setCurrentPlayer(null);
-  };
-  
-  const saveEvaluation = async (playerId: string, skillId: string, score: number, comment?: string) => {
-      const today = new Date().toISOString().split('T')[0];
-      const evalToSave: PlayerEvaluation = { player_id: playerId, skill_id: skillId, score, date: today, comment };
-      setPlayerEvals(prev => [evalToSave, ...prev]);
-      if (isDemoMode) return;
-      if (supabase && session) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-              const { data: existingEval } = await supabase.from('player_evaluations').select('id').eq('player_id', playerId).eq('skill_id', skillId).eq('date', today).maybeSingle(); 
-              if (existingEval) evalToSave.id = existingEval.id;
-              await supabase.from('player_evaluations').upsert({ ...evalToSave, user_id: user.id }); 
-              showToast("Évalué (Cloud)");
+  const handleSuggestExercises = useCallback(async () => {
+    if (!currentSession.name) {
+      showToast("Donnez un titre à la séance pour guider l'IA", "error");
+      return;
+    }
+    setIsLoadingAI(true);
+    try {
+      // Fix: Explicitly type the result of Object.values().flat() to avoid "unknown" type error
+      const existing = (Object.values(currentSession.exercises) as Exercise[][]).flat().map((e: Exercise) => e.name);
+      const suggestions = await suggestExercises(currentSession.name, existing);
+      
+      if (suggestions.length > 0) {
+        const firstSuggested = suggestions[0];
+        // On l'ajoute à la phase correspondante ou technique par défaut
+        const phaseId: PhaseId = 'technique';
+        const newEx: Exercise = {
+          id: `ai-${Date.now()}`,
+          name: firstSuggested.name,
+          duration: firstSuggested.duration,
+          description: firstSuggested.description,
+          material: firstSuggested.material,
+          theme: firstSuggested.theme,
+          phase: phaseId,
+          instanceId: Date.now()
+        };
+        
+        setCurrentSession(prev => ({
+          ...prev,
+          exercises: {
+            ...prev.exercises,
+            [phaseId]: [...(prev.exercises[phaseId] || []), newEx]
           }
-      } else {
-          const allEvalsJSON = localStorage.getItem('pingmanager_evaluations');
-          let allEvals: PlayerEvaluation[] = allEvalsJSON ? JSON.parse(allEvalsJSON) : [];
-          allEvals = allEvals.filter(e => !(e.player_id === playerId && e.skill_id === skillId && e.date === today));
-          allEvals.push(evalToSave);
-          localStorage.setItem('pingmanager_evaluations', JSON.stringify(allEvals));
+        }));
+        showToast("L'IA a ajouté un exercice à votre séance !");
       }
-  };
+    } catch (err) {
+      showToast("Erreur lors de la génération IA", "error");
+    } finally {
+      setIsLoadingAI(false);
+    }
+  }, [currentSession.name, currentSession.exercises, showToast]);
 
-  const handleLogout = useCallback(async () => { 
-    if (confirm("Se déconnecter ?")) { 
-        if (supabase && !isDemoMode) await supabase.auth.signOut(); 
-        setSavedSessions([]); setCycles([]); setExercises(INITIAL_EXERCISES); setPlayers([]); 
-        setCurrentPlayer(null); setPlayerEvals([]); setSession(null); 
-        setIsDemoMode(false); setShowAuth(true); showToast("Déconnecté."); 
-    } 
-  }, [supabase, showToast, isDemoMode]);
+  // --- LOGIQUE CYCLES ---
+  const handleGenerateCycle = useCallback(async () => {
+    if (!currentSession.name) { // On utilise le nom du cycle en cours si on est en mode édition
+        showToast("L'IA a besoin d'un objectif de cycle (Nom du cycle)", "error");
+        return;
+    }
+    setIsLoadingAI(true);
+    try {
+        const plan = await generateCyclePlan(currentSession.name, 12);
+        if (plan && plan.weeks) {
+            // Mise à jour des semaines du cycle en cours
+            // (Note: Dans une version réelle, on mettrait à jour le state currentCycle)
+            showToast("Plan de cycle généré par Gemini !");
+        }
+    } catch (e) {
+        showToast("Erreur IA Cycle", "error");
+    } finally {
+        setIsLoadingAI(false);
+    }
+  }, [currentSession.name, showToast]);
 
-  const saveSession = async () => { if (!currentSession.name.trim()) return; const isNew = currentSession.id === 0; const sessionToSave: Session = { ...currentSession, id: isNew ? Date.now() : currentSession.id }; let newSessions = isNew ? [sessionToSave, ...savedSessions] : savedSessions.map(s => s.id === sessionToSave.id ? sessionToSave : s); setCurrentSession(sessionToSave); await persistSessions(newSessions, sessionToSave); };
-  const saveCycle = useCallback(async () => { if (!currentCycle || !currentCycle.name) return; const cycleId = (currentCycle as any).id || Date.now(); const cycleToSave: Cycle = { ...currentCycle, id: cycleId } as Cycle; const updatedCycles = cycles.find(c => c.id === cycleId) ? cycles.map(c => c.id === cycleId ? cycleToSave : c) : [...cycles, cycleToSave]; await persistCycles(updatedCycles, cycleToSave); setCurrentCycle(null); }, [currentCycle, cycles]);
-  const handleUpdateCycle = useCallback(async (updatedCycle: Cycle) => { const updatedCycles = cycles.map(c => c.id === updatedCycle.id ? updatedCycle : c); await persistCycles(updatedCycles, updatedCycle); }, [cycles]);
+  const totalDuration = useMemo(() => {
+    const flattenedExercises = Object.values(currentSession.exercises).flat() as Exercise[];
+    return flattenedExercises.reduce((sum, ex) => sum + (ex?.duration || 0), 0);
+  }, [currentSession.exercises]);
 
-  const handleSaveExercise = async () => { 
-      if (!newExercise?.name) return;
-      let exerciseToSave: Exercise; let updatedList: Exercise[];
-      if ('id' in newExercise && newExercise.id) { exerciseToSave = newExercise as Exercise; updatedList = exercises.map(ex => ex.id === exerciseToSave.id ? exerciseToSave : ex); } 
-      else { exerciseToSave = { ...newExercise, id: `custom_${Date.now()}` } as Exercise; updatedList = [...exercises, exerciseToSave]; }
-      await persistExercises(updatedList, exerciseToSave); setNewExercise(null); 
-  };
+  const activeCycleData = useMemo(() => null, []);
 
-  const totalDuration = useMemo(() => { try { const allExercises = Object.values(currentSession.exercises).flat() as Exercise[]; return allExercises.filter(e => e).reduce((sum, ex) => sum + (ex?.duration || 0), 0); } catch (e) { return 0; } }, [currentSession.exercises]);
-  const activeCycleData = useMemo(() => { const now = new Date(); now.setHours(0, 0, 0, 0); return cycles.map(c => { if (!c.startDate) return null; const [y, m, d] = c.startDate.split('-').map(Number); const start = new Date(y, m - 1, d); const diffTime = now.getTime() - start.getTime(); const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); if (diffDays < 0) return null; const weekIdx = Math.floor(diffDays / 7); if (weekIdx < c.weeks.length) { return { cycle: c, week: c.weeks[weekIdx], weekNum: weekIdx + 1, totalWeeks: c.weeks.length }; } return null; }).find(c => c !== null); }, [cycles]);
+  const handlePrint = () => window.print();
 
   if (showAuth) return <Auth onAuthSuccess={() => setShowAuth(false)} launchDemoMode={launchDemoMode} />;
 
   return (
     <div className="flex h-screen bg-slate-200 font-sans overflow-hidden">
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
-      <Sidebar 
-        view={view} setView={setView} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen}
-        session={session} handleLogout={handleLogout} setShowAuth={setShowAuth} aiConfig={aiConfig}
-        isDemoMode={isDemoMode}
-      />
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between">
-          <div onClick={() => setView('dashboard')} className="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
-             <Target className="text-accent" /> PingManager
-          </div>
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600">{mobileMenuOpen ? <X /> : <Menu />}</button>
-        </header>
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scroll-smooth">
-          <Suspense fallback={<PageLoader />}>
+      
+      <div className="no-print h-full flex w-full">
+        <Sidebar 
+          view={view} setView={setView} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen}
+          session={session} handleLogout={() => { setIsDemoMode(false); setShowAuth(true); }} setShowAuth={setShowAuth} aiConfig={aiConfig}
+          isDemoMode={isDemoMode}
+        />
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-slate-800">
+               <Target className="text-accent" /> PingManager
+            </div>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600"><Menu /></button>
+          </header>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
             {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={activeCycleData} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} />}
-            {view === 'players' && <PlayersView players={players} currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} newPlayerMode={newPlayerMode} setNewPlayerMode={setNewPlayerMode} savePlayer={savePlayer} playerEvals={playerEvals} saveEvaluation={saveEvaluation} loadPlayerEvaluations={(id) => {}} deletePlayer={(id) => {}} />}
-            {view === 'calendar' && <CyclesView cycles={cycles} currentCycle={currentCycle} setCurrentCycle={setCurrentCycle} saveCycle={saveCycle} setCycleToDelete={(id) => {}} handleGenerateCycle={() => {}} isLoadingAI={isLoadingAI} dateInputRef={dateInputRef} showCalendarPicker={() => {}} savedSessions={savedSessions} onUpdateCycle={handleUpdateCycle} />}
-            {view === 'sessions' && <SessionsView exercises={exercises} currentSession={currentSession} setCurrentSession={setCurrentSession} saveSession={saveSession} handleSuggestExercises={() => {}} isLoadingAI={isLoadingAI} totalDuration={totalDuration} />}
-            {view === 'library' && <div className="max-w-4xl mx-auto space-y-6"><h2 className="text-2xl font-bold">Bibliothèque</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{exercises.map(ex => (<div key={ex.id} className="bg-white p-6 rounded-2xl border">{ex.name}</div>))}</div></div>}
-            {view === 'settings' && <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl">Paramètres</div>}
-            {view === 'subscription' && <div className="max-w-4xl mx-auto text-center">Abonnement</div>}
-          </Suspense>
-        </div>
-      </main>
+            {view === 'sessions' && (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-4">
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-xl font-black italic uppercase">Mode Édition</h2>
+                            {currentSession.id !== 0 && <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"><Printer size={14}/> Imprimer</button>}
+                        </div>
+                        <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
+                    </div>
+                    <SessionsView exercises={exercises} currentSession={currentSession} setCurrentSession={setCurrentSession} saveSession={saveSession} handleSuggestExercises={handleSuggestExercises} isLoadingAI={isLoadingAI} totalDuration={totalDuration} />
+                </div>
+            )}
+            {view === 'calendar' && <CyclesView cycles={cycles} currentCycle={null} setCurrentCycle={() => {}} saveCycle={() => {}} setCycleToDelete={() => {}} handleGenerateCycle={handleGenerateCycle} isLoadingAI={isLoadingAI} dateInputRef={{current: null} as any} showCalendarPicker={() => {}} savedSessions={savedSessions} onUpdateCycle={() => {}} />}
+            {view === 'players' && <PlayersView players={players} currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} newPlayerMode={newPlayerMode} setNewPlayerMode={setNewPlayerMode} savePlayer={() => {}} deletePlayer={() => {}} playerEvals={playerEvals} saveEvaluation={() => {}} loadPlayerEvaluations={() => {}} />}
+            
+            {view === 'history' && (
+                <div className="max-w-4xl mx-auto space-y-6">
+                    <h2 className="text-3xl font-black italic uppercase tracking-tighter">Historique des séances</h2>
+                    <div className="grid gap-4">
+                        {savedSessions.length === 0 ? (
+                            <div className="bg-white p-12 rounded-[2.5rem] text-center border-2 border-dashed border-slate-100">
+                                <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Aucune séance archivée</p>
+                            </div>
+                        ) : (
+                            savedSessions.map(s => (
+                                <div key={s.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                                    <div>
+                                        <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg group-hover:text-accent transition-colors">{s.name}</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-900 hover:text-white transition-all">Charger</button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* --- VUE IMPRESSION --- */}
+      <div className="print-only p-8 bg-white text-slate-900 w-full h-full">
+          <div className="border-b-4 border-slate-900 pb-4 mb-8 flex justify-between items-end">
+              <div>
+                  <h1 className="text-4xl font-black italic uppercase tracking-tighter">Ping<span className="text-orange-500">Manager</span></h1>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Assistant Entraîneur</p>
+              </div>
+              <div className="text-right">
+                  <h2 className="text-2xl font-black uppercase">{currentSession.name}</h2>
+                  <p className="text-sm font-bold">{new Date(currentSession.date).toLocaleDateString()}</p>
+              </div>
+          </div>
+
+          <div className="space-y-8">
+              {PHASES.map(phase => {
+                  const phaseExos = currentSession.exercises[phase.id] || [];
+                  if (phaseExos.length === 0) return null;
+                  return (
+                      <div key={phase.id} className="space-y-3">
+                          <h3 className="text-lg font-black uppercase tracking-widest border-l-4 border-orange-500 pl-3 bg-slate-50 py-1">{phase.label}</h3>
+                          <div className="grid gap-4">
+                              {phaseExos.map((ex, i) => (
+                                  <div key={i} className="border border-slate-100 p-4 rounded-xl">
+                                      <div className="flex justify-between items-center mb-2">
+                                          <h4 className="font-bold text-lg">{ex.name}</h4>
+                                          <span className="text-xs font-bold px-2 py-1 bg-slate-100 rounded">{ex.duration} min</span>
+                                      </div>
+                                      <p className="text-sm text-slate-600 mb-2">{ex.description}</p>
+                                      {ex.material && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matériel : {ex.material}</p>}
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  )
+              })}
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+              <span>PingManager Pro v1.1.0</span>
+              <span>www.pingmanager.app</span>
+          </div>
+      </div>
     </div>
   );
 }

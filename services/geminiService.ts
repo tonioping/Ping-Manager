@@ -3,8 +3,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AIConfig } from "../types";
 
 // Default configuration values
-// Fix: Updated default model to 'gemini-3-flash-preview' per guidelines for basic text tasks
+// Using 'gemini-3-flash-preview' for basic text tasks
 const DEFAULT_GOOGLE_MODEL = 'gemini-3-flash-preview';
+// Using 'gemini-3-pro-preview' for complex text reasoning/generation tasks
+const COMPLEX_GOOGLE_MODEL = 'gemini-3-pro-preview';
 const DEFAULT_OPENROUTER_MODEL = 'mistralai/mistral-7b-instruct:free'; // Example free model
 
 // Helper to get config from LocalStorage or Environment
@@ -93,10 +95,10 @@ const callOpenRouter = async (config: AIConfig, prompt: string, responseSchema?:
 };
 
 // --- GOOGLE API CALLER ---
-const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) => {
-  // Fix: Always initialize GoogleGenAI with named apiKey parameter and use process.env.API_KEY
+const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any, modelName?: string) => {
+  // Always initialize GoogleGenAI with named apiKey parameter and use process.env.API_KEY directly
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const model = config.model || DEFAULT_GOOGLE_MODEL;
+  const model = modelName || config.model || DEFAULT_GOOGLE_MODEL;
 
   const generateConfig: any = {};
   if (schemaConfig) {
@@ -104,13 +106,14 @@ const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) 
     generateConfig.responseSchema = schemaConfig;
   }
 
-  // Fix: Use ai.models.generateContent and access result using .text property
+  // Use ai.models.generateContent to query GenAI with both the model name and prompt
   const response = await ai.models.generateContent({
     model: model,
     contents: prompt,
     config: generateConfig
   });
 
+  // Access text directly from the response property
   return response.text || "";
 };
 
@@ -125,7 +128,8 @@ export const refineExerciseDescription = async (currentDescription: string): Pro
     if (config.provider === 'openrouter') {
       text = await callOpenRouter(config, prompt);
     } else {
-      text = await callGoogle(config, prompt);
+      // Basic text refinement uses the standard flash model
+      text = await callGoogle(config, prompt, undefined, DEFAULT_GOOGLE_MODEL);
     }
     return text.trim();
   } catch (error) {
@@ -167,10 +171,12 @@ export const suggestExercises = async (sessionName: string, existingExercises: s
             description: { type: Type.STRING },
             material: { type: Type.STRING },
             theme: { type: Type.STRING },
-          }
+          },
+          required: ["name", "duration", "description", "material", "theme"]
         }
       };
-      text = await callGoogle(config, prompt, schema);
+      // For more complex creative tasks, we use the pro model
+      text = await callGoogle(config, prompt, schema, COMPLEX_GOOGLE_MODEL);
     }
 
     const jsonString = cleanJSON(text);
@@ -207,12 +213,15 @@ export const generateCyclePlan = async (promptText: string, numWeeks: number): P
                             weekNumber: { type: Type.INTEGER },
                             theme: { type: Type.STRING },
                             notes: { type: Type.STRING }
-                        }
+                        },
+                        required: ["weekNumber", "theme", "notes"]
                     }
                 }
-            }
+            },
+            required: ["weeks"]
         };
-        text = await callGoogle(config, prompt, schema);
+        // Planning cycles is a complex task requiring the pro model
+        text = await callGoogle(config, prompt, schema, COMPLEX_GOOGLE_MODEL);
     }
     
     const jsonString = cleanJSON(text);
