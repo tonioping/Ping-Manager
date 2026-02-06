@@ -33,17 +33,32 @@ export const INITIAL_EXERCISES: Exercise[] = [
 
 export const DEMO_PLAYERS: Player[] = [
     { id: 'demo_1', first_name: 'Lucas', last_name: 'Dubois', level: 'Elite', group: 'competition', hand: 'Droitier', grip: 'Europeenne', blade: 'Butterfly Viscaria', last_equipment_change: '2023-11-15' },
-    // Fix: Updated 'Gauchère' to 'Gaucher' to comply with the defined Player type
     { id: 'demo_2', first_name: 'Léa', last_name: 'Martin', level: 'Avance', group: 'perfectionnement', hand: 'Gaucher', grip: 'Europeenne', blade: 'Tibhar Samsonov', last_equipment_change: '2024-05-10' },
     { id: 'demo_3', first_name: 'Thomas', last_name: 'Moreau', level: 'Intermediaire', group: 'college', hand: 'Droitier', grip: 'Porte-Plume', blade: 'Stiga Clipper', last_equipment_change: '2023-01-20' },
 ];
 
+// Historique riche pour Lucas (demo_1)
 export const DEMO_EVALS: PlayerEvaluation[] = [
+    // Mois actuel
     { player_id: 'demo_1', skill_id: 's1', score: 5, date: '2024-05-20' },
     { player_id: 'demo_1', skill_id: 's3', score: 4, date: '2024-05-20' },
     { player_id: 'demo_1', skill_id: 's5', score: 5, date: '2024-05-20' },
+    // Mois M-1
+    { player_id: 'demo_1', skill_id: 's1', score: 4, date: '2024-04-15' },
+    { player_id: 'demo_1', skill_id: 's3', score: 3, date: '2024-04-15' },
+    { player_id: 'demo_1', skill_id: 's5', score: 4, date: '2024-04-15' },
+    // Mois M-2
+    { player_id: 'demo_1', skill_id: 's1', score: 3, date: '2024-03-10' },
+    { player_id: 'demo_1', skill_id: 's3', score: 3, date: '2024-03-10' },
+    { player_id: 'demo_1', skill_id: 's5', score: 3, date: '2024-03-10' },
+    // Mois M-3
+    { player_id: 'demo_1', skill_id: 's1', score: 2, date: '2024-02-05' },
+    { player_id: 'demo_1', skill_id: 's3', score: 2, date: '2024-02-05' },
+    { player_id: 'demo_1', skill_id: 's5', score: 2, date: '2024-02-05' },
+    
     { player_id: 'demo_2', skill_id: 's4', score: 4, date: '2024-05-20' },
     { player_id: 'demo_2', skill_id: 's7', score: 2, date: '2024-05-20' },
+    { player_id: 'demo_2', skill_id: 's4', score: 3, date: '2024-04-10' },
 ];
 
 export const DEMO_SESSIONS: Session[] = [

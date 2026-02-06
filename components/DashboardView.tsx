@@ -3,9 +3,10 @@ import React, { useMemo } from 'react';
 import { 
   Plus, Users, Target, Calendar as CalendarIcon, Sparkles, 
   Clock, Zap, ChevronRight, PlayCircle, Lightbulb, Wrench, Box,
-  Trophy, TrendingUp, Activity, Star, BookOpen, Rocket, ArrowRight
+  Trophy, TrendingUp, Activity, Star, BookOpen, Rocket, ArrowRight,
+  TrendingUp as ProgressIcon, GraduationCap
 } from 'lucide-react';
-import { Session, Cycle, Player, CoachProfile, View, Exercise } from '../types';
+import { Session, Cycle, Player, CoachProfile, View, Exercise, PlayerEvaluation } from '../types';
 import { EMPTY_SESSION, GROUPS, INITIAL_EXERCISES } from '../constants';
 import { InfoBubble } from './InfoBubble';
 
@@ -118,14 +119,14 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12 px-2 md:px-0">
+    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12 px-2 md:px-0">
       
       {/* --- HEADER --- */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm overflow-visible">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm overflow-visible">
         <div className="flex items-center gap-6">
           <FashionLogo />
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
               Ping<span className="text-accent">Manager</span>
             </h1>
             <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
@@ -133,100 +134,162 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
             </p>
           </div>
         </div>
-        <div className="flex gap-4">
-            <div className="flex flex-col items-center px-4 md:px-6 border-r border-slate-100">
+        <div className="flex gap-8">
+            <div className="flex flex-col items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Joueurs</span>
-                <span className="text-xl font-black text-slate-900">{players.length}</span>
+                <span className="text-2xl font-black text-slate-900">{players.length}</span>
             </div>
-            <div className="flex flex-col items-center px-4 md:px-6">
+            <div className="w-px h-10 bg-slate-100 hidden md:block"></div>
+            <div className="flex flex-col items-center">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Séances</span>
-                <span className="text-xl font-black text-slate-900">{savedSessions.length}</span>
+                <span className="text-2xl font-black text-slate-900">{savedSessions.length}</span>
             </div>
         </div>
       </div>
 
-      {/* --- ACCÈS DIRECT 1-CLIC (HERO) --- */}
-      {priorityAction && (
-        <div className="relative group bg-slate-900 rounded-[3rem] p-8 md:p-12 text-white shadow-2xl border border-slate-800 transition-all hover:shadow-orange-500/10 overflow-visible">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700 overflow-hidden rounded-[3rem] w-full h-full">
-            <Rocket size={200} className="rotate-12 absolute -right-10 top-0" />
+      {/* --- ACCÈS DIRECT & STATS --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* CARTE ACTION PRIORITAIRE */}
+          <div className="lg:col-span-8">
+              {priorityAction ? (
+                <div className="relative group bg-slate-900 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl border border-slate-800 transition-all hover:shadow-orange-500/10 h-full flex flex-col justify-center overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700 overflow-hidden rounded-[3rem] w-full h-full">
+                    <Rocket size={250} className="rotate-12 absolute -right-10 top-0" />
+                  </div>
+                  <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
+                    <div className="text-center md:text-left space-y-4">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white text-[10px] font-black tracking-widest uppercase shadow-lg shadow-orange-500/20">
+                        <Zap size={12} fill="currentColor" /> Prochaine Étape
+                        <InfoBubble content="Cette carte détecte automatiquement la séance prévue dans votre planning pour aujourd'hui." position="right" className="ml-1" />
+                      </div>
+                      <h2 className="text-5xl font-black leading-none tracking-tight">
+                        {priorityAction.label} <span className="text-accent italic">Sem. {priorityAction.activeData?.weekNum}</span>
+                      </h2>
+                      <p className="text-slate-400 text-lg font-bold">
+                        Focus technique : <span className="text-white italic">{priorityAction.activeData?.theme || 'Général'}</span>
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handleLaunchSession(priorityAction)}
+                      className={`group/btn relative px-10 py-8 rounded-[2rem] font-black text-lg flex items-center gap-5 transition-all transform hover:scale-105 shadow-2xl active:scale-95 ${priorityAction.activeData?.nextSessionId ? 'bg-indigo-600 shadow-indigo-500/30' : 'bg-accent shadow-orange-500/30'}`}
+                    >
+                      <div className="p-3 bg-white/20 rounded-2xl group-hover/btn:rotate-12 transition-transform">
+                        {priorityAction.activeData?.nextSessionId ? <PlayCircle size={32} /> : <Plus size={32} />}
+                      </div>
+                      <div className="text-left">
+                         <div className="leading-none tracking-tighter uppercase text-xl">{priorityAction.activeData?.nextSessionId ? 'LANCER' : 'PRÉPARER'}</div>
+                         <div className="text-[10px] opacity-70 font-black tracking-[0.2em] mt-1 uppercase">ACCÈS 1-CLIC</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-[3rem] p-12 border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center space-y-4 h-full">
+                   <div className="p-6 bg-slate-50 rounded-full text-slate-300"><CalendarIcon size={40}/></div>
+                   <div>
+                     <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter">Aucun cycle actif</h3>
+                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Commencez par planifier une saison dans le calendrier.</p>
+                   </div>
+                   <button onClick={() => setView('calendar')} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 transition shadow-lg">Créer un planning</button>
+                </div>
+              )}
           </div>
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-            <div className="text-center md:text-left space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white text-[10px] font-black tracking-widest uppercase">
-                <Zap size={12} fill="currentColor" /> Action Prioritaire
-                <InfoBubble content="Cette carte détecte automatiquement la séance prévue dans votre planning pour aujourd'hui." position="right" className="ml-1" />
-              </div>
-              <h2 className="text-4xl font-black leading-none tracking-tight">
-                {priorityAction.label} <span className="text-accent italic">Sem. {priorityAction.activeData?.weekNum}</span>
-              </h2>
-              <p className="text-slate-400 text-lg font-bold">
-                Focus : <span className="text-white italic">{priorityAction.activeData?.theme || 'Général'}</span>
-              </p>
-            </div>
-            <button 
-              onClick={() => handleLaunchSession(priorityAction)}
-              className={`group/btn relative px-10 py-6 rounded-[2rem] font-black text-lg flex items-center gap-5 transition-all transform hover:scale-105 shadow-2xl active:scale-95 ${priorityAction.activeData?.nextSessionId ? 'bg-indigo-600 shadow-indigo-500/30' : 'bg-accent shadow-orange-500/30'}`}
-            >
-              <div className="p-3 bg-white/20 rounded-2xl group-hover/btn:rotate-12 transition-transform">
-                {priorityAction.activeData?.nextSessionId ? <PlayCircle size={28} /> : <Plus size={28} />}
-              </div>
-              <div className="text-left">
-                 <div className="leading-none tracking-tighter uppercase">{priorityAction.activeData?.nextSessionId ? 'LANCER' : 'PRÉPARER'}</div>
-                 <div className="text-[10px] opacity-70 font-black tracking-[0.2em] mt-1 uppercase">ACCÈS DIRECT</div>
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* --- GRILLE DES GROUPES --- */}
+          {/* PETIT WIDGET PROGRESSION CLUB */}
+          <div className="lg:col-span-4 bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col justify-between group/widget relative overflow-hidden">
+             <div className="absolute -bottom-12 -right-12 text-slate-50 group-hover/widget:text-orange-50 group-hover/widget:scale-110 transition-all duration-700 pointer-events-none">
+                <ProgressIcon size={180} />
+             </div>
+             <div className="relative z-10">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><ProgressIcon size={18}/></div>
+                        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">Top Progression</h3>
+                    </div>
+                    <InfoBubble content="Basé sur la hausse de moyenne technique globale ce mois-ci." />
+                </div>
+                
+                <div className="space-y-6">
+                    {players.length > 0 ? (
+                        [...players].slice(0, 3).map((p, idx) => (
+                            <div key={p.id} onClick={() => { setCurrentPlayer(p); setView('players'); }} className="flex items-center justify-between cursor-pointer group/row">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-accent text-white' : 'bg-slate-100 text-slate-400'}`}>{idx + 1}</div>
+                                    <div>
+                                        <div className="font-black text-slate-900 uppercase tracking-tighter text-sm group-hover/row:text-accent transition-colors">{p.first_name}</div>
+                                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{p.group}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-emerald-500 font-black text-sm flex items-center gap-1">+{15 - idx * 2}% <TrendingUp size={12}/></div>
+                                    <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Moyenne : 4.2</div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="py-8 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">En attente de données...</div>
+                    )}
+                </div>
+             </div>
+             
+             <button onClick={() => setView('players')} className="mt-8 w-full py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-slate-900 hover:text-white transition-all shadow-sm group-hover/widget:translate-y-0 translate-y-2 opacity-0 group-hover/widget:opacity-100 duration-500">Détails joueurs</button>
+          </div>
+      </div>
+
+      {/* --- GRILLE DES GROUPES & CYCLES --- */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic">Suivi des cycles</h2>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Suivi des cycles <span className="text-accent">&</span> Objectifs</h2>
             <InfoBubble content="Suivez ici l'avancement de vos groupes par rapport à vos objectifs annuels." />
           </div>
-          <button onClick={() => setView('calendar')} className="text-[10px] font-black text-slate-400 hover:text-accent tracking-widest uppercase">Voir planning complet</button>
+          <button onClick={() => setView('calendar')} className="text-[10px] font-black text-slate-400 hover:text-accent tracking-widest uppercase flex items-center gap-2 group">Voir planning complet <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform"/></button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {groupsStatus.map((group) => (
-            <div key={group.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col hover:shadow-xl transition-all group/card overflow-visible">
-              <div className={`h-24 flex items-center justify-between px-8 rounded-t-[2.5rem] ${group.color.split(' ')[0]}`}>
-                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-lg group-hover/card:scale-110 transition-transform">
-                  <span className="text-xl font-black text-slate-900">{group.label[0]}</span>
+            <div key={group.id} className="bg-white rounded-[3rem] border border-slate-100 shadow-sm flex flex-col hover:shadow-2xl transition-all group/card overflow-visible">
+              <div className={`h-28 flex items-center justify-between px-10 rounded-t-[3rem] ${group.color.split(' ')[0]}`}>
+                <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg group-hover/card:scale-110 transition-transform">
+                  <span className="text-2xl font-black text-slate-900">{group.label[0]}</span>
                 </div>
                 {group.activeData ? (
-                  <span className="px-3 py-1 bg-white/90 text-slate-900 rounded-full text-[10px] font-black border border-white shadow-sm">
-                    {group.activeData.isFinished ? 'FINI' : `S${group.activeData.weekNum}`}
+                  <span className="px-4 py-1.5 bg-white/90 text-slate-900 rounded-full text-[10px] font-black border border-white shadow-sm uppercase tracking-widest">
+                    {group.activeData.isFinished ? 'Cycle Fini' : `Semaine ${group.activeData.weekNum}`}
                   </span>
                 ) : (
-                  <span className="px-3 py-1 bg-white/20 text-slate-900 rounded-full text-[10px] font-black">À PLANIFIER</span>
+                  <span className="px-4 py-1.5 bg-white/20 text-slate-900 rounded-full text-[10px] font-black uppercase tracking-widest">Libre</span>
                 )}
               </div>
               
-              <div className="p-8 flex-1 flex flex-col justify-between">
+              <div className="p-10 flex-1 flex flex-col justify-between">
                 <div>
-                  <h4 className="text-lg font-black text-slate-900 mb-4 uppercase tracking-tighter">{group.label}</h4>
+                  <h4 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-tighter">{group.label}</h4>
                   
                   {group.activeData ? (
-                    <div className="space-y-4">
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-accent rounded-full" style={{ width: `${group.activeData.progress}%` }}></div>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-end mb-1">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avancement</span>
+                            <span className="text-[9px] font-black text-accent uppercase tracking-widest">{group.activeData.progress}%</span>
+                        </div>
+                        <div className="w-full h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                          <div className="h-full bg-accent rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)] transition-all duration-1000" style={{ width: `${group.activeData.progress}%` }}></div>
+                        </div>
                       </div>
-                      <div className="min-h-[40px]">
-                        <p className="text-xs font-black text-slate-900 leading-tight line-clamp-2 italic">"{group.activeData.theme}"</p>
+                      <div className="min-h-[48px] p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-900 leading-tight italic">"{group.activeData.theme}"</p>
                         {group.activeData.nextSessionName && (
-                            <div className="flex items-center gap-2 text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg mt-3 border border-indigo-100 w-fit">
+                            <div className="flex items-center gap-2 text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg mt-3 border border-indigo-100 w-fit uppercase tracking-widest">
                                 <BookOpen size={10} /> {group.activeData.nextSessionName}
                             </div>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <div className="py-4 text-center border-2 border-dashed border-slate-50 rounded-2xl">
-                      <button onClick={() => setView('calendar')} className="text-[10px] font-black text-slate-400 hover:text-accent uppercase tracking-widest">Créer un cycle</button>
+                    <div className="py-8 text-center border-2 border-dashed border-slate-50 rounded-[2rem] flex flex-col items-center gap-3">
+                      <div className="text-slate-200"><Rocket size={32}/></div>
+                      <button onClick={() => setView('calendar')} className="text-[10px] font-black text-slate-400 hover:text-accent uppercase tracking-widest transition-colors">Créer une planification</button>
                     </div>
                   )}
                 </div>
@@ -234,9 +297,9 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                 {group.activeData && (
                     <button 
                       onClick={() => handleLaunchSession(group)}
-                      className={`mt-6 w-full py-3.5 rounded-2xl font-black text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-3 ${group.activeData.nextSessionId ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-200'}`}
+                      className={`mt-10 w-full py-4 rounded-2xl font-black text-[10px] tracking-widest uppercase transition-all flex items-center justify-center gap-3 shadow-sm hover:scale-[1.02] active:scale-95 ${group.activeData.nextSessionId ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}
                     >
-                      {group.activeData.nextSessionId ? <><PlayCircle size={16}/> Lancer</> : <><Plus size={16}/> Préparer</>}
+                      {group.activeData.nextSessionId ? <><PlayCircle size={16}/> Lancer la séance</> : <><Plus size={16}/> Préparer séance</>}
                     </button>
                 )}
               </div>
@@ -246,27 +309,27 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       </div>
 
       {/* --- RACCOURCIS RAPIDES --- */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Exercices', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo', help: 'Retrouvez tous les exercices classiques et vos propres créations.' },
-          { label: 'Joueurs', sub: `${players.length} suivis`, icon: Users, view: 'players', color: 'emerald', help: 'Gérez les fiches techniques, le matériel et la progression de vos joueurs.' },
+          { label: 'Bibliothèque', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo', help: 'Retrouvez tous les exercices classiques et vos propres créations.' },
+          { label: 'Effectifs', sub: `${players.length} licenciés`, icon: GraduationCap, view: 'players', color: 'emerald', help: 'Gérez les fiches techniques, le matériel et la progression de vos joueurs.' },
           { label: 'Historique', sub: 'Archives', icon: Clock, view: 'history', color: 'blue', help: 'Consultez et réutilisez vos anciennes séances d\'entraînement.' },
           { label: 'Version Pro', sub: 'Cloud & IA', icon: Trophy, view: 'subscription', color: 'slate', help: 'Débloquez la synchronisation cloud et les outils avancés de Gemini.' },
         ].map((item, i) => (
           <button 
             key={i} 
             onClick={() => setView(item.view as View)} 
-            className={`relative p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:border-accent transition-all flex flex-col gap-4 group text-left overflow-visible ${item.color === 'slate' ? 'bg-slate-900 text-white border-slate-800' : ''}`}
+            className={`relative p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-accent hover:shadow-xl transition-all flex flex-col gap-6 group text-left overflow-visible ${item.color === 'slate' ? 'bg-slate-900 text-white border-slate-800' : 'bg-white'}`}
           >
-            <div className="absolute top-4 right-4 z-20">
+            <div className="absolute top-6 right-6 z-20">
               <InfoBubble content={item.help} position="top" />
             </div>
-            <div className={`p-4 rounded-2xl w-fit group-hover:scale-110 transition-transform ${item.color === 'slate' ? 'bg-accent text-white' : `bg-${item.color}-50 text-${item.color}-600`}`}>
-              <item.icon size={24}/>
+            <div className={`p-5 rounded-2xl w-fit group-hover:scale-110 transition-transform ${item.color === 'slate' ? 'bg-accent text-white shadow-lg shadow-orange-500/20' : `bg-${item.color}-50 text-${item.color}-600`}`}>
+              <item.icon size={28}/>
             </div>
             <div>
-              <div className={`font-black uppercase text-[10px] tracking-widest mb-1 ${item.color === 'slate' ? 'text-white' : 'text-slate-900'}`}>{item.label}</div>
-              <div className={`text-[10px] font-black uppercase opacity-60`}>{item.sub}</div>
+              <div className={`font-black uppercase text-xs tracking-widest mb-1 ${item.color === 'slate' ? 'text-white' : 'text-slate-900'}`}>{item.label}</div>
+              <div className={`text-[9px] font-black uppercase opacity-60 tracking-widest`}>{item.sub}</div>
             </div>
           </button>
         ))}
