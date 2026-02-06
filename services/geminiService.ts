@@ -1,8 +1,10 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AIConfig } from "../types";
 
 // Default configuration values
-const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
+// Fix: Updated default model to 'gemini-3-flash-preview' per guidelines for basic text tasks
+const DEFAULT_GOOGLE_MODEL = 'gemini-3-flash-preview';
 const DEFAULT_OPENROUTER_MODEL = 'mistralai/mistral-7b-instruct:free'; // Example free model
 
 // Helper to get config from LocalStorage or Environment
@@ -92,7 +94,7 @@ const callOpenRouter = async (config: AIConfig, prompt: string, responseSchema?:
 
 // --- GOOGLE API CALLER ---
 const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) => {
-  // Guideline: Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  // Fix: Always initialize GoogleGenAI with named apiKey parameter and use process.env.API_KEY
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = config.model || DEFAULT_GOOGLE_MODEL;
 
@@ -102,6 +104,7 @@ const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any) 
     generateConfig.responseSchema = schemaConfig;
   }
 
+  // Fix: Use ai.models.generateContent and access result using .text property
   const response = await ai.models.generateContent({
     model: model,
     contents: prompt,
@@ -185,7 +188,7 @@ export const generateCyclePlan = async (promptText: string, numWeeks: number): P
   const prompt = `
         En te basant sur l'objectif suivant pour un cycle d'entraînement de tennis de table : "${promptText}", crée un plan structuré pour ${numWeeks} semaines.
         Pour chaque semaine, fournis un "theme" principal (un focus technique ou tactique) et de brèves "notes" (points clés ou objectifs pour cette semaine).
-        Retourne le résultat sous forme d'objet JSON avec une seule clé "weeks", qui est un tableau d'objets. Chaque objet doit avoir "weekNumber", "theme", et "notes".
+        Retourne le résultat sous forme d'objet JSON avec une seule clé "weeks", qui est un tableau d'objects. Chaque objet doit avoir "weekNumber", "theme", et "notes".
     `;
 
   try {
