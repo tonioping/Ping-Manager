@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CalendarDays, Plus, X, Bot, Save, Minus, Pencil, Trash2, Calendar as CalendarIcon, Edit3, Link, Check, BookOpen } from 'lucide-react';
 import { GeminiButton } from './GeminiButton';
@@ -71,29 +70,25 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
     setEditingWeekTheme(null);
   };
 
-  const getWeekRange = (startDateStr: string, weekIndex: number) => {
-    if (!startDateStr) return '';
-    const [y, m, d] = startDateStr.split('-').map(Number);
-    const start = new Date(y, m - 1, d);
-    start.setDate(start.getDate() + (weekIndex * 7));
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const f = (date: Date) => `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-    return `du ${f(start)} au ${f(end)}`;
-  };
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
             <CalendarDays className="text-accent"/> Planification Annuelle
           </h2>
-          <InfoBubble content="Créez des cycles d'entraînement (ex: 12 semaines) pour structurer la progression de vos groupes sur le long terme." />
+          <InfoBubble content="Créez des cycles d'entraînement pour structurer la progression de vos groupes." />
         </div>
         <button 
-          onClick={() => setCurrentCycle({ name: '', startDate: new Date().toISOString().split('T')[0], weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), type: 'developpement', objectives: '', group: '' })} 
-          className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"
+          onClick={() => setCurrentCycle({ 
+            name: '', 
+            startDate: new Date().toISOString().split('T')[0], 
+            weeks: Array(12).fill(null).map((_, i) => ({ weekNumber: i + 1, theme: '', notes: '' })), 
+            type: 'developpement', 
+            objectives: '', 
+            group: '' 
+          })} 
+          className="bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg hover:bg-slate-800 transition"
         >
           <Plus size={18} /> Nouveau Cycle
         </button>
@@ -101,27 +96,20 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
 
       {editingWeek && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
-           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
-              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                 <h3 className="font-bold text-slate-800">Lier une séance</h3>
+           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+              <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                 <h3 className="font-bold text-slate-800 dark:text-white">Lier une séance</h3>
                  <button onClick={() => setEditingWeek(null)}><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
               </div>
               <div className="p-4">
-                 <p className="text-sm text-slate-500 mb-4">Sélectionnez une séance pour la <strong>Semaine {editingWeek.weekIndex + 1}</strong>.</p>
                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                    {savedSessions.length === 0 && <p className="text-center text-slate-400 py-4">Aucune séance enregistrée.</p>}
                     {savedSessions.map(sess => (
-                        <button key={sess.id} onClick={() => handleLinkSession(sess)} className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-accent hover:bg-orange-50 transition-all flex justify-between items-center group">
-                            <div><div className="font-bold text-slate-800">{sess.name}</div><div className="text-xs text-slate-500">{new Date(sess.date).toLocaleDateString()}</div></div>
+                        <button key={sess.id} onClick={() => handleLinkSession(sess)} className="w-full text-left p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-accent hover:bg-orange-50 dark:hover:bg-slate-800 transition-all flex justify-between items-center group">
+                            <div><div className="font-bold text-slate-800 dark:text-white">{sess.name}</div></div>
                             {editingWeek.cycle.weeks[editingWeek.weekIndex].sessionId === sess.id && <Check size={18} className="text-green-500"/>}
                         </button>
                     ))}
                  </div>
-                 {editingWeek.cycle.weeks[editingWeek.weekIndex].sessionName && (
-                     <div className="mt-4 pt-4 border-t border-slate-100">
-                         <button onClick={handleUnlinkSession} className="w-full py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium transition">Détacher la séance actuelle</button>
-                     </div>
-                 )}
               </div>
            </div>
         </div>
@@ -129,34 +117,32 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
 
       {currentCycle && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
-              <div>
-                <h3 className="text-xl font-bold text-slate-800">{(currentCycle as any).id ? 'Modifier le Cycle' : 'Nouveau Cycle'}</h3>
-              </div>
-              <button onClick={() => setCurrentCycle(null)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">{(currentCycle as any).id ? 'Modifier le Cycle' : 'Nouveau Cycle'}</h3>
+              <button onClick={() => setCurrentCycle(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition"><X size={20} className="text-slate-400 hover:text-slate-600"/></button>
             </div>
-            <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-1">
+            <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-950/30 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
                 <div className="md:col-span-8">
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Nom du Cycle</label>
-                  <input type="text" className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle({...currentCycle, name: e.target.value})} />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nom du Cycle</label>
+                  <input type="text" className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle(prev => prev ? {...prev, name: e.target.value} : null)} />
                 </div>
                 <div className="md:col-span-4">
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Groupe Cible</label>
-                  <select value={(currentCycle as any).group || ''} onChange={(e) => setCurrentCycle({...currentCycle, group: e.target.value})} className="w-full p-4 border border-slate-200 rounded-xl text-slate-900 bg-white focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Groupe Cible</label>
+                  <select value={(currentCycle as any).group || ''} onChange={(e) => setCurrentCycle(prev => prev ? {...prev, group: e.target.value} : null)} className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium">
                     <option value="">-- Tous --</option>
                     {GROUPS.map(g => (<option key={g.id} value={g.id}>{g.label}</option>))}
                   </select>
                 </div>
               </div>
 
-              <div className="mb-8 bg-indigo-50 p-5 rounded-xl border border-indigo-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="mb-8 bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex gap-4 items-center">
-                  <div className="bg-white p-3 rounded-lg shadow-sm text-indigo-600"><Bot size={24}/></div>
+                  <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm text-indigo-600 dark:text-indigo-400"><Bot size={24}/></div>
                   <div>
-                    <h4 className="font-bold text-indigo-900 flex items-center gap-2">Assistant IA <InfoBubble content="Donnez un objectif (ex: 'Améliorer le service') et l'IA proposera une progression cohérente semaine par semaine." /></h4>
-                    <p className="text-sm text-indigo-700/80">Générez automatiquement une progression sur {currentCycle.weeks.length} semaines.</p>
+                    <h4 className="font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">Assistant IA</h4>
+                    <p className="text-sm text-indigo-700/80 dark:text-indigo-300/80">Générez automatiquement une progression sur {currentCycle.weeks.length} semaines.</p>
                   </div>
                 </div>
                 <GeminiButton onClick={handleGenerateCycle} isLoading={isLoadingAI}>Générer le plan</GeminiButton>
@@ -164,30 +150,30 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
 
               <div className="space-y-4">
                 {currentCycle.weeks.map((week, idx) => (
-                  <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all group hover:border-accent/50">
+                  <div key={idx} className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group hover:border-accent/50">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div>
-                        <h4 className="font-bold text-slate-700 text-lg">Semaine {week.weekNumber}</h4>
+                        <div className="w-8 h-8 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div>
+                        <h4 className="font-bold text-slate-700 dark:text-slate-300 text-lg">Semaine {week.weekNumber}</h4>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Thème Technique</label>
-                        <input type="text" placeholder="Ex: Topspin Revers" value={week.theme} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], theme: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 transition-all"/>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">Thème Technique</label>
+                        <input type="text" placeholder="Ex: Topspin Revers" value={week.theme} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], theme: e.target.value }; setCurrentCycle(prev => prev ? {...prev, weeks: newWeeks} : null);}} className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/20 transition-all"/>
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Notes & Objectifs</label>
-                        <textarea placeholder="Points clés à travailler..." value={week.notes} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], notes: e.target.value }; setCurrentCycle({...currentCycle, weeks: newWeeks});}} rows={2} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-accent/20 transition-all resize-none"/>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 tracking-wider">Notes & Objectifs</label>
+                        <textarea placeholder="Points clés..." value={week.notes} onChange={(e) => {const newWeeks = [...currentCycle.weeks]; newWeeks[idx] = { ...newWeeks[idx], notes: e.target.value }; setCurrentCycle(prev => prev ? {...prev, weeks: newWeeks} : null);}} rows={2} className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-accent/20 transition-all resize-none"/>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-4">
-              <button onClick={() => setCurrentCycle(null)} className="px-6 py-3 text-slate-600 font-semibold hover:bg-slate-50 rounded-xl transition">Annuler</button>
-              <button onClick={saveCycle} className="px-8 py-3 bg-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition font-bold flex items-center gap-2 transform hover:scale-105 active:scale-95"><Save size={20}/> Enregistrer le cycle</button>
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end gap-4">
+              <button onClick={() => setCurrentCycle(null)} className="px-6 py-3 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition">Annuler</button>
+              <button onClick={saveCycle} className="px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl shadow-lg hover:bg-slate-800 transition font-bold flex items-center gap-2 transform hover:scale-105 active:scale-95"><Save size={20}/> Enregistrer</button>
             </div>
           </div>
         </div>
@@ -197,38 +183,29 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
         {cycles.map(cycle => { 
           const cycleTypeConfig = CYCLE_TYPES[(cycle as any).type || 'developpement']; 
           return (
-            <div key={cycle.id} className="relative animate-fade-in">
-              <div className={`absolute -left-[29px] top-6 w-6 h-6 rounded-full border-4 border-white shadow-sm ${cycleTypeConfig.color.split(' ')[0]} z-10`}></div>
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all group">
-                <div className={`p-4 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-start ${cycleTypeConfig.color.replace('text-', 'bg-').replace('800', '50')}`}>
+            <div key={cycle.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-md transition-all group">
+                <div className={`p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap gap-4 justify-between items-start ${cycleTypeConfig.color.replace('text-', 'bg-').replace('800', '50')}`}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <span className={`text-xl`}>{cycleTypeConfig.icon}</span>
-                      <h3 onClick={() => setEditingCycleTitleId(cycle.id)} className="text-lg font-bold text-slate-800 cursor-pointer hover:text-accent flex items-center gap-2 group/title">{cycle.name}</h3>
+                      <h3 className="text-lg font-bold text-slate-800 dark:text-white">{cycle.name}</h3>
                     </div>
                   </div>
                 </div>
                 <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3 px-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aperçu du cycle</span>
-                    <InfoBubble content="Cliquez sur une semaine pour y rattacher une séance d'entraînement spécifique." />
-                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {cycle.weeks.map((week, i) => (
-                      <div key={i} onClick={() => setEditingWeek({cycle, weekIndex: i})} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col h-32 justify-between hover:border-accent hover:bg-white hover:shadow-sm cursor-pointer transition-all relative group/week">
+                      <div key={i} onClick={() => setEditingWeek({cycle, weekIndex: i})} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col h-32 justify-between hover:border-accent hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm cursor-pointer transition-all relative group/week">
                         <div className="absolute top-2 right-2 text-slate-300 group-hover/week:text-accent transition-colors"><Link size={14} /></div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sem {week.weekNumber}</span>
-                        <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-tight">{week.theme || 'À définir'}</p>
-                        {week.sessionName ? (
-                            <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded border border-orange-200 truncate"><BookOpen size={10} /> <span className="truncate">{week.sessionName}</span></div>
-                        ) : (
-                            week.notes && <div className="h-1 w-8 bg-slate-200 rounded-full mt-1"></div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Sem {week.weekNumber}</span>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-white line-clamp-2 leading-tight">{week.theme || 'À définir'}</p>
+                        {week.sessionName && (
+                            <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800 truncate"><BookOpen size={10} /> <span className="truncate">{week.sessionName}</span></div>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
             </div>
           ); 
         })}
