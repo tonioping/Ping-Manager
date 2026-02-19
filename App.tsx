@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X, CheckCircle, AlertCircle, Loader2, Menu, Target, Printer } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -35,11 +35,18 @@ export default function App() {
   const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
   const [savedSessions, setSavedSessions] = useState<Session[]>([]);
+  
+  // États pour les Cycles
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  // États pour les Joueurs
   const [players, setPlayers] = useState<Player[]>([]); 
   const [playerEvals, setPlayerEvals] = useState<PlayerEvaluation[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [newPlayerMode, setNewPlayerMode] = useState(false);
+
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
   const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-3-flash-preview' });
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
@@ -142,15 +149,44 @@ export default function App() {
   }, [currentSession.name, currentSession.exercises, showToast]);
 
   // --- LOGIQUE CYCLES ---
+  const saveCycle = useCallback(() => {
+    if (!currentCycle || !currentCycle.name.trim()) {
+      showToast("Veuillez donner un nom au cycle", "error");
+      return;
+    }
+    const newCycle = { ...currentCycle, id: (currentCycle as any).id || Date.now() } as Cycle;
+    setCycles(prev => {
+      const exists = prev.find(c => c.id === newCycle.id);
+      if (exists) return prev.map(c => c.id === newCycle.id ? newCycle : c);
+      return [newCycle, ...prev];
+    });
+    setCurrentCycle(null);
+    showToast("Cycle enregistré !");
+  }, [currentCycle, showToast]);
+
+  const deleteCycle = useCallback((id: number) => {
+    setCycles(prev => prev.filter(c => c.id !== id));
+    showToast("Cycle supprimé");
+  }, [showToast]);
+
+  const updateCycle = useCallback((updatedCycle: Cycle) => {
+    setCycles(prev => prev.map(c => c.id === updatedCycle.id ? updatedCycle : c));
+  }, []);
+
   const handleGenerateCycle = useCallback(async () => {
-    if (!currentSession.name) {
+    if (!currentCycle || !currentCycle.name) {
         showToast("L'IA a besoin d'un objectif de cycle (Nom du cycle)", "error");
         return;
     }
     setIsLoadingAI(true);
     try {
-        const plan = await generateCyclePlan(currentSession.name, 12);
+        const plan = await generateCyclePlan(currentCycle.name, currentCycle.weeks.length);
         if (plan && plan.weeks) {
+            const updatedWeeks = currentCycle.weeks.map((w, i) => {
+                const aiWeek = plan.weeks.find(aw => aw.weekNumber === w.weekNumber);
+                return aiWeek ? { ...w, theme: aiWeek.theme, notes: aiWeek.notes } : w;
+            });
+            setCurrentCycle({ ...currentCycle, weeks: updatedWeeks });
             showToast("Plan de cycle généré par Gemini !");
         }
     } catch (e) {
@@ -158,14 +194,40 @@ export default function App() {
     } finally {
         setIsLoadingAI(false);
     }
-  }, [currentSession.name, showToast]);
+  }, [currentCycle, showToast]);
+
+  // --- LOGIQUE JOUEURS ---
+  const savePlayer = useCallback((player: Player) => {
+    setPlayers(prev => {
+      const exists = prev.find(p => p.id === player.id);
+      if (exists) return prev.map(p => p.id === player.id ? player : p);
+      return [...prev, player];
+    });
+    setCurrentPlayer(null);
+    setNewPlayerMode(false);
+    showToast("Joueur enregistré !");
+  }, [showToast]);
+
+  const deletePlayer = useCallback((id: string) => {
+    setPlayers(prev => prev.filter(p => p.id !== id));
+    showToast("Joueur supprimé");
+  }, [showToast]);
+
+  const saveEvaluation = useCallback((playerId: string, skillId: string, score: number) => {
+    const newEval: PlayerEvaluation = {
+      player_id: playerId,
+      skill_id: skillId,
+      score,
+      date: new Date().toISOString().split('T')[0]
+    };
+    setPlayerEvals(prev => [...prev, newEval]);
+    showToast("Évaluation enregistrée");
+  }, [showToast]);
 
   const totalDuration = useMemo(() => {
     const flattenedExercises = Object.values(currentSession.exercises).flat() as Exercise[];
     return flattenedExercises.reduce((sum, ex) => sum + (ex?.duration || 0), 0);
   }, [currentSession.exercises]);
-
-  const activeCycleData = useMemo(() => null, []);
 
   const handlePrint = () => window.print();
 
@@ -190,7 +252,7 @@ export default function App() {
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 dark:text-slate-400"><Menu /></button>
             </header>
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
-              {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={activeCycleData} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} />}
+              {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={null} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} />}
               {view === 'sessions' && (
                   <div className="space-y-4">
                       <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-4">
@@ -203,8 +265,35 @@ export default function App() {
                       <SessionsView exercises={exercises} currentSession={currentSession} setCurrentSession={setCurrentSession} saveSession={saveSession} handleSuggestExercises={handleSuggestExercises} isLoadingAI={isLoadingAI} totalDuration={totalDuration} />
                   </div>
               )}
-              {view === 'calendar' && <CyclesView cycles={cycles} currentCycle={null} setCurrentCycle={() => {}} saveCycle={() => {}} setCycleToDelete={() => {}} handleGenerateCycle={handleGenerateCycle} isLoadingAI={isLoadingAI} dateInputRef={{current: null} as any} showCalendarPicker={() => {}} savedSessions={savedSessions} onUpdateCycle={() => {}} />}
-              {view === 'players' && <PlayersView players={players} currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} newPlayerMode={newPlayerMode} setNewPlayerMode={setNewPlayerMode} savePlayer={() => {}} deletePlayer={() => {}} playerEvals={playerEvals} saveEvaluation={() => {}} loadPlayerEvaluations={() => {}} />}
+              {view === 'calendar' && (
+                <CyclesView 
+                  cycles={cycles} 
+                  currentCycle={currentCycle} 
+                  setCurrentCycle={setCurrentCycle} 
+                  saveCycle={saveCycle} 
+                  setCycleToDelete={deleteCycle} 
+                  handleGenerateCycle={handleGenerateCycle} 
+                  isLoadingAI={isLoadingAI} 
+                  dateInputRef={dateInputRef} 
+                  showCalendarPicker={() => dateInputRef.current?.showPicker()} 
+                  savedSessions={savedSessions} 
+                  onUpdateCycle={updateCycle} 
+                />
+              )}
+              {view === 'players' && (
+                <PlayersView 
+                  players={players} 
+                  currentPlayer={currentPlayer} 
+                  setCurrentPlayer={setCurrentPlayer} 
+                  newPlayerMode={newPlayerMode} 
+                  setNewPlayerMode={setNewPlayerMode} 
+                  savePlayer={savePlayer} 
+                  deletePlayer={deletePlayer} 
+                  playerEvals={playerEvals} 
+                  saveEvaluation={saveEvaluation} 
+                  loadPlayerEvaluations={() => {}} 
+                />
+              )}
               
               {view === 'history' && (
                   <div className="max-w-4xl mx-auto space-y-6">
