@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, CheckCircle, AlertCircle, Loader2, Menu, Target, Printer } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -26,6 +25,12 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [view, setView] = useState<View>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pingmanager_theme') === 'dark';
+    }
+    return false;
+  });
   
   const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
@@ -43,6 +48,14 @@ export default function App() {
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode(prev => {
+      const newVal = !prev;
+      localStorage.setItem('pingmanager_theme', newVal ? 'dark' : 'light');
+      return newVal;
+    });
   }, []);
 
   const launchDemoMode = useCallback(() => {
@@ -95,13 +108,11 @@ export default function App() {
     }
     setIsLoadingAI(true);
     try {
-      // Fix: Explicitly type the result of Object.values().flat() to avoid "unknown" type error
       const existing = (Object.values(currentSession.exercises) as Exercise[][]).flat().map((e: Exercise) => e.name);
       const suggestions = await suggestExercises(currentSession.name, existing);
       
       if (suggestions.length > 0) {
         const firstSuggested = suggestions[0];
-        // On l'ajoute à la phase correspondante ou technique par défaut
         const phaseId: PhaseId = 'technique';
         const newEx: Exercise = {
           id: `ai-${Date.now()}`,
@@ -132,7 +143,7 @@ export default function App() {
 
   // --- LOGIQUE CYCLES ---
   const handleGenerateCycle = useCallback(async () => {
-    if (!currentSession.name) { // On utilise le nom du cycle en cours si on est en mode édition
+    if (!currentSession.name) {
         showToast("L'IA a besoin d'un objectif de cycle (Nom du cycle)", "error");
         return;
     }
@@ -140,8 +151,6 @@ export default function App() {
     try {
         const plan = await generateCyclePlan(currentSession.name, 12);
         if (plan && plan.weeks) {
-            // Mise à jour des semaines du cycle en cours
-            // (Note: Dans une version réelle, on mettrait à jour le state currentCycle)
             showToast("Plan de cycle généré par Gemini !");
         }
     } catch (e) {
@@ -163,106 +172,108 @@ export default function App() {
   if (showAuth) return <Auth onAuthSuccess={() => setShowAuth(false)} launchDemoMode={launchDemoMode} />;
 
   return (
-    <div className="flex h-screen bg-slate-200 font-sans overflow-hidden">
-      {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
-      
-      <div className="no-print h-full flex w-full">
-        <Sidebar 
-          view={view} setView={setView} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen}
-          session={session} handleLogout={() => { setIsDemoMode(false); setShowAuth(true); }} setShowAuth={setShowAuth} aiConfig={aiConfig}
-          isDemoMode={isDemoMode}
-        />
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="lg:hidden bg-white border-b p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-slate-800">
-               <Target className="text-accent" /> PingManager
-            </div>
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600"><Menu /></button>
-          </header>
-          <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
-            {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={activeCycleData} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} />}
-            {view === 'sessions' && (
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-4">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-xl font-black italic uppercase">Mode Édition</h2>
-                            {currentSession.id !== 0 && <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200"><Printer size={14}/> Imprimer</button>}
-                        </div>
-                        <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
-                    </div>
-                    <SessionsView exercises={exercises} currentSession={currentSession} setCurrentSession={setCurrentSession} saveSession={saveSession} handleSuggestExercises={handleSuggestExercises} isLoadingAI={isLoadingAI} totalDuration={totalDuration} />
-                </div>
-            )}
-            {view === 'calendar' && <CyclesView cycles={cycles} currentCycle={null} setCurrentCycle={() => {}} saveCycle={() => {}} setCycleToDelete={() => {}} handleGenerateCycle={handleGenerateCycle} isLoadingAI={isLoadingAI} dateInputRef={{current: null} as any} showCalendarPicker={() => {}} savedSessions={savedSessions} onUpdateCycle={() => {}} />}
-            {view === 'players' && <PlayersView players={players} currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} newPlayerMode={newPlayerMode} setNewPlayerMode={setNewPlayerMode} savePlayer={() => {}} deletePlayer={() => {}} playerEvals={playerEvals} saveEvaluation={() => {}} loadPlayerEvaluations={() => {}} />}
-            
-            {view === 'history' && (
-                <div className="max-w-4xl mx-auto space-y-6">
-                    <h2 className="text-3xl font-black italic uppercase tracking-tighter">Historique des séances</h2>
-                    <div className="grid gap-4">
-                        {savedSessions.length === 0 ? (
-                            <div className="bg-white p-12 rounded-[2.5rem] text-center border-2 border-dashed border-slate-100">
-                                <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Aucune séance archivée</p>
-                            </div>
-                        ) : (
-                            savedSessions.map(s => (
-                                <div key={s.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
-                                    <div>
-                                        <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg group-hover:text-accent transition-colors">{s.name}</h3>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</p>
-                                    </div>
-                                    <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-900 hover:text-white transition-all">Charger</button>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            )}
-          </div>
-        </main>
-      </div>
-
-      {/* --- VUE IMPRESSION --- */}
-      <div className="print-only p-8 bg-white text-slate-900 w-full h-full">
-          <div className="border-b-4 border-slate-900 pb-4 mb-8 flex justify-between items-end">
-              <div>
-                  <h1 className="text-4xl font-black italic uppercase tracking-tighter">Ping<span className="text-orange-500">Manager</span></h1>
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Assistant Entraîneur</p>
+    <div className={`${darkMode ? 'dark' : ''} h-screen font-sans overflow-hidden`}>
+      <div className="flex h-full bg-slate-200 dark:bg-slate-950 transition-colors duration-300">
+        {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+        
+        <div className="no-print h-full flex w-full">
+          <Sidebar 
+            view={view} setView={setView} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen}
+            session={session} handleLogout={() => { setIsDemoMode(false); setShowAuth(true); }} setShowAuth={setShowAuth} aiConfig={aiConfig}
+            isDemoMode={isDemoMode} darkMode={darkMode} toggleDarkMode={toggleDarkMode}
+          />
+          <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header className="lg:hidden bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
+                 <Target className="text-accent" /> PingManager
               </div>
-              <div className="text-right">
-                  <h2 className="text-2xl font-black uppercase">{currentSession.name}</h2>
-                  <p className="text-sm font-bold">{new Date(currentSession.date).toLocaleDateString()}</p>
-              </div>
-          </div>
-
-          <div className="space-y-8">
-              {PHASES.map(phase => {
-                  const phaseExos = currentSession.exercises[phase.id] || [];
-                  if (phaseExos.length === 0) return null;
-                  return (
-                      <div key={phase.id} className="space-y-3">
-                          <h3 className="text-lg font-black uppercase tracking-widest border-l-4 border-orange-500 pl-3 bg-slate-50 py-1">{phase.label}</h3>
-                          <div className="grid gap-4">
-                              {phaseExos.map((ex, i) => (
-                                  <div key={i} className="border border-slate-100 p-4 rounded-xl">
-                                      <div className="flex justify-between items-center mb-2">
-                                          <h4 className="font-bold text-lg">{ex.name}</h4>
-                                          <span className="text-xs font-bold px-2 py-1 bg-slate-100 rounded">{ex.duration} min</span>
-                                      </div>
-                                      <p className="text-sm text-slate-600 mb-2">{ex.description}</p>
-                                      {ex.material && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matériel : {ex.material}</p>}
-                                  </div>
-                              ))}
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 dark:text-slate-400"><Menu /></button>
+            </header>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
+              {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={activeCycleData} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} />}
+              {view === 'sessions' && (
+                  <div className="space-y-4">
+                      <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-4">
+                          <div className="flex items-center gap-4">
+                              <h2 className="text-xl font-black italic uppercase dark:text-white">Mode Édition</h2>
+                              {currentSession.id !== 0 && <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Printer size={14}/> Imprimer</button>}
                           </div>
+                          <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
                       </div>
-                  )
-              })}
-          </div>
+                      <SessionsView exercises={exercises} currentSession={currentSession} setCurrentSession={setCurrentSession} saveSession={saveSession} handleSuggestExercises={handleSuggestExercises} isLoadingAI={isLoadingAI} totalDuration={totalDuration} />
+                  </div>
+              )}
+              {view === 'calendar' && <CyclesView cycles={cycles} currentCycle={null} setCurrentCycle={() => {}} saveCycle={() => {}} setCycleToDelete={() => {}} handleGenerateCycle={handleGenerateCycle} isLoadingAI={isLoadingAI} dateInputRef={{current: null} as any} showCalendarPicker={() => {}} savedSessions={savedSessions} onUpdateCycle={() => {}} />}
+              {view === 'players' && <PlayersView players={players} currentPlayer={currentPlayer} setCurrentPlayer={setCurrentPlayer} newPlayerMode={newPlayerMode} setNewPlayerMode={setNewPlayerMode} savePlayer={() => {}} deletePlayer={() => {}} playerEvals={playerEvals} saveEvaluation={() => {}} loadPlayerEvaluations={() => {}} />}
+              
+              {view === 'history' && (
+                  <div className="max-w-4xl mx-auto space-y-6">
+                      <h2 className="text-3xl font-black italic uppercase tracking-tighter dark:text-white">Historique des séances</h2>
+                      <div className="grid gap-4">
+                          {savedSessions.length === 0 ? (
+                              <div className="bg-white dark:bg-slate-900 p-12 rounded-[2.5rem] text-center border-2 border-dashed border-slate-100 dark:border-slate-800">
+                                  <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Aucune séance archivée</p>
+                              </div>
+                          ) : (
+                              savedSessions.map(s => (
+                                  <div key={s.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                                      <div>
+                                          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-lg group-hover:text-accent transition-colors">{s.name}</h3>
+                                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</p>
+                                      </div>
+                                      <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all">Charger</button>
+                                  </div>
+                              ))
+                          )}
+                      </div>
+                  </div>
+              )}
+            </div>
+          </main>
+        </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-              <span>PingManager Pro v1.1.0</span>
-              <span>www.pingmanager.app</span>
-          </div>
+        {/* --- VUE IMPRESSION --- */}
+        <div className="print-only p-8 bg-white text-slate-900 w-full h-full">
+            <div className="border-b-4 border-slate-900 pb-4 mb-8 flex justify-between items-end">
+                <div>
+                    <h1 className="text-4xl font-black italic uppercase tracking-tighter">Ping<span className="text-orange-500">Manager</span></h1>
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Assistant Entraîneur</p>
+                </div>
+                <div className="text-right">
+                    <h2 className="text-2xl font-black uppercase">{currentSession.name}</h2>
+                    <p className="text-sm font-bold">{new Date(currentSession.date).toLocaleDateString()}</p>
+                </div>
+            </div>
+
+            <div className="space-y-8">
+                {PHASES.map(phase => {
+                    const phaseExos = currentSession.exercises[phase.id] || [];
+                    if (phaseExos.length === 0) return null;
+                    return (
+                        <div key={phase.id} className="space-y-3">
+                            <h3 className="text-lg font-black uppercase tracking-widest border-l-4 border-orange-500 pl-3 bg-slate-50 py-1">{phase.label}</h3>
+                            <div className="grid gap-4">
+                                {phaseExos.map((ex, i) => (
+                                    <div key={i} className="border border-slate-100 p-4 rounded-xl">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className="font-bold text-lg">{ex.name}</h4>
+                                            <span className="text-xs font-bold px-2 py-1 bg-slate-100 rounded">{ex.duration} min</span>
+                                        </div>
+                                        <p className="text-sm text-slate-600 mb-2">{ex.description}</p>
+                                        {ex.material && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matériel : {ex.material}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+                <span>PingManager Pro v1.1.0</span>
+                <span>www.pingmanager.app</span>
+            </div>
+        </div>
       </div>
     </div>
   );

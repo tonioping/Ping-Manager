@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { 
   LayoutDashboard, CalendarDays, Plus, BookOpen, GraduationCap, Filter, CreditCard, Settings, 
-  LogOut, LogIn, Cloud, CloudOff, User, Sparkles, Target, PlayCircle
+  LogOut, LogIn, Cloud, CloudOff, User, Sparkles, Target, PlayCircle, Moon, Sun
 } from 'lucide-react';
 import { View, AIConfig } from '../types';
 
@@ -30,9 +29,11 @@ interface SidebarProps {
     setShowAuth: (show: boolean) => void;
     aiConfig: AIConfig;
     isDemoMode?: boolean;
+    darkMode: boolean;
+    toggleDarkMode: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobileMenuOpen, setMobileMenuOpen, session, handleLogout, setShowAuth, aiConfig, isDemoMode }) => {
+export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobileMenuOpen, setMobileMenuOpen, session, handleLogout, setShowAuth, aiConfig, isDemoMode, darkMode, toggleDarkMode }) => {
     
     const handleNavigation = (targetView: View) => {
         setView(targetView);
@@ -71,6 +72,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobi
             <SidebarItem view="settings" currentView={view} setView={handleNavigation} icon={Settings} label="Paramètres" />
           </nav>
           <div className="p-4 border-t border-slate-800 bg-slate-900/20">
+             <button 
+                onClick={toggleDarkMode}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all mb-2"
+             >
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                <span className="text-sm tracking-wide">{darkMode ? 'Mode Clair' : 'Mode Sombre'}</span>
+             </button>
+
              {isDemoMode || session ? (
                 <button onClick={() => { handleLogout(); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800 mb-4"><LogOut size={16} /> {isDemoMode ? 'Quitter Démo' : 'Déconnexion'}</button>
              ) : (
