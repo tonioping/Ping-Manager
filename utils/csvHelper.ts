@@ -13,9 +13,10 @@ export const exportPlayersToCSV = (players: Player[]) => {
     p.last_equipment_change || ''
   ]);
 
+  // Utilisation du point-virgule pour la compatibilité Excel FR
   const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    headers.join(';'),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(';'))
   ].join('\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -30,28 +31,44 @@ export const exportPlayersToCSV = (players: Player[]) => {
 };
 
 export const parsePlayersCSV = (csvText: string): Partial<Player>[] => {
-  const lines = csvText.split(/\r?\n/);
+  const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  // Détection du séparateur (, ou ;)
+  const firstLine = lines[0];
+  const separator = firstLine.includes(';') ? ';' : ',';
+  
+  const headers = firstLine.split(separator).map(h => h.trim().replace(/"/g, ''));
   const players: Partial<Player>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    
-    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-    const player: any = { id: crypto.randomUUID() };
+    const values = lines[i].split(separator).map(v => v.trim().replace(/"/g, ''));
+    // On ne génère pas d'ID ici pour laisser Supabase le faire si c'est une nouvelle insertion
+    const player: any = {};
 
     values.forEach((val, idx) => {
-      const header = headers[idx]?.toLowerCase();
-      if (header?.includes('prénom') || idx === 0) player.first_name = val;
-      else if (header?.includes('nom') || idx === 1) player.last_name = val;
-      else if (header?.includes('niveau') || idx === 2) player.level = val || 'Debutants';
-      else if (header?.includes('groupe') || idx === 3) player.group = val;
-      else if (header?.includes('main') || idx === 4) player.hand = val;
-      else if (header?.includes('prise') || idx === 5) player.grip = val;
-      else if (header?.includes('bois') || idx === 6) player.blade = val;
-      else if (header?.includes('matériel') || idx === 7) player.last_equipment_change = val;
+      const header = headers[idx]?.toLowerCase() || '';
+      
+      if (header.includes('prénom') || idx === 0) player.first_name = val;
+      else if (header.includes('nom') || idx === 1) player.last_name = val;
+      else if (header.includes('niveau') || idx === 2) {
+          // Normalisation du niveau pour correspondre aux types attendus
+          if (val.toLowerCase().includes('déb') || val.toLowerCase().includes('deb')) player.level = 'Debutants';
+          else if (val.toLowerCase().includes('int')) player.level = 'Intermediaire';
+          else if (val.toLowerCase().includes('ava')) player.level = 'Avance';
+          else if (val.toLowerCase().includes('eli')) player.level = 'Elite';
+          else player.level = 'Debutants';
+      }
+      else if (header.includes('groupe') || idx === 3) player.group = val;
+      else if (header.includes('main') || idx === 4) player.hand = val;
+      else if (header.includes('prise') || idx === 5) player.grip = val;
+      else if (header.includes('bois') || idx === 6) player.blade = val;
+      else if (header.includes('matériel') || idx === 7) {
+          // Validation basique de la date (YYYY-MM-DD)
+          if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+              player.last_equipment_change = val;
+          }
+      }
     });
 
     if (player.first_name && player.last_name) {

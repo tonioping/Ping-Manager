@@ -193,7 +193,6 @@ export default function App() {
     };
 
     if (session && !isDemoMode) {
-        // L'upsert nécessite une contrainte UNIQUE sur (session_id, player_id) dans Supabase
         const { data, error } = await supabase
             .from('attendance')
             .upsert(record, { onConflict: 'session_id,player_id' })
@@ -288,13 +287,17 @@ export default function App() {
 
   const savePlayer = useCallback(async (player: Player) => {
     if (session && !isDemoMode) {
+      // On s'assure que l'ID est valide ou absent pour une nouvelle insertion
+      const playerToSave = { ...player, user_id: session.user.id };
+      
       const { data, error } = await supabase
         .from('players')
-        .upsert({ ...player, user_id: session.user.id })
+        .upsert(playerToSave)
         .select()
         .single();
 
       if (error) {
+        console.error("Erreur Supabase SavePlayer:", error);
         showToast("Erreur sauvegarde joueur", "error");
         return;
       }
@@ -425,7 +428,6 @@ export default function App() {
         return;
       }
     }
-    // Sinon créer une nouvelle séance pour ce groupe
     const group = GROUPS.find(g => g.id === selectedGroupId);
     setCurrentSession({
       ...EMPTY_SESSION,
@@ -552,7 +554,6 @@ export default function App() {
           </main>
         </div>
 
-        {/* --- VUE IMPRESSION --- */}
         <div className="print-only p-8 bg-white text-slate-900 w-full h-full">
             <div className="border-b-4 border-slate-900 pb-4 mb-8 flex justify-between items-end">
                 <div>
