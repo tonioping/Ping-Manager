@@ -287,21 +287,8 @@ export default function App() {
 
   const savePlayer = useCallback(async (player: Player) => {
     if (session && !isDemoMode) {
-      // On s'assure que l'ID est valide ou absent pour une nouvelle insertion
-      const playerToSave = { ...player, user_id: session.user.id };
-      
-      const { data, error } = await supabase
-        .from('players')
-        .upsert(playerToSave)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Erreur Supabase SavePlayer:", error);
-        showToast("Erreur sauvegarde joueur", "error");
-        return;
-      }
-      setPlayers(prev => {
+      const { data, error } = await supabase.from('players').upsert({ ...player, user_id: session.user.id }).select().single();
+      if (!error && data) setPlayers(prev => {
         const exists = prev.find(p => p.id === data.id);
         if (exists) return prev.map(p => p.id === data.id ? data : p);
         return [...prev, data];
@@ -464,7 +451,6 @@ export default function App() {
                 <GroupDetailView 
                   group={GROUPS.find(g => g.id === selectedGroupId)!}
                   players={players}
-                  cycle={cycles.find(c => c.group === selectedGroupId) || null}
                   sessions={savedSessions}
                   attendance={attendance}
                   onBack={() => setView('dashboard')}

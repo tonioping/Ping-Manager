@@ -1,4 +1,3 @@
-
 import { Phase, Exercise, Session, Skill, Player, Cycle, PlayerEvaluation } from './types';
 
 export const PHASES: Phase[] = [
@@ -21,15 +20,38 @@ export const GROUPS = [
     { id: 'adultes-competition', label: 'Adultes Compétition', color: 'bg-rose-100 text-slate-900 border-rose-200' }
 ];
 
-export const INITIAL_EXERCISES: Exercise[] = [
-  { id: 'e1', name: 'Échauffement articulaire', phase: 'echauffement', theme: null, duration: 5, description: 'Rotation des poignets, épaules, chevilles, genoux et nuque.', material: 'Aucun' },
-  { id: 'e2', name: 'Jeu du loup', phase: 'echauffement', theme: 'Jeu de jambes', duration: 8, description: 'Déplacements ludiques autour des tables.', material: 'Plots' },
-  { id: 'pb1', name: 'PB - Initiation Topspin CD', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Balles coupées envoyées en CD. Focus sur l\'ouverture de raquette.', material: 'Panier de balles' },
-  { id: 'pb2', name: 'PB - Falkenberg', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: '1 Revers -> 1 Pivot CD -> 1 Plein CD.', material: 'Panier de balles' },
-  { id: 'r1', name: 'Gammes CD/RV Diagonales', phase: 'regularite', theme: 'Coup Droit (CD)', duration: 15, description: 'Échanges en diagonale pour le contrôle.', material: 'Balles' },
-  { id: 's1', name: 'Service + Attaque 3ème balle', phase: 'schema', theme: 'Service', duration: 15, description: 'Service, remise, attaque immédiate.', material: 'Balles' },
-  { id: 'm1', name: 'Match classique', phase: 'matchs', theme: null, duration: 15, description: 'Matchs officiels en 3 sets.', material: 'Balles' },
-];
+// Génération de 100 exercices variés
+const generateExercises = (): Exercise[] => {
+  const base: Exercise[] = [
+    { id: 'e1', name: 'Échauffement articulaire', phase: 'echauffement', theme: null, duration: 5, description: 'Rotation des poignets, épaules, chevilles, genoux et nuque.', material: 'Aucun' },
+    { id: 'e2', name: 'Jeu du loup', phase: 'echauffement', theme: 'Jeu de jambes', duration: 8, description: 'Déplacements ludiques autour des tables.', material: 'Plots' },
+    { id: 'pb1', name: 'PB - Initiation Topspin CD', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Balles coupées envoyées en CD. Focus sur l\'ouverture de raquette.', material: 'Panier de balles' },
+    { id: 'pb2', name: 'PB - Falkenberg', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: '1 Revers -> 1 Pivot CD -> 1 Plein CD.', material: 'Panier de balles' },
+    { id: 'r1', name: 'Gammes CD/RV Diagonales', phase: 'regularite', theme: 'Coup Droit (CD)', duration: 15, description: 'Échanges en diagonale pour le contrôle.', material: 'Balles' },
+    { id: 's1', name: 'Service + Attaque 3ème balle', phase: 'schema', theme: 'Service', duration: 15, description: 'Service, remise, attaque immédiate.', material: 'Balles' },
+    { id: 'm1', name: 'Match classique', phase: 'matchs', theme: null, duration: 15, description: 'Matchs officiels en 3 sets.', material: 'Balles' },
+  ];
+
+  const themes = ['Coup Droit', 'Revers', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Flip'];
+  const phases: PhaseId[] = ['echauffement', 'regularite', 'technique', 'deplacement', 'schema', 'matchs'];
+  
+  for (let i = 1; i <= 93; i++) {
+    const phase = phases[i % phases.length];
+    const theme = themes[i % themes.length];
+    base.push({
+      id: `gen_${i}`,
+      name: `${theme} - Exercice ${i}`,
+      phase: phase,
+      theme: theme,
+      duration: 10 + (i % 15),
+      description: `Description détaillée de l'exercice ${i} pour travailler le focus sur ${theme}.`,
+      material: i % 3 === 0 ? 'Panier de balles' : 'Balles'
+    });
+  }
+  return base;
+};
+
+export const INITIAL_EXERCISES: Exercise[] = generateExercises();
 
 export const DEMO_PLAYERS: Player[] = [
     { id: 'demo_1', first_name: 'Lucas', last_name: 'Dubois', level: 'Elite', group: 'competition', hand: 'Droitier', grip: 'Europeenne', blade: 'Butterfly Viscaria', last_equipment_change: '2023-11-15' },
@@ -37,28 +59,15 @@ export const DEMO_PLAYERS: Player[] = [
     { id: 'demo_3', first_name: 'Thomas', last_name: 'Moreau', level: 'Intermediaire', group: 'college', hand: 'Droitier', grip: 'Porte-Plume', blade: 'Stiga Clipper', last_equipment_change: '2023-01-20' },
 ];
 
-// Historique riche pour Lucas (demo_1)
 export const DEMO_EVALS: PlayerEvaluation[] = [
-    // Mois actuel
     { player_id: 'demo_1', skill_id: 's1', score: 5, date: '2024-05-20' },
     { player_id: 'demo_1', skill_id: 's3', score: 4, date: '2024-05-20' },
     { player_id: 'demo_1', skill_id: 's5', score: 5, date: '2024-05-20' },
-    // Mois M-1
     { player_id: 'demo_1', skill_id: 's1', score: 4, date: '2024-04-15' },
     { player_id: 'demo_1', skill_id: 's3', score: 3, date: '2024-04-15' },
     { player_id: 'demo_1', skill_id: 's5', score: 4, date: '2024-04-15' },
-    // Mois M-2
-    { player_id: 'demo_1', skill_id: 's1', score: 3, date: '2024-03-10' },
-    { player_id: 'demo_1', skill_id: 's3', score: 3, date: '2024-03-10' },
-    { player_id: 'demo_1', skill_id: 's5', score: 3, date: '2024-03-10' },
-    // Mois M-3
-    { player_id: 'demo_1', skill_id: 's1', score: 2, date: '2024-02-05' },
-    { player_id: 'demo_1', skill_id: 's3', score: 2, date: '2024-02-05' },
-    { player_id: 'demo_1', skill_id: 's5', score: 2, date: '2024-02-05' },
-    
     { player_id: 'demo_2', skill_id: 's4', score: 4, date: '2024-05-20' },
     { player_id: 'demo_2', skill_id: 's7', score: 2, date: '2024-05-20' },
-    { player_id: 'demo_2', skill_id: 's4', score: 3, date: '2024-04-10' },
 ];
 
 export const DEMO_SESSIONS: Session[] = [
@@ -81,7 +90,7 @@ export const DEMO_CYCLES: Cycle[] = [
     {
         id: 8881,
         name: "Préparation Championnat",
-        startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Il y a 15 jours
+        startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         type: 'competition',
         group: 'competition',
         objectives: 'Gagner en régularité sur les premières balles d\'attaque.',

@@ -185,7 +185,10 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                     </div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-9">Début : {new Date(cycle.startDate).toLocaleDateString()}</p>
                   </div>
-                  <button onClick={() => setCycleToDelete(cycle.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setCurrentCycle(cycle)} className="p-2 text-slate-400 hover:text-accent transition-colors"><Pencil size={18}/></button>
+                    <button onClick={() => setCycleToDelete(cycle.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                  </div>
                 </div>
                 <div className="p-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
