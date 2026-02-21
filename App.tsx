@@ -180,7 +180,7 @@ export default function App() {
   }, [currentSession, session, isDemoMode, showToast]);
 
   const saveAttendance = useCallback(async (playerId: string, status: 'present' | 'absent' | 'late') => {
-    if (!currentSession.id) {
+    if (!currentSession.id || currentSession.id === 0) {
         showToast("Enregistrez d'abord la séance pour faire l'appel", "error");
         return;
     }
@@ -193,13 +193,20 @@ export default function App() {
     };
 
     if (session && !isDemoMode) {
+        // L'upsert nécessite une contrainte UNIQUE sur (session_id, player_id) dans Supabase
         const { data, error } = await supabase
             .from('attendance')
             .upsert(record, { onConflict: 'session_id,player_id' })
             .select()
             .single();
         
-        if (!error && data) {
+        if (error) {
+            console.error("Erreur Supabase Attendance:", error);
+            showToast("Erreur lors de l'enregistrement de la présence", "error");
+            return;
+        }
+
+        if (data) {
             setAttendance(prev => {
                 const exists = prev.find(a => a.session_id === data.session_id && a.player_id === data.player_id);
                 if (exists) return prev.map(a => a.session_id === data.session_id && a.player_id === data.player_id ? data : a);
