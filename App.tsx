@@ -5,9 +5,10 @@ import { DashboardView } from './components/DashboardView';
 import { SessionsView } from './components/SessionsView';
 import { CyclesView } from './components/CyclesView';
 import { PlayersView } from './components/PlayersView';
+import { GroupDetailView } from './components/GroupDetailView';
 import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
-import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS } from './constants';
+import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
 import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance } from './types';
 import { suggestExercises, generateCyclePlan } from './services/geminiService';
 
@@ -24,6 +25,7 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(true); 
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [view, setView] = useState<View>('dashboard');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -402,6 +404,30 @@ export default function App() {
 
   const handlePrint = () => window.print();
 
+  const handleSelectGroup = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setView('group-detail');
+  };
+
+  const handleLaunchSessionFromGroup = (sessionId?: number) => {
+    if (sessionId) {
+      const sess = savedSessions.find(s => s.id === sessionId);
+      if (sess) {
+        setCurrentSession({...sess});
+        setView('sessions');
+        return;
+      }
+    }
+    // Sinon créer une nouvelle séance pour ce groupe
+    const group = GROUPS.find(g => g.id === selectedGroupId);
+    setCurrentSession({
+      ...EMPTY_SESSION,
+      name: `${group?.label || 'Séance'} - ${new Date().toLocaleDateString()}`,
+      date: new Date().toISOString().split('T')[0]
+    });
+    setView('sessions');
+  };
+
   if (showAuth) return <Auth onAuthSuccess={() => setShowAuth(false)} launchDemoMode={launchDemoMode} />;
 
   return (
@@ -423,7 +449,21 @@ export default function App() {
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 dark:text-slate-400"><Menu /></button>
             </header>
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
-              {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={null} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} />}
+              {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={null} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} onSelectGroup={handleSelectGroup} />}
+              
+              {view === 'group-detail' && selectedGroupId && (
+                <GroupDetailView 
+                  group={GROUPS.find(g => g.id === selectedGroupId)!}
+                  players={players}
+                  cycle={cycles.find(c => c.group === selectedGroupId) || null}
+                  sessions={savedSessions}
+                  attendance={attendance}
+                  onBack={() => setView('dashboard')}
+                  onLaunchSession={handleLaunchSessionFromGroup}
+                  onSaveAttendance={saveAttendance}
+                />
+              )}
+
               {view === 'sessions' && (
                   <div className="space-y-4">
                       <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-4">

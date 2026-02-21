@@ -73,7 +73,7 @@ export interface AIConfig {
   model: string;
 }
 
-export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings' | 'players' | 'subscription';
+export type View = 'dashboard' | 'sessions' | 'history' | 'library' | 'calendar' | 'settings' | 'players' | 'subscription' | 'group-detail';
 
 export interface Player {
     id: string;

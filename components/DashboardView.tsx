@@ -19,6 +19,7 @@ interface DashboardViewProps {
   setView: (view: View) => void;
   setCurrentSession: (session: Session) => void;
   setCurrentPlayer: (player: Player | null) => void;
+  onSelectGroup: (groupId: string) => void;
 }
 
 const FashionLogo = () => (
@@ -45,7 +46,8 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   cycles,
   setView,
   setCurrentSession,
-  setCurrentPlayer
+  setCurrentPlayer,
+  onSelectGroup
 }) => {
   
   const groupsStatus = useMemo(() => {
@@ -254,7 +256,11 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {groupsStatus.map((group) => (
-            <div key={group.id} className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col hover:shadow-2xl transition-all group/card overflow-visible">
+            <div 
+              key={group.id} 
+              onClick={() => onSelectGroup(group.id)}
+              className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col hover:shadow-2xl transition-all group/card overflow-visible cursor-pointer"
+            >
               <div className={`h-28 flex items-center justify-between px-10 rounded-t-[3rem] ${group.color.split(' ')[0]}`}>
                 <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-lg group-hover/card:scale-110 transition-transform">
                   <span className="text-2xl font-black text-slate-900 dark:text-white">{group.label[0]}</span>
@@ -295,17 +301,17 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                   ) : (
                     <div className="py-8 text-center border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-[2rem] flex flex-col items-center gap-3">
                       <div className="text-slate-200 dark:text-slate-700"><Rocket size={32}/></div>
-                      <button onClick={() => setView('calendar')} className="text-[10px] font-black text-slate-400 hover:text-accent uppercase tracking-widest transition-colors">Créer une planification</button>
+                      <button onClick={(e) => { e.stopPropagation(); setView('calendar'); }} className="text-[10px] font-black text-slate-400 hover:text-accent uppercase tracking-widest transition-colors">Créer une planification</button>
                     </div>
                   )}
                 </div>
 
                 {group.activeData && (
                     <button 
-                      onClick={() => handleLaunchSession(group)}
-                      className={`mt-10 w-full py-4 rounded-2xl font-black text-[10px] tracking-widest uppercase transition-all flex items-center justify-center gap-3 shadow-sm hover:scale-[1.02] active:scale-95 ${group.activeData.nextSessionId ? 'bg-slate-900 dark:bg-white dark:text-slate-900 text-white hover:bg-slate-800' : 'bg-white dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                      onClick={(e) => { e.stopPropagation(); onSelectGroup(group.id); }}
+                      className={`mt-10 w-full py-4 rounded-2xl font-black text-[10px] tracking-widest uppercase transition-all flex items-center justify-center gap-3 shadow-sm hover:scale-[1.02] active:scale-95 bg-slate-900 dark:bg-white dark:text-slate-900 text-white hover:bg-slate-800`}
                     >
-                      {group.activeData.nextSessionId ? <><PlayCircle size={16}/> Lancer la séance</> : <><Plus size={16}/> Préparer séance</>}
+                      <ChevronRight size={16}/> Voir détails groupe
                     </button>
                 )}
               </div>
