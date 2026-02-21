@@ -6,6 +6,7 @@ import { SessionsView } from './components/SessionsView';
 import { CyclesView } from './components/CyclesView';
 import { PlayersView } from './components/PlayersView';
 import { GroupDetailView } from './components/GroupDetailView';
+import { LibraryView } from './components/LibraryView';
 import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
@@ -458,6 +459,8 @@ export default function App() {
                   onSaveAttendance={saveAttendance}
                 />
               )}
+
+              {view === 'library' && <LibraryView exercises={exercises} />}
 
               {view === 'sessions' && (
                   <div className="space-y-4">
