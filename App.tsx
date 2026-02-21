@@ -143,23 +143,35 @@ export default function App() {
       return;
     }
 
-    const sessionData = {
+    // On prépare les données. On n'inclut 'group' que s'il est défini pour éviter les erreurs 400
+    // si la colonne n'existe pas encore (bien que le SQL ci-dessus doive la créer).
+    const sessionData: any = {
       name: currentSession.name,
       date: currentSession.date,
       exercises: currentSession.exercises,
-      group: currentSession.group,
       user_id: session?.user?.id
     };
 
+    if (currentSession.group) {
+      sessionData.group = currentSession.group;
+    }
+
     if (session && !isDemoMode) {
+      // Si l'ID est 0 ou manquant, on laisse Supabase générer l'ID (INSERT)
+      // Sinon on fait un UPDATE (UPSERT avec ID)
+      const payload = (currentSession.id && currentSession.id !== 0) 
+        ? { ...sessionData, id: currentSession.id } 
+        : sessionData;
+
       const { data, error } = await supabase
         .from('sessions')
-        .upsert(currentSession.id ? { ...sessionData, id: currentSession.id } : sessionData)
+        .upsert(payload)
         .select()
         .single();
 
       if (error) {
-        showToast("Erreur lors de la sauvegarde Cloud", "error");
+        console.error("Erreur Supabase Session:", error);
+        showToast("Erreur lors de la sauvegarde Cloud (Vérifiez la colonne 'group')", "error");
         return;
       }
       setSavedSessions(prev => {
