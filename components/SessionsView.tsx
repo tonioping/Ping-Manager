@@ -1,10 +1,10 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box } from 'lucide-react';
-import { Exercise, Session, PhaseId } from '../types';
+import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box, Users } from 'lucide-react';
+import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
 import { PHASES } from '../constants';
 import { GeminiButton } from './GeminiButton';
 import { InfoBubble } from './InfoBubble';
+import { AttendanceModal } from './AttendanceModal';
 
 interface SessionsViewProps {
   exercises: Exercise[];
@@ -14,6 +14,9 @@ interface SessionsViewProps {
   handleSuggestExercises: () => void;
   isLoadingAI: boolean;
   totalDuration: number;
+  players: Player[];
+  attendance: Attendance[];
+  onSaveAttendance: (playerId: string, status: 'present' | 'absent' | 'late') => void;
 }
 
 const PhaseDropZone = React.memo(({ phase, exercises, onDrop, onRemove }: any) => {
@@ -65,13 +68,17 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   saveSession,
   handleSuggestExercises,
   isLoadingAI,
-  totalDuration
+  totalDuration,
+  players,
+  attendance,
+  onSaveAttendance
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPhase, setFilterPhase] = useState('all');
   const [filterMaterial, setFilterMaterial] = useState<'all' | 'panier'>('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
+  const [showAttendance, setShowAttendance] = useState(false);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => { 
@@ -105,6 +112,16 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] lg:h-[calc(100vh-100px)] relative">
+      {showAttendance && (
+        <AttendanceModal 
+            players={players} 
+            attendance={attendance} 
+            onToggle={onSaveAttendance} 
+            onClose={() => setShowAttendance(false)} 
+            groupName={currentSession.name}
+        />
+      )}
+
       <div className="lg:hidden flex p-1 mx-4 mb-2 bg-slate-200 rounded-xl">
         <button onClick={() => setActiveTab('library')} className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-2 ${activeTab === 'library' ? 'bg-white shadow-sm' : 'text-slate-500'}`}><List size={16}/> Biblio</button>
         <button onClick={() => setActiveTab('session')} className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-2 ${activeTab === 'session' ? 'bg-white shadow-sm' : 'text-slate-500'}`}><Layers size={16}/> Séance</button>
@@ -135,6 +152,13 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
               <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-4">
                   <input type="text" placeholder="Nom de la séance" value={currentSession.name} onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} className="flex-1 w-full p-2 text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-accent outline-none text-slate-900 transition-colors" />
                   <div className="flex gap-2">
+                      <button 
+                        onClick={() => setShowAttendance(true)}
+                        className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 shadow-md flex items-center gap-2"
+                        title="Faire l'appel"
+                      >
+                        <Users size={20}/>
+                      </button>
                       <div className="flex items-center gap-1">
                         <GeminiButton onClick={handleSuggestExercises} isLoading={isLoadingAI} className="!py-2 !px-3 !text-sm">IA Suggest</GeminiButton>
                         <InfoBubble content="L'IA analyse le titre de votre séance pour vous proposer 3 exercices originaux et complémentaires." position="left" />

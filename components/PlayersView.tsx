@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock } from 'lucide-react';
 // @ts-ignore
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Player, PlayerEvaluation, Skill } from '../types';
+import { Player, PlayerEvaluation, Skill, Attendance, Session, Exercise } from '../types';
 import { DEFAULT_SKILLS, GROUPS } from '../constants';
 import { InfoBubble } from './InfoBubble';
 
@@ -17,6 +17,8 @@ interface PlayersViewProps {
   playerEvals: PlayerEvaluation[];
   saveEvaluation: (playerId: string, skillId: string, score: number) => void;
   loadPlayerEvaluations: (playerId: string) => void;
+  attendance: Attendance[];
+  sessions: Session[];
 }
 
 export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
@@ -29,7 +31,9 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   deletePlayer,
   playerEvals,
   saveEvaluation,
-  loadPlayerEvaluations
+  loadPlayerEvaluations,
+  attendance,
+  sessions
 }) => {
   const [filterGroup, setFilterGroup] = useState<string>('all');
   const [historySkillFilter, setHistorySkillFilter] = useState<string>('average');
@@ -39,10 +43,24 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
       return playerEvals.filter(ev => ev.player_id === currentPlayer.id);
   }, [playerEvals, currentPlayer]);
 
+  const trainingVolume = useMemo(() => {
+    if (!currentPlayer) return 0;
+    const playerAttendance = attendance.filter(a => a.player_id === currentPlayer.id && (a.status === 'present' || a.status === 'late'));
+    
+    let totalMinutes = 0;
+    playerAttendance.forEach(record => {
+        const session = sessions.find(s => s.id === record.session_id);
+        if (session) {
+            const sessionMinutes = Object.values(session.exercises).flat().reduce((sum, ex) => sum + (ex?.duration || 0), 0);
+            totalMinutes += sessionMinutes;
+        }
+    });
+    return Math.round(totalMinutes / 60);
+  }, [currentPlayer, attendance, sessions]);
+
   const radarData = useMemo(() => { 
       if (!currentPlayerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); 
       const latestScores: Record<string, number> = {}; 
-      // Sort by date desc to get the most recent ones first
       [...currentPlayerEvals].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).forEach(ev => { 
           if (latestScores[ev.skill_id] === undefined) latestScores[ev.skill_id] = ev.score; 
       }); 
@@ -51,28 +69,21 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
   const progressionData = useMemo(() => {
       if (!currentPlayerEvals.length) return [];
-      
-      // Group evaluations by date
       const evalsByDate: Record<string, PlayerEvaluation[]> = {};
       currentPlayerEvals.forEach(ev => {
           if (!evalsByDate[ev.date]) evalsByDate[ev.date] = [];
           evalsByDate[ev.date].push(ev);
       });
-
-      // Sort dates
       const sortedDates = Object.keys(evalsByDate).sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
-
       return sortedDates.map(date => {
           const dayEvals = evalsByDate[date];
           let scoreVal = 0;
-          
           if (historySkillFilter === 'average') {
               scoreVal = dayEvals.reduce((sum, e) => sum + e.score, 0) / dayEvals.length;
           } else {
               const specificEval = dayEvals.find(e => e.skill_id === historySkillFilter);
               scoreVal = specificEval ? specificEval.score : 0;
           }
-
           return {
               date: new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
               score: parseFloat(scoreVal.toFixed(1)),
@@ -154,6 +165,22 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
                 <div className="p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
                      <div className="lg:col-span-4 space-y-10">
+                        {!newPlayerMode && (
+                            <div className="bg-accent text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group/volume">
+                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/20 rounded-full blur-3xl group-hover/volume:scale-150 transition-transform duration-700"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-4 opacity-80">
+                                        <Clock size={14}/> Volume d'entraînement
+                                    </div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-5xl font-black italic tracking-tighter">{trainingVolume}</span>
+                                        <span className="text-xl font-bold uppercase italic opacity-80">Heures</span>
+                                    </div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest mt-4 opacity-60">Total cumulé cette saison</p>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-6">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-2"><User size={14}/> Informations de base</h4>
                             <div className="space-y-4">
@@ -202,7 +229,6 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                      {!newPlayerMode && (
                          <div className="lg:col-span-8 space-y-12">
                              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                 {/* RADAR CHART */}
                                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center">
                                      <div className="w-full flex justify-between items-center mb-6">
                                          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
@@ -225,7 +251,6 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                      </div>
                                  </div>
 
-                                 {/* PROGRESSION LINE CHART */}
                                  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col">
                                      <div className="w-full flex justify-between items-center mb-4">
                                          <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
@@ -264,7 +289,6 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                  </div>
                              </div>
 
-                             {/* EVALUATION GRID */}
                              <div className="space-y-6">
                                  <div className="flex items-center justify-between px-2">
                                      <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
@@ -277,9 +301,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                          const todayStr = new Date().toISOString().split('T')[0];
                                          const todayEval = currentPlayerEvals.find(e => e.skill_id === skill.id && e.date === todayStr);
                                          const latestEval = [...currentPlayerEvals].filter(e => e.skill_id === skill.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                                         
                                          const currentVal = todayEval ? todayEval.score : 0;
-
                                          return (
                                              <div key={skill.id} className="group/eval p-6 bg-white border border-slate-100 rounded-[2rem] flex flex-col sm:flex-row justify-between items-center gap-4 hover:border-accent/30 hover:shadow-lg transition-all">
                                                  <div className="text-center sm:text-left">

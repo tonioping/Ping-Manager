@@ -1,4 +1,3 @@
-
 export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'deplacement' | 'schema' | 'matchs';
 
 export interface Phase {
@@ -26,6 +25,15 @@ export interface Session {
   date: string;
   exercises: Record<PhaseId, Exercise[]>;
   user_id?: string;
+  group?: string; // Groupe associé à la séance
+}
+
+export interface Attendance {
+    id?: string;
+    session_id: number;
+    player_id: string;
+    status: 'present' | 'absent' | 'late';
+    user_id?: string;
 }
 
 export interface CycleWeek {
@@ -46,7 +54,7 @@ export interface Cycle {
   type: CycleType;
   objectives: string;
   user_id?: string;
-  group?: string; // Ajout du groupe cible
+  group?: string; 
 }
 
 export interface CoachProfile {
@@ -77,17 +85,13 @@ export interface Player {
     group?: string; 
     notes?: string;
     user_id?: string;
-    
-    // Ping Specifics
-    ranking?: number; // Points (ex: 1250)
+    ranking?: number;
     hand?: 'Droitier' | 'Gaucher';
     grip?: 'Europeenne' | 'Porte-Plume';
-    
-    // Equipment
     blade?: string;
     rubber_fh?: string;
     rubber_bh?: string;
-    last_equipment_change?: string; // Date
+    last_equipment_change?: string;
 }
 
 export interface Skill {

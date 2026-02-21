@@ -8,7 +8,7 @@ import { PlayersView } from './components/PlayersView';
 import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS } from './constants';
-import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId } from './types';
+import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance } from './types';
 import { suggestExercises, generateCyclePlan } from './services/geminiService';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
@@ -39,6 +39,7 @@ export default function App() {
   const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
   const [players, setPlayers] = useState<Player[]>([]); 
   const [playerEvals, setPlayerEvals] = useState<PlayerEvaluation[]>([]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [newPlayerMode, setNewPlayerMode] = useState(false);
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
@@ -60,7 +61,6 @@ export default function App() {
     });
   }, []);
 
-  // --- CHARGEMENT DES DONNÉES DEPUIS SUPABASE ---
   const loadUserData = useCallback(async (userId: string) => {
     try {
       const [
@@ -68,19 +68,22 @@ export default function App() {
         { data: sessionsData },
         { data: cyclesData },
         { data: evalsData },
-        { data: profileData }
+        { data: profileData },
+        { data: attendanceData }
       ] = await Promise.all([
         supabase.from('players').select('*').eq('user_id', userId),
         supabase.from('sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('cycles').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('player_evaluations').select('*').eq('user_id', userId),
-        supabase.from('profiles').select('*').eq('id', userId).single()
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        supabase.from('attendance').select('*').eq('user_id', userId)
       ]);
 
       if (playersData) setPlayers(playersData);
       if (sessionsData) setSavedSessions(sessionsData);
       if (cyclesData) setCycles(cyclesData.map(c => ({ ...c, startDate: c.start_date })));
       if (evalsData) setPlayerEvals(evalsData);
+      if (attendanceData) setAttendance(attendanceData);
       if (profileData) setCoachProfile({ 
         name: profileData.full_name || '', 
         club: profileData.club_name || '', 
@@ -112,6 +115,7 @@ export default function App() {
         setSavedSessions([]);
         setCycles([]);
         setPlayerEvals([]);
+        setAttendance([]);
       }
     });
 
@@ -124,12 +128,12 @@ export default function App() {
     setSavedSessions(DEMO_SESSIONS);
     setCycles(DEMO_CYCLES);
     setPlayerEvals(DEMO_EVALS);
+    setAttendance([]);
     setCoachProfile({ name: 'Coach Démo', club: 'PING CLUB DEMO', license: 'DEMO-2024', is_pro: true, subscription_status: 'pro' });
     setShowAuth(false);
     showToast("Mode Démo activé !");
   }, [showToast]);
 
-  // --- LOGIQUE SESSIONS ---
   const saveSession = useCallback(async () => {
     if (!currentSession.name.trim()) {
       showToast("Veuillez donner un nom à votre séance", "error");
@@ -159,6 +163,7 @@ export default function App() {
         if (exists) return prev.map(s => s.id === data.id ? data : s);
         return [data, ...prev];
       });
+      setCurrentSession(data);
     } else {
       const newSession = { ...currentSession, id: currentSession.id || Date.now() };
       setSavedSessions(prev => {
@@ -166,13 +171,48 @@ export default function App() {
         if (exists) return prev.map(s => s.id === newSession.id ? newSession : s);
         return [newSession, ...prev];
       });
+      setCurrentSession(newSession);
     }
     
     showToast("Séance enregistrée avec succès !");
-    setView('dashboard');
   }, [currentSession, session, isDemoMode, showToast]);
 
-  // --- LOGIQUE CYCLES ---
+  const saveAttendance = useCallback(async (playerId: string, status: 'present' | 'absent' | 'late') => {
+    if (!currentSession.id) {
+        showToast("Enregistrez d'abord la séance pour faire l'appel", "error");
+        return;
+    }
+
+    const record = {
+        session_id: currentSession.id,
+        player_id: playerId,
+        status,
+        user_id: session?.user?.id
+    };
+
+    if (session && !isDemoMode) {
+        const { data, error } = await supabase
+            .from('attendance')
+            .upsert(record, { onConflict: 'session_id,player_id' })
+            .select()
+            .single();
+        
+        if (!error && data) {
+            setAttendance(prev => {
+                const exists = prev.find(a => a.session_id === data.session_id && a.player_id === data.player_id);
+                if (exists) return prev.map(a => a.session_id === data.session_id && a.player_id === data.player_id ? data : a);
+                return [...prev, data];
+            });
+        }
+    } else {
+        setAttendance(prev => {
+            const exists = prev.find(a => a.session_id === currentSession.id && a.player_id === playerId);
+            if (exists) return prev.map(a => a.session_id === currentSession.id && a.player_id === playerId ? { ...record } : a);
+            return [...prev, { ...record }];
+        });
+    }
+  }, [currentSession.id, session, isDemoMode, showToast]);
+
   const saveCycle = useCallback(async () => {
     if (!currentCycle || !currentCycle.name.trim()) {
       showToast("Veuillez donner un nom au cycle", "error");
@@ -237,7 +277,6 @@ export default function App() {
     setCycles(prev => prev.map(c => c.id === updatedCycle.id ? updatedCycle : c));
   }, [session, isDemoMode]);
 
-  // --- LOGIQUE JOUEURS ---
   const savePlayer = useCallback(async (player: Player) => {
     if (session && !isDemoMode) {
       const { data, error } = await supabase
@@ -394,7 +433,18 @@ export default function App() {
                           </div>
                           <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
                       </div>
-                      <SessionsView exercises={exercises} currentSession={currentSession} setCurrentSession={setCurrentSession} saveSession={saveSession} handleSuggestExercises={handleSuggestExercises} isLoadingAI={isLoadingAI} totalDuration={totalDuration} />
+                      <SessionsView 
+                        exercises={exercises} 
+                        currentSession={currentSession} 
+                        setCurrentSession={setCurrentSession} 
+                        saveSession={saveSession} 
+                        handleSuggestExercises={handleSuggestExercises} 
+                        isLoadingAI={isLoadingAI} 
+                        totalDuration={totalDuration}
+                        players={players}
+                        attendance={attendance.filter(a => a.session_id === currentSession.id)}
+                        onSaveAttendance={saveAttendance}
+                      />
                   </div>
               )}
               {view === 'calendar' && (
@@ -424,6 +474,8 @@ export default function App() {
                   playerEvals={playerEvals} 
                   saveEvaluation={saveEvaluation} 
                   loadPlayerEvaluations={() => {}} 
+                  attendance={attendance}
+                  sessions={savedSessions}
                 />
               )}
               
