@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box, Users } from 'lucide-react';
+import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box, Users, Tag, Wrench, Filter } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
-import { PHASES } from '../constants';
+import { PHASES, THEMES } from '../constants';
 import { GeminiButton } from './GeminiButton';
 import { InfoBubble } from './InfoBubble';
 import { AttendanceModal } from './AttendanceModal';
@@ -75,23 +75,29 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPhase, setFilterPhase] = useState('all');
-  const [filterMaterial, setFilterMaterial] = useState<'all' | 'panier'>('all');
+  const [filterTheme, setFilterTheme] = useState('all');
+  const [filterMaterial, setFilterMaterial] = useState('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
   const [showAttendance, setShowAttendance] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => { 
         if (!ex) return false; 
         if (filterPhase !== 'all' && ex.phase !== filterPhase) return false; 
-        if (filterMaterial === 'panier' && ex.material !== 'Panier de balles') return false;
+        if (filterTheme !== 'all' && ex.theme !== filterTheme) return false;
+        if (filterMaterial !== 'all') {
+            if (filterMaterial === 'panier' && ex.material !== 'Panier de balles') return false;
+            if (filterMaterial === 'standard' && ex.material === 'Panier de balles') return false;
+        }
         if (searchTerm) { 
             const term = searchTerm.toLowerCase(); 
-            if (!ex.name.toLowerCase().includes(term)) return false; 
+            if (!ex.name.toLowerCase().includes(term) && !ex.description.toLowerCase().includes(term)) return false; 
         } 
         return true; 
     });
-  }, [exercises, filterPhase, filterMaterial, searchTerm]);
+  }, [exercises, filterPhase, filterTheme, filterMaterial, searchTerm]);
 
   const handleDragStart = (exercise: Exercise) => setDraggedExercise(exercise);
   
@@ -128,22 +134,113 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden px-4 md:px-0">
-        <div className={`w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${activeTab === 'session' ? 'hidden lg:flex' : 'flex'}`}>
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-2">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bibliothèque</span>
-                <InfoBubble content="Maintenez un exercice et glissez-le dans une zone à droite pour l'ajouter." />
-              </div>
-              <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-2 bg-white border rounded-lg text-sm text-slate-900 outline-none" />
-            </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
-            {filteredExercises.map(ex => (
-                <div key={ex.id} draggable onDragStart={() => handleDragStart(ex)} className="p-3 bg-white border rounded-xl hover:border-accent cursor-grab active:cursor-grabbing flex justify-between items-center group">
-                <div className="flex-1"><span className="font-semibold text-sm text-slate-800">{ex.name}</span></div>
-                <button onClick={() => handleDirectAdd(ex)} className="lg:hidden p-2 text-accent"><Plus size={18}/></button>
-                <div className="hidden lg:block text-slate-300"><GripVertical size={16}/></div>
+        {/* BIBLIOTHÈQUE LATÉRALE AMÉLIORÉE */}
+        <div className={`w-full lg:w-96 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${activeTab === 'session' ? 'hidden lg:flex' : 'flex'}`}>
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bibliothèque</span>
+                  <InfoBubble content="Glissez un exercice dans une zone à droite ou cliquez sur le '+' pour l'ajouter." />
                 </div>
-            ))}
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`p-1.5 rounded-lg transition-all ${showFilters ? 'bg-accent text-white' : 'text-slate-400 hover:bg-slate-200'}`}
+                >
+                  <Filter size={16} />
+                </button>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input 
+                  type="text" 
+                  placeholder="Rechercher..." 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  className="w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent/20" 
+                />
+              </div>
+
+              {showFilters && (
+                <div className="space-y-2 pt-2 animate-fade-in">
+                  <select 
+                    value={filterPhase} 
+                    onChange={(e) => setFilterPhase(e.target.value)}
+                    className="w-full p-2 bg-white border rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none"
+                  >
+                    <option value="all">Toutes les phases</option>
+                    {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                  </select>
+                  <select 
+                    value={filterTheme} 
+                    onChange={(e) => setFilterTheme(e.target.value)}
+                    className="w-full p-2 bg-white border rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none"
+                  >
+                    <option value="all">Tous les thèmes</option>
+                    {THEMES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <select 
+                    value={filterMaterial} 
+                    onChange={(e) => setFilterMaterial(e.target.value)}
+                    className="w-full p-2 bg-white border rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none"
+                  >
+                    <option value="all">Tout matériel</option>
+                    <option value="panier">Panier de balles</option>
+                    <option value="standard">Balles standards</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-slate-50/30">
+              {filteredExercises.map(ex => (
+                <div 
+                  key={ex.id} 
+                  draggable 
+                  onDragStart={() => handleDragStart(ex)} 
+                  className="p-4 bg-white border border-slate-100 rounded-2xl hover:border-accent cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all group"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${PHASES.find(p => p.id === ex.phase)?.color.split(' ')[0].replace('50', '500')}`}></span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{PHASES.find(p => p.id === ex.phase)?.label}</span>
+                      </div>
+                      <h4 className="font-black text-slate-900 uppercase tracking-tighter text-sm group-hover:text-accent transition-colors">{ex.name}</h4>
+                    </div>
+                    <button 
+                      onClick={() => handleDirectAdd(ex)} 
+                      className="p-2 bg-slate-50 text-accent rounded-xl hover:bg-accent hover:text-white transition-all"
+                    >
+                      <Plus size={16}/>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-2 font-medium italic">
+                      {ex.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-[8px] font-black text-accent flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-widest">
+                        <Clock size={10} /> {ex.duration} min
+                      </span>
+                      {ex.theme && (
+                        <span className="text-[8px] font-black text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-widest">
+                          <Tag size={10} /> {ex.theme}
+                        </span>
+                      )}
+                      <span className="text-[8px] font-black text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-widest">
+                        <Wrench size={10} /> {ex.material === 'Panier de balles' ? 'Panier' : 'Standard'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredExercises.length === 0 && (
+                <div className="py-10 text-center">
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun exercice trouvé</p>
+                </div>
+              )}
             </div>
         </div>
 
