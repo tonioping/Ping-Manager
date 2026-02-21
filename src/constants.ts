@@ -28,6 +28,11 @@ const generateExercises = (): Exercise[] => {
     { id: 'kid3', name: 'La Chasse aux Trésors', phase: 'echauffement', theme: 'Vitesse', duration: 8, description: 'Disperser 50 balles au sol. Au signal, les enfants doivent ramasser le plus de balles possible et les ramener dans leur camp une par une.', material: 'Balles, Paniers' },
     { id: 'kid4', name: 'Jacques a dit (Version Ping)', phase: 'echauffement', theme: 'Coordination', duration: 10, description: 'L\'entraîneur dit "Jacques a dit : Position de base", "Coup droit", "Revers". Les enfants s\'exécutent uniquement si "Jacques a dit" est prononcé.', material: 'Raquettes' },
     { id: 'kid5', name: 'Le Slalom Géant', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Parcours de plots en pas chassés le plus vite possible, en gardant la raquette devant soi en position de garde.', material: 'Plots' },
+    { id: 'kid6', name: 'Le Chasseur de Balles', phase: 'echauffement', theme: 'Vitesse', duration: 10, description: 'L\'entraîneur lance des balles à la main dans différentes directions. L\'enfant doit essayer de les attraper avant le deuxième rebond.', material: 'Balles' },
+    { id: 'kid7', name: 'La Rivière aux Crocodiles', phase: 'echauffement', theme: 'Coordination', duration: 12, description: 'Traverser la salle en marchant sur des "pierres" (plots) sans toucher le sol, tout en faisant rebondir la balle sur sa raquette.', material: 'Plots, Raquettes, Balles' },
+    { id: 'kid8', name: 'Le Chef d\'Orchestre', phase: 'echauffement', theme: 'Coordination', duration: 8, description: 'Un enfant fait des gestes techniques (CD, RV, Pivot) et les autres doivent l\'imiter le plus vite possible. On change de chef toutes les 2 minutes.', material: 'Raquettes' },
+    { id: 'kid9', name: 'Le Bowling Ping', phase: 'echauffement', theme: 'Coordination', duration: 15, description: 'Placer des gobelets ou des plots sur la table. L\'enfant doit les renverser en lançant la balle avec sa raquette (coup droit ou revers).', material: 'Gobelets/Plots, Balles, Raquettes' },
+    { id: 'kid10', name: 'La Course aux Couleurs', phase: 'echauffement', theme: 'Vitesse', duration: 10, description: 'L\'entraîneur annonce une couleur. Les enfants doivent courir toucher le plot de cette couleur le plus vite possible et revenir en position de base.', material: 'Plots de couleurs différentes' },
     
     // Exercices standards existants
     { id: 'e1', name: 'Échauffement articulaire', phase: 'echauffement', theme: null, duration: 5, description: 'Rotation des poignets, épaules, chevilles, genoux et nuque.', material: 'Aucun' },
@@ -42,7 +47,7 @@ const generateExercises = (): Exercise[] => {
   const themes = ['Coup Droit', 'Revers', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Flip'];
   const phases: PhaseId[] = ['echauffement', 'regularite', 'technique', 'deplacement', 'schema', 'matchs'];
   
-  for (let i = 1; i <= 88; i++) {
+  for (let i = 1; i <= 83; i++) {
     const phase = phases[i % phases.length];
     const theme = themes[i % themes.length];
     base.push({
