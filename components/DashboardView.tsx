@@ -3,7 +3,7 @@ import {
   Plus, Users, Target, Calendar as CalendarIcon, Sparkles, 
   Clock, Zap, ChevronRight, PlayCircle, Lightbulb, Wrench, Box,
   Trophy, TrendingUp, Activity, Star, BookOpen, Rocket, ArrowRight,
-  TrendingUp as ProgressIcon, GraduationCap
+  TrendingUp as ProgressIcon, GraduationCap, Globe
 } from 'lucide-react';
 import { Session, Cycle, Player, CoachProfile, View, Exercise, PlayerEvaluation } from '../types';
 import { EMPTY_SESSION, GROUPS, INITIAL_EXERCISES } from '../constants';
@@ -121,16 +121,31 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12 px-2 md:px-0">
       
       {/* --- HEADER --- */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-visible">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-visible relative">
+        
+        {/* TEST DE DÉPLOIEMENT - BADGE LIVE */}
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 md:left-auto md:right-12 md:translate-x-0">
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500 text-white rounded-full shadow-lg shadow-emerald-500/20 border-2 border-white dark:border-slate-900 animate-bounce">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Déploiement OK</span>
+            </div>
+        </div>
+
         <div className="flex items-center gap-6">
           <FashionLogo />
           <div>
             <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">
               Ping<span className="text-accent">Manager</span>
             </h1>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-               <Activity size={12} className="text-accent" /> Coach : {coachProfile.name || 'Premium'}
-            </p>
+            <div className="flex flex-wrap items-center gap-3 mt-1">
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Activity size={12} className="text-accent" /> Coach : {coachProfile.name || 'Premium'}
+                </p>
+                <div className="h-3 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-emerald-500 uppercase tracking-widest">
+                    <Globe size={10} /> Synchronisé
+                </div>
+            </div>
           </div>
         </div>
         <div className="flex gap-8">
