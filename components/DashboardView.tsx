@@ -123,14 +123,6 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
       {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-visible relative">
         
-        {/* TEST DE DÉPLOIEMENT - BADGE LIVE */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 md:left-auto md:right-12 md:translate-x-0">
-            <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500 text-white rounded-full shadow-lg shadow-emerald-500/20 border-2 border-white dark:border-slate-900 animate-bounce">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                <span className="text-[10px] font-black uppercase tracking-widest">Déploiement OK</span>
-            </div>
-        </div>
-
         <div className="flex items-center gap-6">
           <FashionLogo />
           <div>
@@ -287,7 +279,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avancement</span>
                             <span className="text-[9px] font-black text-accent uppercase tracking-widest">{group.activeData.progress}%</span>
                         </div>
-                        <div className="w-full h-2.5 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100 dark:border-slate-700">
+                        <div className="w-full h-2.5 bg-slate-50 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
                           <div className="h-full bg-accent rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)] transition-all duration-1000" style={{ width: `${group.activeData.progress}%` }}></div>
                         </div>
                       </div>
