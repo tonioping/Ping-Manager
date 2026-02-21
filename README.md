@@ -2,19 +2,18 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# PingManager - Assistant IA pour Entraîneurs
 
-This contains everything you need to run your app locally.
+Application de gestion de sessions d'entraînement de tennis de table avec intégration Gemini AI.
 
-View your app in AI Studio: https://ai.studio/apps/drive/12bnAS6I_s_UcFmIqp1E7O0EEvaxmCils
+## Déploiement Vercel
 
-## Run Locally
+Si le déploiement automatique ne se déclenche pas ou échoue :
+1. **Nettoyage Git** : Si `node_modules` est toujours visible sur GitHub, exécutez `git rm -r --cached node_modules` localement pour arrêter de le suivre.
+2. **Redéploiement** : Sur Vercel, lancez un **Redeploy** sur le commit le plus récent (celui incluant le fix TypeScript et le .gitignore).
 
-**Prerequisites:**  Node.js
+## Installation Locale
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. `npm install`
+2. Configurez vos variables d'environnement dans `.env.local`
+3. `npm run dev`
