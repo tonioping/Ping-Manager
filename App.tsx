@@ -11,7 +11,6 @@ import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS,
 import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId } from './types';
 import { suggestExercises, generateCyclePlan } from './services/geminiService';
 
-// PingManager App - Version 1.1.4 - Déploiement automatique activé
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
   <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
     {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
@@ -36,22 +35,17 @@ export default function App() {
   const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
   const [savedSessions, setSavedSessions] = useState<Session[]>([]);
-  
-  // États pour les Cycles
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [currentCycle, setCurrentCycle] = useState<Cycle | Omit<Cycle, 'id'> | null>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
-  // États pour les Joueurs
   const [players, setPlayers] = useState<Player[]>([]); 
   const [playerEvals, setPlayerEvals] = useState<PlayerEvaluation[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [newPlayerMode, setNewPlayerMode] = useState(false);
-
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
   const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-3-flash-preview' });
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -66,6 +60,64 @@ export default function App() {
     });
   }, []);
 
+  // --- CHARGEMENT DES DONNÉES DEPUIS SUPABASE ---
+  const loadUserData = useCallback(async (userId: string) => {
+    try {
+      const [
+        { data: playersData },
+        { data: sessionsData },
+        { data: cyclesData },
+        { data: evalsData },
+        { data: profileData }
+      ] = await Promise.all([
+        supabase.from('players').select('*').eq('user_id', userId),
+        supabase.from('sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('cycles').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('player_evaluations').select('*').eq('user_id', userId),
+        supabase.from('profiles').select('*').eq('id', userId).single()
+      ]);
+
+      if (playersData) setPlayers(playersData);
+      if (sessionsData) setSavedSessions(sessionsData);
+      if (cyclesData) setCycles(cyclesData.map(c => ({ ...c, startDate: c.start_date })));
+      if (evalsData) setPlayerEvals(evalsData);
+      if (profileData) setCoachProfile({ 
+        name: profileData.full_name || '', 
+        club: profileData.club_name || '', 
+        license: profileData.license_number || '',
+        is_pro: profileData.is_pro,
+        subscription_status: profileData.subscription_status
+      });
+    } catch (error) {
+      console.error("Erreur lors du chargement des données:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        setShowAuth(false);
+        loadUserData(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        setShowAuth(false);
+        loadUserData(session.user.id);
+      } else {
+        setPlayers([]);
+        setSavedSessions([]);
+        setCycles([]);
+        setPlayerEvals([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadUserData]);
+
   const launchDemoMode = useCallback(() => {
     setIsDemoMode(true);
     setPlayers(DEMO_PLAYERS);
@@ -77,37 +129,169 @@ export default function App() {
     showToast("Mode Démo activé !");
   }, [showToast]);
 
-  useEffect(() => {
-    if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        if (session) setShowAuth(false);
-      });
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        if (session) setShowAuth(false);
-      });
-      return () => subscription.unsubscribe();
-    } else {
-      setShowAuth(false);
-    }
-  }, []);
-
   // --- LOGIQUE SESSIONS ---
-  const saveSession = useCallback(() => {
+  const saveSession = useCallback(async () => {
     if (!currentSession.name.trim()) {
       showToast("Veuillez donner un nom à votre séance", "error");
       return;
     }
-    const newSession = { ...currentSession, id: currentSession.id || Date.now() };
-    setSavedSessions(prev => {
-      const exists = prev.find(s => s.id === newSession.id);
-      if (exists) return prev.map(s => s.id === newSession.id ? newSession : s);
-      return [newSession, ...prev];
-    });
+
+    const sessionData = {
+      name: currentSession.name,
+      date: currentSession.date,
+      exercises: currentSession.exercises,
+      user_id: session?.user?.id
+    };
+
+    if (session && !isDemoMode) {
+      const { data, error } = await supabase
+        .from('sessions')
+        .upsert(currentSession.id ? { ...sessionData, id: currentSession.id } : sessionData)
+        .select()
+        .single();
+
+      if (error) {
+        showToast("Erreur lors de la sauvegarde Cloud", "error");
+        return;
+      }
+      setSavedSessions(prev => {
+        const exists = prev.find(s => s.id === data.id);
+        if (exists) return prev.map(s => s.id === data.id ? data : s);
+        return [data, ...prev];
+      });
+    } else {
+      const newSession = { ...currentSession, id: currentSession.id || Date.now() };
+      setSavedSessions(prev => {
+        const exists = prev.find(s => s.id === newSession.id);
+        if (exists) return prev.map(s => s.id === newSession.id ? newSession : s);
+        return [newSession, ...prev];
+      });
+    }
+    
     showToast("Séance enregistrée avec succès !");
     setView('dashboard');
-  }, [currentSession, showToast]);
+  }, [currentSession, session, isDemoMode, showToast]);
+
+  // --- LOGIQUE CYCLES ---
+  const saveCycle = useCallback(async () => {
+    if (!currentCycle || !currentCycle.name.trim()) {
+      showToast("Veuillez donner un nom au cycle", "error");
+      return;
+    }
+
+    const cycleData = {
+      name: currentCycle.name,
+      start_date: currentCycle.startDate,
+      weeks: currentCycle.weeks,
+      type: currentCycle.type,
+      objectives: currentCycle.objectives,
+      group: currentCycle.group,
+      user_id: session?.user?.id
+    };
+
+    if (session && !isDemoMode) {
+      const { data, error } = await supabase
+        .from('cycles')
+        .upsert((currentCycle as any).id ? { ...cycleData, id: (currentCycle as any).id } : cycleData)
+        .select()
+        .single();
+
+      if (error) {
+        showToast("Erreur lors de la sauvegarde du cycle", "error");
+        return;
+      }
+      const formatted = { ...data, startDate: data.start_date };
+      setCycles(prev => {
+        const exists = prev.find(c => c.id === formatted.id);
+        if (exists) return prev.map(c => c.id === formatted.id ? formatted : c);
+        return [formatted, ...prev];
+      });
+    } else {
+      const newCycle = { ...currentCycle, id: (currentCycle as any).id || Date.now() } as Cycle;
+      setCycles(prev => {
+        const exists = prev.find(c => c.id === newCycle.id);
+        if (exists) return prev.map(c => c.id === newCycle.id ? newCycle : c);
+        return [newCycle, ...prev];
+      });
+    }
+    setCurrentCycle(null);
+    showToast("Cycle enregistré !");
+  }, [currentCycle, session, isDemoMode, showToast]);
+
+  const deleteCycle = useCallback(async (id: number) => {
+    if (session && !isDemoMode) {
+      await supabase.from('cycles').delete().eq('id', id);
+    }
+    setCycles(prev => prev.filter(c => c.id !== id));
+    showToast("Cycle supprimé");
+  }, [session, isDemoMode, showToast]);
+
+  const updateCycle = useCallback(async (updatedCycle: Cycle) => {
+    if (session && !isDemoMode) {
+      await supabase.from('cycles').update({
+        name: updatedCycle.name,
+        weeks: updatedCycle.weeks,
+        start_date: updatedCycle.startDate
+      }).eq('id', updatedCycle.id);
+    }
+    setCycles(prev => prev.map(c => c.id === updatedCycle.id ? updatedCycle : c));
+  }, [session, isDemoMode]);
+
+  // --- LOGIQUE JOUEURS ---
+  const savePlayer = useCallback(async (player: Player) => {
+    if (session && !isDemoMode) {
+      const { data, error } = await supabase
+        .from('players')
+        .upsert({ ...player, user_id: session.user.id })
+        .select()
+        .single();
+
+      if (error) {
+        showToast("Erreur sauvegarde joueur", "error");
+        return;
+      }
+      setPlayers(prev => {
+        const exists = prev.find(p => p.id === data.id);
+        if (exists) return prev.map(p => p.id === data.id ? data : p);
+        return [...prev, data];
+      });
+    } else {
+      setPlayers(prev => {
+        const exists = prev.find(p => p.id === player.id);
+        if (exists) return prev.map(p => p.id === player.id ? player : p);
+        return [...prev, player];
+      });
+    }
+    setCurrentPlayer(null);
+    setNewPlayerMode(false);
+    showToast("Joueur enregistré !");
+  }, [session, isDemoMode, showToast]);
+
+  const deletePlayer = useCallback(async (id: string) => {
+    if (session && !isDemoMode) {
+      await supabase.from('players').delete().eq('id', id);
+    }
+    setPlayers(prev => prev.filter(p => p.id !== id));
+    showToast("Joueur supprimé");
+  }, [session, isDemoMode, showToast]);
+
+  const saveEvaluation = useCallback(async (playerId: string, skillId: string, score: number) => {
+    const evalData = {
+      player_id: playerId,
+      skill_id: skillId,
+      score,
+      date: new Date().toISOString().split('T')[0],
+      user_id: session?.user?.id
+    };
+
+    if (session && !isDemoMode) {
+      const { data, error } = await supabase.from('player_evaluations').insert(evalData).select().single();
+      if (!error && data) setPlayerEvals(prev => [...prev, data]);
+    } else {
+      setPlayerEvals(prev => [...prev, { ...evalData, id: Date.now() }]);
+    }
+    showToast("Évaluation enregistrée");
+  }, [session, isDemoMode, showToast]);
 
   const handleSuggestExercises = useCallback(async () => {
     if (!currentSession.name) {
@@ -149,31 +333,6 @@ export default function App() {
     }
   }, [currentSession.name, currentSession.exercises, showToast]);
 
-  // --- LOGIQUE CYCLES ---
-  const saveCycle = useCallback(() => {
-    if (!currentCycle || !currentCycle.name.trim()) {
-      showToast("Veuillez donner un nom au cycle", "error");
-      return;
-    }
-    const newCycle = { ...currentCycle, id: (currentCycle as any).id || Date.now() } as Cycle;
-    setCycles(prev => {
-      const exists = prev.find(c => c.id === newCycle.id);
-      if (exists) return prev.map(c => c.id === newCycle.id ? newCycle : c);
-      return [newCycle, ...prev];
-    });
-    setCurrentCycle(null);
-    showToast("Cycle enregistré !");
-  }, [currentCycle, showToast]);
-
-  const deleteCycle = useCallback((id: number) => {
-    setCycles(prev => prev.filter(c => c.id !== id));
-    showToast("Cycle supprimé");
-  }, [showToast]);
-
-  const updateCycle = useCallback((updatedCycle: Cycle) => {
-    setCycles(prev => prev.map(c => c.id === updatedCycle.id ? updatedCycle : c));
-  }, []);
-
   const handleGenerateCycle = useCallback(async () => {
     if (!currentCycle || !currentCycle.name) {
         showToast("L'IA a besoin d'un objectif de cycle (Nom du cycle)", "error");
@@ -196,34 +355,6 @@ export default function App() {
         setIsLoadingAI(false);
     }
   }, [currentCycle, showToast]);
-
-  // --- LOGIQUE JOUEURS ---
-  const savePlayer = useCallback((player: Player) => {
-    setPlayers(prev => {
-      const exists = prev.find(p => p.id === player.id);
-      if (exists) return prev.map(p => p.id === player.id ? player : p);
-      return [...prev, player];
-    });
-    setCurrentPlayer(null);
-    setNewPlayerMode(false);
-    showToast("Joueur enregistré !");
-  }, [showToast]);
-
-  const deletePlayer = useCallback((id: string) => {
-    setPlayers(prev => prev.filter(p => p.id !== id));
-    showToast("Joueur supprimé");
-  }, [showToast]);
-
-  const saveEvaluation = useCallback((playerId: string, skillId: string, score: number) => {
-    const newEval: PlayerEvaluation = {
-      player_id: playerId,
-      skill_id: skillId,
-      score,
-      date: new Date().toISOString().split('T')[0]
-    };
-    setPlayerEvals(prev => [...prev, newEval]);
-    showToast("Évaluation enregistrée");
-  }, [showToast]);
 
   const totalDuration = useMemo(() => {
     const flattenedExercises = Object.values(currentSession.exercises).flat() as Exercise[];
