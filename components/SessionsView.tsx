@@ -80,7 +80,6 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
   const [showAttendance, setShowAttendance] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => { 
@@ -134,19 +133,14 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden px-4 md:px-0">
-        {/* BIBLIOTHÈQUE LATÉRALE */}
+        {/* BIBLIOTHÈQUE LATÉRALE AVEC FILTRES PERMANENTS */}
         <div className={`w-full lg:w-96 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${activeTab === 'session' ? 'hidden lg:flex' : 'flex'}`}>
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bibliothèque</span>
                 </div>
-                <button 
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`p-1.5 rounded-lg transition-all ${showFilters ? 'bg-accent text-white' : 'text-slate-400 hover:bg-slate-200'}`}
-                >
-                  <Filter size={16} />
-                </button>
+                <Filter size={14} className="text-slate-300" />
               </div>
 
               <div className="relative">
@@ -160,26 +154,24 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                 />
               </div>
 
-              {showFilters && (
-                <div className="space-y-2 pt-2 animate-fade-in">
-                  <select 
-                    value={filterPhase} 
-                    onChange={(e) => setFilterPhase(e.target.value)}
-                    className="w-full p-2 bg-white border rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none"
-                  >
-                    <option value="all">Toutes les phases</option>
-                    {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                  </select>
-                  <select 
-                    value={filterTheme} 
-                    onChange={(e) => setFilterTheme(e.target.value)}
-                    className="w-full p-2 bg-white border rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none"
-                  >
-                    <option value="all">Tous les thèmes</option>
-                    {THEMES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <select 
+                  value={filterPhase} 
+                  onChange={(e) => setFilterPhase(e.target.value)}
+                  className="w-full p-2 bg-white border rounded-lg text-[9px] font-black uppercase tracking-wider outline-none focus:border-accent"
+                >
+                  <option value="all">Phases</option>
+                  {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+                <select 
+                  value={filterTheme} 
+                  onChange={(e) => setFilterTheme(e.target.value)}
+                  className="w-full p-2 bg-white border rounded-lg text-[9px] font-black uppercase tracking-wider outline-none focus:border-accent"
+                >
+                  <option value="all">Thèmes</option>
+                  {THEMES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-slate-50/30">
