@@ -33,8 +33,19 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
   onUpdateCycle
 }) => {
   const [editingWeek, setEditingWeek] = useState<{cycle: Cycle, weekIndex: number} | null>(null);
-  const [editingCycleTitleId, setEditingCycleTitleId] = useState<number | null>(null);
-  const [editingWeekTheme, setEditingWeekTheme] = useState<{cycleId: number, weekIdx: number, val: string} | null>(null);
+
+  const getWeekRange = (startDateStr: string, weekNumber: number) => {
+    if (!startDateStr) return "";
+    const start = new Date(startDateStr);
+    const weekStart = new Date(start);
+    weekStart.setDate(start.getDate() + (weekNumber - 1) * 7);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const format = (d: Date) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+    return `${format(weekStart)} au ${format(weekEnd)}`;
+  };
 
   const handleLinkSession = (session: Session) => {
     if (!editingWeek) return;
@@ -43,31 +54,6 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
     updatedWeeks[weekIndex] = { ...updatedWeeks[weekIndex], sessionId: session.id, sessionName: session.name };
     onUpdateCycle({ ...cycle, weeks: updatedWeeks });
     setEditingWeek(null);
-  };
-
-  const handleUnlinkSession = () => {
-    if (!editingWeek) return;
-    const { cycle, weekIndex } = editingWeek;
-    const updatedWeeks = [...cycle.weeks];
-    updatedWeeks[weekIndex] = { ...updatedWeeks[weekIndex], sessionId: undefined, sessionName: undefined };
-    onUpdateCycle({ ...cycle, weeks: updatedWeeks });
-    setEditingWeek(null);
-  };
-
-  const saveInlineCycleName = (cycle: Cycle, newName: string) => {
-    if (newName.trim() && newName !== cycle.name) onUpdateCycle({ ...cycle, name: newName.trim() });
-    setEditingCycleTitleId(null);
-  };
-
-  const saveInlineWeekTheme = (cycle: Cycle) => {
-    if (!editingWeekTheme) return;
-    const { weekIdx, val } = editingWeekTheme;
-    if (val !== cycle.weeks[weekIdx].theme) {
-        const updatedWeeks = [...cycle.weeks];
-        updatedWeeks[weekIdx] = { ...updatedWeeks[weekIdx], theme: val.trim() };
-        onUpdateCycle({ ...cycle, weeks: updatedWeeks });
-    }
-    setEditingWeekTheme(null);
   };
 
   return (
@@ -124,11 +110,15 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
             </div>
             <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-slate-950/30 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                <div className="md:col-span-8">
+                <div className="md:col-span-6">
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Nom du Cycle</label>
                   <input type="text" className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:ring-2 focus:ring-accent outline-none shadow-sm text-lg font-medium" placeholder="Ex: Phase 1 - Reprise" value={currentCycle.name} onChange={(e) => setCurrentCycle(prev => prev ? {...prev, name: e.target.value} : null)} />
                 </div>
-                <div className="md:col-span-4">
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Date de début</label>
+                  <input type="date" className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium" value={currentCycle.startDate} onChange={(e) => setCurrentCycle(prev => prev ? {...prev, startDate: e.target.value} : null)} />
+                </div>
+                <div className="md:col-span-3">
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Groupe Cible</label>
                   <select value={(currentCycle as any).group || ''} onChange={(e) => setCurrentCycle(prev => prev ? {...prev, group: e.target.value} : null)} className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:ring-2 focus:ring-accent outline-none shadow-sm font-medium">
                     <option value="">-- Tous --</option>
@@ -154,7 +144,10 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">{week.weekNumber}</div>
-                        <h4 className="font-bold text-slate-700 dark:text-slate-300 text-lg">Semaine {week.weekNumber}</h4>
+                        <div>
+                            <h4 className="font-bold text-slate-700 dark:text-slate-300 text-lg">Semaine {week.weekNumber}</h4>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{getWeekRange(currentCycle.startDate, week.weekNumber)}</p>
+                        </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -190,14 +183,19 @@ export const CyclesView: React.FC<CyclesViewProps> = React.memo(({
                       <span className={`text-xl`}>{cycleTypeConfig.icon}</span>
                       <h3 className="text-lg font-bold text-slate-800 dark:text-white">{cycle.name}</h3>
                     </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-9">Début : {new Date(cycle.startDate).toLocaleDateString()}</p>
                   </div>
+                  <button onClick={() => setCycleToDelete(cycle.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
                 </div>
                 <div className="p-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {cycle.weeks.map((week, i) => (
-                      <div key={i} onClick={() => setEditingWeek({cycle, weekIndex: i})} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col h-32 justify-between hover:border-accent hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm cursor-pointer transition-all relative group/week">
+                      <div key={i} onClick={() => setEditingWeek({cycle, weekIndex: i})} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col h-36 justify-between hover:border-accent hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm cursor-pointer transition-all relative group/week">
                         <div className="absolute top-2 right-2 text-slate-300 group-hover/week:text-accent transition-colors"><Link size={14} /></div>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Sem {week.weekNumber}</span>
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Sem {week.weekNumber}</span>
+                            <p className="text-[8px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-tighter">{getWeekRange(cycle.startDate, week.weekNumber)}</p>
+                        </div>
                         <p className="text-sm font-semibold text-slate-800 dark:text-white line-clamp-2 leading-tight">{week.theme || 'À définir'}</p>
                         {week.sessionName && (
                             <div className="mt-1 flex items-center gap-1 text-[10px] font-bold text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800 truncate"><BookOpen size={10} /> <span className="truncate">{week.sessionName}</span></div>
