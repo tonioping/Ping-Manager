@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Users, Clock, PlayCircle, TrendingUp, BookOpen, Calendar, ChevronRight, History } from 'lucide-react';
+import { ArrowLeft, Users, Clock, PlayCircle, TrendingUp, BookOpen, Calendar, ChevronRight, History, CheckCircle } from 'lucide-react';
 // @ts-ignore
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Player, Session, Attendance, View } from '../types';
@@ -41,8 +41,6 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
     return sessions
       .filter(s => {
         const sessionDate = new Date(s.date);
-        // On vérifie si la séance appartient au groupe (via son nom ou un tag si existant)
-        // Ici on se base sur le fait que le coach lance souvent des séances nommées avec le groupe
         return sessionDate >= seasonStart && s.name.toLowerCase().includes(group.label.toLowerCase());
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -71,7 +69,6 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
       const yearOffset = index + 8 >= 12 ? 1 : 0;
       const year = seasonStart.getFullYear() + yearOffset;
       
-      // Compter les présences totales du groupe pour ce mois
       const monthAttendance = attendance.filter(a => {
         const session = sessions.find(s => s.id === a.session_id);
         if (!session || !session.name.toLowerCase().includes(group.label.toLowerCase())) return false;
@@ -126,10 +123,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* COLONNE GAUCHE : GRAPHIQUE & HISTORIQUE */}
         <div className="lg:col-span-8 space-y-8">
-          
-          {/* GRAPHIQUE DE VOLUME */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
               <TrendingUp className="text-accent" size={20} /> Volume de présence mensuel
@@ -154,7 +148,6 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
             </div>
           </div>
 
-          {/* HISTORIQUE DES SÉANCES */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
               <History className="text-blue-500" size={20} /> Séances depuis le 1er Septembre
@@ -196,7 +189,6 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           </div>
         </div>
 
-        {/* COLONNE DROITE : STATS JOUEURS */}
         <div className="lg:col-span-4 space-y-8">
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm h-full">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
