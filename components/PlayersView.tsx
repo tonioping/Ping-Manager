@@ -1,6 +1,6 @@
-
 import React, { useMemo, useState } from 'react';
 import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon } from 'lucide-react';
+// @ts-ignore
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Player, PlayerEvaluation, Skill } from '../types';
 import { DEFAULT_SKILLS, GROUPS } from '../constants';
