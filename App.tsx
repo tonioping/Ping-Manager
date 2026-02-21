@@ -140,11 +140,9 @@ export default function App() {
   const saveSession = useCallback(async () => {
     if (!currentSession.name.trim()) {
       showToast("Veuillez donner un nom à votre séance", "error");
-      return;
+      return null;
     }
 
-    // On prépare les données. On n'inclut 'group' que s'il est défini pour éviter les erreurs 400
-    // si la colonne n'existe pas encore (bien que le SQL ci-dessus doive la créer).
     const sessionData: any = {
       name: currentSession.name,
       date: currentSession.date,
@@ -156,9 +154,9 @@ export default function App() {
       sessionData.group = currentSession.group;
     }
 
+    let savedData = null;
+
     if (session && !isDemoMode) {
-      // Si l'ID est 0 ou manquant, on laisse Supabase générer l'ID (INSERT)
-      // Sinon on fait un UPDATE (UPSERT avec ID)
       const payload = (currentSession.id && currentSession.id !== 0) 
         ? { ...sessionData, id: currentSession.id } 
         : sessionData;
@@ -171,9 +169,10 @@ export default function App() {
 
       if (error) {
         console.error("Erreur Supabase Session:", error);
-        showToast("Erreur lors de la sauvegarde Cloud (Vérifiez la colonne 'group')", "error");
-        return;
+        showToast("Erreur lors de la sauvegarde Cloud", "error");
+        return null;
       }
+      savedData = data;
       setSavedSessions(prev => {
         const exists = prev.find(s => s.id === data.id);
         if (exists) return prev.map(s => s.id === data.id ? data : s);
@@ -182,6 +181,7 @@ export default function App() {
       setCurrentSession(data);
     } else {
       const newSession = { ...currentSession, id: currentSession.id || Date.now() };
+      savedData = newSession;
       setSavedSessions(prev => {
         const exists = prev.find(s => s.id === newSession.id);
         if (exists) return prev.map(s => s.id === newSession.id ? newSession : s);
@@ -191,6 +191,7 @@ export default function App() {
     }
     
     showToast("Séance enregistrée avec succès !");
+    return savedData;
   }, [currentSession, session, isDemoMode, showToast]);
 
   const saveAttendance = useCallback(async (playerId: string, status: 'present' | 'absent' | 'late') => {

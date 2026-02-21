@@ -10,7 +10,7 @@ interface SessionsViewProps {
   exercises: Exercise[];
   currentSession: Session;
   setCurrentSession: React.Dispatch<React.SetStateAction<Session>>;
-  saveSession: () => void;
+  saveSession: () => Promise<any>;
   handleSuggestExercises: () => void;
   isLoadingAI: boolean;
   totalDuration: number;
@@ -80,6 +80,7 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
   const [showAttendance, setShowAttendance] = useState(false);
+  const [isSavingForAttendance, setIsSavingForAttendance] = useState(false);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => { 
@@ -114,6 +115,17 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
   const removeExerciseFromSession = useCallback((phaseId: PhaseId, instanceId: number) => { 
       setCurrentSession(prev => ({ ...prev, exercises: { ...prev.exercises, [phaseId]: (prev.exercises[phaseId] || []).filter(ex => ex.instanceId !== instanceId) } })); 
   }, [setCurrentSession]);
+
+  const handleAttendanceClick = async () => {
+    if (!currentSession.id || currentSession.id === 0) {
+        setIsSavingForAttendance(true);
+        const saved = await saveSession();
+        setIsSavingForAttendance(false);
+        if (saved) setShowAttendance(true);
+    } else {
+        setShowAttendance(true);
+    }
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] lg:h-[calc(100vh-100px)] relative">
@@ -227,11 +239,12 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                   </div>
                   <div className="flex gap-2 pt-4">
                       <button 
-                        onClick={() => setShowAttendance(true)}
-                        className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 shadow-lg flex items-center gap-2 transition-all active:scale-95"
+                        onClick={handleAttendanceClick}
+                        disabled={isSavingForAttendance}
+                        className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 shadow-lg flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                         title="Faire l'appel"
                       >
-                        <Users size={20}/>
+                        {isSavingForAttendance ? <Clock className="animate-spin" size={20}/> : <Users size={20}/>}
                       </button>
                       <button onClick={saveSession} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 shadow-lg flex items-center gap-2 transition-all active:scale-95"><Save size={20}/></button>
                   </div>
