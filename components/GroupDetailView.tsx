@@ -46,7 +46,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, group.label, seasonStart]);
 
-  // Statistiques individuelles
+  // Statistiques individuelles (utilisées pour le classement et le graphique)
   const playerStats = useMemo(() => {
     return groupPlayers.map(player => {
       const playerAttendance = attendance.filter(a => a.player_id === player.id && (a.status === 'present' || a.status === 'late'));
@@ -57,29 +57,15 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           totalMinutes += Object.values(session.exercises).flat().reduce((sum, ex) => sum + (ex?.duration || 0), 0);
         }
       });
-      return { ...player, hours: Math.round(totalMinutes / 60) };
-    });
+      return { 
+        name: player.first_name, 
+        fullName: `${player.first_name} ${player.last_name}`,
+        hours: Math.round(totalMinutes / 60),
+        level: player.level,
+        id: player.id
+      };
+    }).sort((a, b) => b.hours - a.hours);
   }, [groupPlayers, attendance, sessions]);
-
-  // Données pour le graphique de volume mensuel
-  const chartData = useMemo(() => {
-    const months = ['Sept', 'Oct', 'Nov', 'Déc', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août'];
-    const data = months.map((name, index) => {
-      const monthIdx = (index + 8) % 12; // Aligner sur Septembre
-      const yearOffset = index + 8 >= 12 ? 1 : 0;
-      const year = seasonStart.getFullYear() + yearOffset;
-      
-      const monthAttendance = attendance.filter(a => {
-        const session = sessions.find(s => s.id === a.session_id);
-        if (!session || !session.name.toLowerCase().includes(group.label.toLowerCase())) return false;
-        const d = new Date(session.date);
-        return d.getMonth() === monthIdx && d.getFullYear() === year && (a.status === 'present' || a.status === 'late');
-      });
-
-      return { name, total: monthAttendance.length };
-    });
-    return data;
-  }, [attendance, sessions, group.label, seasonStart]);
 
   const handleOpenAttendance = (sessionId: number) => {
     setSelectedSessionId(sessionId);
@@ -124,23 +110,29 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
+          
+          {/* GRAPHIQUE DE VOLUME PAR JOUEUR */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
-            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
-              <TrendingUp className="text-accent" size={20} /> Volume de présence mensuel
-            </h3>
-            <div className="h-64 w-full">
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2">
+                <TrendingUp className="text-accent" size={20} /> Volume d'entraînement par joueur
+                </h3>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Heures cumulées</span>
+            </div>
+            <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
+                    <BarChart data={playerStats}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 800, fill: '#94a3b8'}} dy={10} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontStyle: 'italic', fontWeight: 900, fill: '#0f172a'}} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 800, fill: '#94a3b8'}} />
                         <Tooltip 
                             cursor={{fill: '#f8fafc'}}
                             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                            formatter={(value: number) => [`${value} Heures`, 'Volume']}
                         />
-                        <Bar dataKey="total" radius={[6, 6, 0, 0]}>
-                            {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.total > 0 ? '#f97316' : '#f1f5f9'} />
+                        <Bar dataKey="hours" radius={[8, 8, 0, 0]}>
+                            {playerStats.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={index === 0 ? '#f97316' : '#334155'} />
                             ))}
                         </Bar>
                     </BarChart>
@@ -148,6 +140,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
             </div>
           </div>
 
+          {/* HISTORIQUE DES SÉANCES */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
               <History className="text-blue-500" size={20} /> Séances depuis le 1er Septembre
@@ -189,6 +182,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           </div>
         </div>
 
+        {/* COLONNE DROITE : CLASSEMENT DÉTAILLÉ */}
         <div className="lg:col-span-4 space-y-8">
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm h-full">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
@@ -196,7 +190,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
             </h3>
 
             <div className="space-y-6">
-              {playerStats.sort((a, b) => b.hours - a.hours).map((player, idx) => (
+              {playerStats.map((player, idx) => (
                 <div key={player.id} className="space-y-2 group/player">
                   <div className="flex justify-between items-end">
                     <div className="flex items-center gap-3">
@@ -204,7 +198,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
                         {idx + 1}
                       </div>
                       <div>
-                        <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm group-hover/player:text-accent transition-colors">{player.first_name} {player.last_name}</div>
+                        <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm group-hover/player:text-accent transition-colors">{player.fullName}</div>
                         <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{player.level}</div>
                       </div>
                     </div>
