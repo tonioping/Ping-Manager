@@ -112,6 +112,13 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
     });
   }, [savePlayer]);
 
+  const handleDeleteClick = (e: React.MouseEvent, playerId: string, name: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Voulez-vous vraiment supprimer le profil de ${name} ?`)) {
+      deletePlayer(playerId);
+    }
+  };
+
   return (
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
@@ -136,7 +143,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredPlayers.map(p => (
-                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card">
+                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card relative">
+                            <button 
+                                onClick={(e) => handleDeleteClick(e, p.id, `${p.first_name} ${p.last_name}`)}
+                                className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all opacity-0 group-hover/card:opacity-100"
+                                title="Supprimer le joueur"
+                            >
+                                <Trash2 size={18} />
+                            </button>
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black group-hover/card:scale-110 transition-transform">
                                     {p.first_name[0]}{p.last_name[0]}
