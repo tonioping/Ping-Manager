@@ -29,24 +29,22 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
 
   const groupPlayers = useMemo(() => players.filter(p => p.group === group.id), [players, group.id]);
 
-  // Calcul de la date de début de saison (1er Septembre)
   const seasonStart = useMemo(() => {
     const now = new Date();
     const year = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
-    return new Date(year, 8, 1); // 1er Septembre
+    return new Date(year, 8, 1);
   }, []);
 
-  // Filtrage des séances du groupe depuis le début de saison
   const groupSessions = useMemo(() => {
     return sessions
       .filter(s => {
         const sessionDate = new Date(s.date);
-        return sessionDate >= seasonStart && s.name.toLowerCase().includes(group.label.toLowerCase());
+        // On filtre par l'ID du groupe explicitement ou par le nom si l'ID est manquant (compatibilité)
+        return sessionDate >= seasonStart && (s.group === group.id || s.name.toLowerCase().includes(group.label.toLowerCase()));
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sessions, group.label, seasonStart]);
+  }, [sessions, group.id, group.label, seasonStart]);
 
-  // Statistiques individuelles (utilisées pour le classement et le graphique)
   const playerStats = useMemo(() => {
     return groupPlayers.map(player => {
       const playerAttendance = attendance.filter(a => a.player_id === player.id && (a.status === 'present' || a.status === 'late'));
@@ -110,8 +108,6 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
-          
-          {/* GRAPHIQUE DE VOLUME PAR JOUEUR */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
             <div className="flex justify-between items-center mb-8">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2">
@@ -140,10 +136,9 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
             </div>
           </div>
 
-          {/* HISTORIQUE DES SÉANCES */}
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
-              <History className="text-blue-500" size={20} /> Séances depuis le 1er Septembre
+              <History className="text-blue-500" size={20} /> Séances du groupe
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -175,14 +170,13 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
                 ))
               ) : (
                 <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem]">
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Aucune séance enregistrée pour ce groupe cette saison</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Aucune séance enregistrée pour ce groupe</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* COLONNE DROITE : CLASSEMENT DÉTAILLÉ */}
         <div className="lg:col-span-4 space-y-8">
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm h-full">
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">

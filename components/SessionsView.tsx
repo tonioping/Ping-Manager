@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Search, GripVertical, Save, Clock, Target, Plus, X, List, Layers, Box, Users, Tag, Wrench, Filter } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
-import { PHASES, THEMES } from '../constants';
+import { PHASES, THEMES, GROUPS } from '../constants';
 import { GeminiButton } from './GeminiButton';
 import { InfoBubble } from './InfoBubble';
 import { AttendanceModal } from './AttendanceModal';
@@ -120,7 +120,7 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
     <div className="flex flex-col h-[calc(100vh-80px)] lg:h-[calc(100vh-100px)] relative">
       {showAttendance && (
         <AttendanceModal 
-            players={players} 
+            players={players.filter(p => !currentSession.group || p.group === currentSession.group)} 
             attendance={attendance} 
             onToggle={onSaveAttendance} 
             onClose={() => setShowAttendance(false)} 
@@ -134,13 +134,12 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 overflow-hidden px-4 md:px-0">
-        {/* BIBLIOTHÈQUE LATÉRALE AMÉLIORÉE */}
+        {/* BIBLIOTHÈQUE LATÉRALE */}
         <div className={`w-full lg:w-96 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${activeTab === 'session' ? 'hidden lg:flex' : 'flex'}`}>
             <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bibliothèque</span>
-                  <InfoBubble content="Glissez un exercice dans une zone à droite ou cliquez sur le '+' pour l'ajouter." />
                 </div>
                 <button 
                   onClick={() => setShowFilters(!showFilters)}
@@ -179,15 +178,6 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                     <option value="all">Tous les thèmes</option>
                     {THEMES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                  <select 
-                    value={filterMaterial} 
-                    onChange={(e) => setFilterMaterial(e.target.value)}
-                    className="w-full p-2 bg-white border rounded-lg text-[10px] font-bold uppercase tracking-wider outline-none"
-                  >
-                    <option value="all">Tout matériel</option>
-                    <option value="panier">Panier de balles</option>
-                    <option value="standard">Balles standards</option>
-                  </select>
                 </div>
               )}
             </div>
@@ -215,52 +205,43 @@ export const SessionsView: React.FC<SessionsViewProps> = React.memo(({
                       <Plus size={16}/>
                     </button>
                   </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-2 font-medium italic">
-                      {ex.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-[8px] font-black text-accent flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-widest">
-                        <Clock size={10} /> {ex.duration} min
-                      </span>
-                      {ex.theme && (
-                        <span className="text-[8px] font-black text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-widest">
-                          <Tag size={10} /> {ex.theme}
-                        </span>
-                      )}
-                      <span className="text-[8px] font-black text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-widest">
-                        <Wrench size={10} /> {ex.material === 'Panier de balles' ? 'Panier' : 'Standard'}
-                      </span>
-                    </div>
+                  <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-2 font-medium italic mb-2">{ex.description}</p>
+                  <div className="flex gap-2">
+                    <span className="text-[8px] font-black text-accent flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-widest"><Clock size={10} /> {ex.duration} min</span>
+                    {ex.theme && <span className="text-[8px] font-black text-slate-400 flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-widest"><Tag size={10} /> {ex.theme}</span>}
                   </div>
                 </div>
               ))}
-              {filteredExercises.length === 0 && (
-                <div className="py-10 text-center">
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun exercice trouvé</p>
-                </div>
-              )}
             </div>
         </div>
 
         <div className={`flex-1 flex flex-col overflow-hidden bg-white rounded-2xl shadow-sm border border-slate-200 ${activeTab === 'library' ? 'hidden lg:flex' : 'flex'}`}>
-            <div className="p-4 border-b border-slate-100 bg-white z-10">
-              <div className="flex flex-col md:flex-row gap-3 items-start md:items-center mb-4">
-                  <input type="text" placeholder="Nom de la séance" value={currentSession.name} onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} className="flex-1 w-full p-2 text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-accent outline-none text-slate-900 transition-colors" />
-                  <div className="flex gap-2">
+            <div className="p-6 border-b border-slate-100 bg-white z-10 space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                  <div className="flex-1 w-full">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Nom de la séance</label>
+                    <input type="text" placeholder="Ex: Perfectionnement Topspin" value={currentSession.name} onChange={(e) => setCurrentSession(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 text-xl font-black bg-transparent border-b-2 border-slate-100 focus:border-accent outline-none text-slate-900 transition-colors uppercase italic tracking-tighter" />
+                  </div>
+                  <div className="w-full md:w-48">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Groupe</label>
+                    <select 
+                        value={currentSession.group || ''} 
+                        onChange={(e) => setCurrentSession(prev => ({ ...prev, group: e.target.value }))}
+                        className="w-full p-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                        <option value="">-- Aucun --</option>
+                        {GROUPS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex gap-2 pt-4">
                       <button 
                         onClick={() => setShowAttendance(true)}
-                        className="p-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 shadow-md flex items-center gap-2"
+                        className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 shadow-lg flex items-center gap-2 transition-all active:scale-95"
                         title="Faire l'appel"
                       >
                         <Users size={20}/>
                       </button>
-                      <div className="flex items-center gap-1">
-                        <GeminiButton onClick={handleSuggestExercises} isLoading={isLoadingAI} className="!py-2 !px-3 !text-sm">IA Suggest</GeminiButton>
-                        <InfoBubble content="L'IA analyse le titre de votre séance pour vous proposer 3 exercices originaux et complémentaires." position="left" />
-                      </div>
-                      <button onClick={saveSession} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 shadow-md flex items-center gap-2"><Save size={20}/></button>
+                      <button onClick={saveSession} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 shadow-lg flex items-center gap-2 transition-all active:scale-95"><Save size={20}/></button>
                   </div>
               </div>
             </div>

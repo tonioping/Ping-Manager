@@ -147,6 +147,7 @@ export default function App() {
       name: currentSession.name,
       date: currentSession.date,
       exercises: currentSession.exercises,
+      group: currentSession.group,
       user_id: session?.user?.id
     };
 
@@ -420,7 +421,8 @@ export default function App() {
     setCurrentSession({
       ...EMPTY_SESSION,
       name: `${group?.label || 'Séance'} - ${new Date().toLocaleDateString()}`,
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
+      group: selectedGroupId || undefined
     });
     setView('sessions');
   };
