@@ -9,7 +9,7 @@ export const PHASES: Phase[] = [
   { id: 'matchs', label: 'MATCHS VARIÉS', duration: 15, color: 'bg-rose-50 border-rose-200 text-slate-900' }
 ];
 
-export const THEMES: string[] = ['Coup Droit (CD)', 'Revers (RV)', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Contre-initiative', 'Flip', 'Remise de service', 'Incertitude'];
+export const THEMES: string[] = ['Coup Droit (CD)', 'Revers (RV)', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Contre-initiative', 'Flip', 'Remise de service', 'Incertitude', 'Coordination', 'Vitesse'];
 
 export const GROUPS = [
     { id: 'debutant', label: 'Débutant', color: 'bg-emerald-100 text-slate-900 border-emerald-200' },
@@ -22,6 +22,14 @@ export const GROUPS = [
 
 const generateExercises = (): Exercise[] => {
   const base: Exercise[] = [
+    // Échauffements Enfants (-10 ans)
+    { id: 'kid1', name: 'Le Miroir Magique', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Les enfants sont par deux face à face. L\'un est le meneur et fait des pas chassés, l\'autre doit l\'imiter exactement comme un miroir.', material: 'Aucun' },
+    { id: 'kid2', name: 'Relais Équilibre', phase: 'echauffement', theme: 'Coordination', duration: 12, description: 'Course de relais par équipe. Chaque enfant doit parcourir une distance avec une balle en équilibre sur sa raquette sans la faire tomber.', material: 'Raquettes, Balles, Plots' },
+    { id: 'kid3', name: 'La Chasse aux Trésors', phase: 'echauffement', theme: 'Vitesse', duration: 8, description: 'Disperser 50 balles au sol. Au signal, les enfants doivent ramasser le plus de balles possible et les ramener dans leur camp une par une.', material: 'Balles, Paniers' },
+    { id: 'kid4', name: 'Jacques a dit (Version Ping)', phase: 'echauffement', theme: 'Coordination', duration: 10, description: 'L\'entraîneur dit "Jacques a dit : Position de base", "Coup droit", "Revers". Les enfants s\'exécutent uniquement si "Jacques a dit" est prononcé.', material: 'Raquettes' },
+    { id: 'kid5', name: 'Le Slalom Géant', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Parcours de plots en pas chassés le plus vite possible, en gardant la raquette devant soi en position de garde.', material: 'Plots' },
+    
+    // Exercices standards existants
     { id: 'e1', name: 'Échauffement articulaire', phase: 'echauffement', theme: null, duration: 5, description: 'Rotation des poignets, épaules, chevilles, genoux et nuque.', material: 'Aucun' },
     { id: 'e2', name: 'Jeu du loup', phase: 'echauffement', theme: 'Jeu de jambes', duration: 8, description: 'Déplacements ludiques autour des tables.', material: 'Plots' },
     { id: 'pb1', name: 'PB - Initiation Topspin CD', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Balles coupées envoyées en CD. Focus sur l\'ouverture de raquette.', material: 'Panier de balles' },
@@ -34,7 +42,7 @@ const generateExercises = (): Exercise[] => {
   const themes = ['Coup Droit', 'Revers', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Flip'];
   const phases: PhaseId[] = ['echauffement', 'regularite', 'technique', 'deplacement', 'schema', 'matchs'];
   
-  for (let i = 1; i <= 93; i++) {
+  for (let i = 1; i <= 88; i++) {
     const phase = phases[i % phases.length];
     const theme = themes[i % themes.length];
     base.push({
