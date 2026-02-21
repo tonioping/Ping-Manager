@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock } from 'lucide-react';
 // @ts-ignore
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Player, PlayerEvaluation, Skill, Attendance, Session, Exercise } from '../types';
 import { DEFAULT_SKILLS, GROUPS } from '../constants';
 import { InfoBubble } from './InfoBubble';
+import { PlayerCSVActions } from './PlayerCSVActions';
 
 interface PlayersViewProps {
   players: Player[];
@@ -105,38 +106,47 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
       return players.filter(p => p.group === filterGroup);
   }, [players, filterGroup]);
 
+  const handleImportPlayers = useCallback((importedPlayers: Partial<Player>[]) => {
+    importedPlayers.forEach(p => {
+      savePlayer(p as Player);
+    });
+  }, [savePlayer]);
+
   return (
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
             <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter"><GraduationCap className="text-accent" size={28}/> Joueurs</h2>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter"><GraduationCap className="text-accent" size={28}/> Joueurs</h2>
                         <InfoBubble content="Gérez vos effectifs et suivez la progression technique individuelle de chaque licencié." />
                     </div>
-                    <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-widest uppercase flex items-center gap-2 shadow-xl hover:bg-slate-800 transition transform hover:scale-105 active:scale-95"><Plus size={18} /> Nouveau Joueur</button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <PlayerCSVActions players={players} onImport={handleImportPlayers} />
+                        <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-widest uppercase flex items-center gap-2 shadow-xl hover:bg-slate-800 transition transform hover:scale-105 active:scale-95"><Plus size={18} /> Nouveau</button>
+                    </div>
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
-                    <button onClick={() => setFilterGroup('all')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${filterGroup === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}>Tous</button>
+                    <button onClick={() => setFilterGroup('all')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${filterGroup === 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-slate-300'}`}>Tous</button>
                     {GROUPS.map(g => (
-                        <button key={g.id} onClick={() => setFilterGroup(g.id)} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${filterGroup === g.id ? `${g.color.split(' ')[0]} ${g.color.split(' ')[1]} shadow-lg` : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}>{g.label}</button>
+                        <button key={g.id} onClick={() => setFilterGroup(g.id)} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${filterGroup === g.id ? `${g.color.split(' ')[0]} ${g.color.split(' ')[1]} shadow-lg` : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-slate-300'}`}>{g.label}</button>
                     ))}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredPlayers.map(p => (
-                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card">
+                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card">
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-black group-hover/card:scale-110 transition-transform">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black group-hover/card:scale-110 transition-transform">
                                     {p.first_name[0]}{p.last_name[0]}
                                 </div>
                                 <div>
-                                    <h3 className="font-black text-slate-900 uppercase tracking-tighter">{p.first_name} {p.last_name}</h3>
+                                    <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tighter">{p.first_name} {p.last_name}</h3>
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{p.level}</span>
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
                                 <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${GROUPS.find(g => g.id === p.group)?.color || 'bg-slate-100 text-slate-400'}`}>
                                     {GROUPS.find(g => g.id === p.group)?.label || 'Sans Groupe'}
                                 </span>
@@ -149,17 +159,17 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
         )}
         
         {(currentPlayer || newPlayerMode) && (
-            <div className="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden animate-fade-in">
-                <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-fade-in">
+                <div className="p-8 border-b border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex gap-6 items-center">
-                        <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-4 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all shadow-sm"><ArrowRight className="rotate-180 text-slate-900" size={20}/></button>
+                        <button onClick={() => { setCurrentPlayer(null); setNewPlayerMode(false); }} className="p-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"><ArrowRight className="rotate-180 text-slate-900 dark:text-white" size={20}/></button>
                         <div>
-                            {newPlayerMode ? <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Nouveau Profil</h3> : <h3 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">{currentPlayer?.first_name} <span className="text-accent">{currentPlayer?.last_name}</span></h3>}
+                            {newPlayerMode ? <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Nouveau Profil</h3> : <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">{currentPlayer?.first_name} <span className="text-accent">{currentPlayer?.last_name}</span></h3>}
                             {!newPlayerMode && <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">{currentPlayer?.level} • {GROUPS.find(g => g.id === currentPlayer?.group)?.label}</div>}
                         </div>
                     </div>
                     <div className="flex gap-3">
-                         <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase flex items-center gap-3 hover:bg-slate-800 transition shadow-xl hover:scale-[1.02] active:scale-95"><Save size={18}/> Sauvegarder</button>
+                         <button onClick={() => currentPlayer && savePlayer(currentPlayer)} className="px-8 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase flex items-center gap-3 hover:bg-slate-800 transition shadow-xl hover:scale-[1.02] active:scale-95"><Save size={18}/> Sauvegarder</button>
                     </div>
                 </div>
 
@@ -186,15 +196,15 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Prénom</label>
-                                    <input type="text" className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900" placeholder="Prénom" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
+                                    <input type="text" className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900 dark:text-white" placeholder="Prénom" value={currentPlayer?.first_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, first_name: e.target.value} : null)} />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Nom</label>
-                                    <input type="text" className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900" placeholder="Nom" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
+                                    <input type="text" className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900 dark:text-white" placeholder="Nom" value={currentPlayer?.last_name} onChange={e => setCurrentPlayer(prev => prev ? {...prev, last_name: e.target.value} : null)} />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Groupe</label>
-                                    <select className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900" value={currentPlayer?.group || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, group: e.target.value} : null)}>
+                                    <select className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900 dark:text-white" value={currentPlayer?.group || ''} onChange={e => setCurrentPlayer(prev => prev ? {...prev, group: e.target.value} : null)}>
                                         <option value="">Sélectionner un groupe</option>
                                         {GROUPS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
                                     </select>
@@ -229,9 +239,9 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                      {!newPlayerMode && (
                          <div className="lg:col-span-8 space-y-12">
                              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center">
+                                 <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center">
                                      <div className="w-full flex justify-between items-center mb-6">
-                                         <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                         <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                                            <Activity size={14} className="text-accent"/> Radar de Compétences
                                          </h4>
                                          <InfoBubble content="Ce graphique montre le niveau actuel sur les 7 piliers du joueur de tennis de table." />
@@ -251,15 +261,15 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                      </div>
                                  </div>
 
-                                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col">
+                                 <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col">
                                      <div className="w-full flex justify-between items-center mb-4">
-                                         <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                         <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                                            <TrendingUp size={14} className="text-blue-500"/> Courbe de Progression
                                          </h4>
                                          <select 
                                             value={historySkillFilter} 
                                             onChange={(e) => setHistorySkillFilter(e.target.value)}
-                                            className="text-[9px] font-black uppercase tracking-widest bg-slate-50 border-none rounded-lg p-2 focus:ring-0 outline-none"
+                                            className="text-[9px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 border-none rounded-lg p-2 focus:ring-0 outline-none dark:text-white"
                                          >
                                              <option value="average">Moyenne Globale</option>
                                              {DEFAULT_SKILLS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -280,7 +290,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                                  </LineChart>
                                              </ResponsiveContainer>
                                          ) : (
-                                             <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                                             <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
                                                  <History size={32} className="text-slate-300 mb-2" />
                                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Pas assez de recul historique.<br/>Évaluez le joueur sur plusieurs dates.</p>
                                              </div>
@@ -291,7 +301,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
                              <div className="space-y-6">
                                  <div className="flex items-center justify-between px-2">
-                                     <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                     <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                                        <LineChartIcon size={14} className="text-accent"/> Évaluer aujourd'hui
                                      </h4>
                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Date : {new Date().toLocaleDateString()}</span>
@@ -303,14 +313,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                          const latestEval = [...currentPlayerEvals].filter(e => e.skill_id === skill.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
                                          const currentVal = todayEval ? todayEval.score : 0;
                                          return (
-                                             <div key={skill.id} className="group/eval p-6 bg-white border border-slate-100 rounded-[2rem] flex flex-col sm:flex-row justify-between items-center gap-4 hover:border-accent/30 hover:shadow-lg transition-all">
+                                             <div key={skill.id} className="group/eval p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] flex flex-col sm:flex-row justify-between items-center gap-4 hover:border-accent/30 hover:shadow-lg transition-all">
                                                  <div className="text-center sm:text-left">
-                                                     <div className="font-black text-slate-900 uppercase tracking-tighter text-sm">{skill.name}</div>
+                                                     <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm">{skill.name}</div>
                                                      {latestEval && latestEval.date !== todayStr && (
                                                          <div className="text-[8px] font-black text-slate-400 uppercase mt-1 tracking-widest">Dernier : {latestEval.score}/5 ({new Date(latestEval.date).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })})</div>
                                                      )}
                                                  </div>
-                                                 <div className="flex gap-1 bg-slate-50 p-1 rounded-2xl">
+                                                 <div className="flex gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-2xl">
                                                      {[1, 2, 3, 4, 5].map(star => (
                                                          <button 
                                                             key={star} 
