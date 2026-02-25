@@ -30,63 +30,42 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_e3', name: "Coordination Échelle de Rythme", phase: "echauffement", theme: "Motricité", duration: 10, description: "Travail d'appuis rapides au sol. Fréquence maximale des pieds pour préparer les déplacements latéraux.", material: "Échelle de rythme" },
     { id: 'ch_e4', name: "Shadow Play - Pivot Explosif", phase: "echauffement", theme: "Jeu de jambes", duration: 5, description: "Focus spécifique sur le saut de pivot pour libérer le coup droit depuis le milieu de table.", material: "Aucun" },
     { id: 'ch_e5', name: "Shadow Play - Liaison CD/RV", phase: "echauffement", theme: "Coordination", duration: 5, description: "Alternance rapide CD et RV sans balle. Focus sur le relâchement de l'épaule et la stabilité des appuis.", material: "Aucun" },
-    { id: 'ch_e6', name: "Gammes de Pas Chassés", phase: "echauffement", theme: "Jeu de jambes", duration: 5, description: "Déplacements latéraux rapides sur toute la largeur de la salle. Garder le centre de gravité bas.", material: "Aucun" },
+    { id: 'ch_beg_e1', name: "L'Équilibre de la Perle", phase: "echauffement", theme: "Habileté", duration: 10, description: "Débutant : Se déplacer dans la salle en maintenant la balle en équilibre sur la raquette. Varier les hauteurs et les vitesses.", material: "Raquette et Balle" },
+    { id: 'ch_beg_e2', name: "Le Miroir du Maître", phase: "echauffement", theme: "Coordination", duration: 5, description: "Face à face, le débutant doit imiter les déplacements latéraux et les postures du coach en temps réel.", material: "Aucun" },
 
     // --- RÉGULARITÉ ---
     { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. L'objectif est d'atteindre 100 échanges sans faute. Discipline mentale absolue.", material: "Balles" },
     { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis et varier la longueur.", material: "Balles" },
     { id: 'ch_r3', name: "Triangle de Régularité (RV-CD-CD)", phase: "regularite", theme: "Liaison", duration: 20, description: "1 RV milieu, 1 CD milieu, 1 CD plein coup droit. Rythme constant, placement précis dans les coins.", material: "Balles" },
-    { id: 'ch_r4', name: "Bloc Actif vs Topspin Aléatoire", phase: "regularite", theme: "Bloc", duration: 15, description: "Le bloqueur doit diriger la balle activement vers les zones libres pendant que l'attaquant varie ses placements.", material: "Balles" },
-    { id: 'ch_r5', name: "Poussette Longue - Tenue de Balle", phase: "regularite", theme: "Poussette", duration: 10, description: "Échanges de poussettes longues et tendues. Interdiction de démarrer. Focus sur l'effet coupé et la profondeur.", material: "Balles" },
-    { id: 'ch_r6', name: "Régularité en '8'", phase: "regularite", theme: "Liaison", duration: 15, description: "Un joueur joue en ligne, l'autre en diagonale. La balle dessine un 8 sur la table. Travail de placement et de lecture.", material: "Balles" },
-    { id: 'ch_r7', name: "Bloc Aléatoire (Incertitude)", phase: "regularite", theme: "Incertitude", duration: 15, description: "L'attaquant joue toujours au même endroit, le bloqueur distribue n'importe où. L'attaquant doit s'ajuster.", material: "Balles" },
+    { id: 'ch_beg_r1', name: "Le Mur de Soie (CD)", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Débutant : Réaliser 10 échanges consécutifs en coup droit avec le coach. Focus sur la régularité du rebond.", material: "Balles" },
+    { id: 'ch_beg_r2', name: "Revers de Velours", phase: "regularite", theme: "Revers (RV)", duration: 15, description: "Débutant : Échanges simples en revers. Garder la raquette devant soi, geste court et contrôlé.", material: "Balles" },
 
     // --- TECHNIQUE ---
     { id: 'ch_t1', name: "Topspin CD sur Balle Coupée", phase: "technique", theme: "Topspin", duration: 20, description: "L'entraîneur distribue des balles coupées lourdes. Action forte de l'avant-bras et des jambes. Focus sur le 'frotté'.", material: "Panier de balles" },
     { id: 'ch_t2', name: "Service 'Ghost' Court", phase: "technique", theme: "Service", duration: 15, description: "Service coupé très court qui doit revenir vers le filet. Travail de la finesse du toucher.", material: "Balles" },
     { id: 'ch_t3', name: "Flip Banane (Chiquita)", phase: "technique", theme: "Flip", duration: 20, description: "Remise de service court en revers avec une action latérale du poignet pour surprendre l'adversaire.", material: "Panier de balles" },
-    { id: 'ch_t4', name: "Contre-Topspin à Mi-Distance", phase: "technique", theme: "Contre-initiative", duration: 20, description: "Répondre à un topspin adverse par un topspin agressif loin de la table. Engagement total du corps.", material: "Balles" },
-    { id: 'ch_t5', name: "Service Marteau & Placement", phase: "technique", theme: "Service", duration: 15, description: "Service 'Tomahawk' avec variations d'effets latéraux. Focus sur le masquage du geste.", material: "Balles" },
-    { id: 'ch_t6', name: "Démarrage RV sur Balle Coupée", phase: "technique", theme: "Revers (RV)", duration: 20, description: "Ouverture en topspin revers sur balle coupée. Action de poignet rapide et stable.", material: "Panier de balles" },
-    { id: 'ch_t7', name: "Contre-Topspin sur Topspin (Près de table)", phase: "technique", theme: "Contre-initiative", duration: 20, description: "Prendre la balle au sommet du rebond pour contrer l'attaque adverse. Geste court et explosif.", material: "Balles" },
-    { id: 'ch_t8', name: "Flip CD sur Service Court", phase: "technique", theme: "Flip", duration: 15, description: "Attaque agressive en coup droit sur balle courte. Avancer le pied droit sous la table.", material: "Panier de balles" },
-    { id: 'ch_t9', name: "Bloc Coupé (Side-Spin)", phase: "technique", theme: "Bloc", duration: 15, description: "Bloquer en ajoutant un effet latéral pour dévier la trajectoire de la balle. Très perturbant.", material: "Balles" },
+    { id: 'ch_beg_t1', name: "La Pince d'Or (Prise de raquette)", phase: "technique", theme: "Habileté", duration: 10, description: "Débutant : Apprendre la prise correcte (CD/RV). Exercices de jonglages alternés CD/RV pour automatiser la tenue.", material: "Raquette" },
+    { id: 'ch_beg_t2', name: "Première Poussette", phase: "technique", theme: "Poussette", duration: 20, description: "Débutant : Apprendre à 'caresser' le dessous de la balle pour créer un effet coupé. Geste lent et ample.", material: "Panier de balles" },
 
     // --- DÉPLACEMENT ---
     { id: 'ch_d1', name: "Le 'Falkenberg' Chinois", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : 1 RV milieu, 1 CD milieu (pivot), 1 CD plein coup droit. Intensité maximale.", material: "Balles" },
     { id: 'ch_d2', name: "Déplacement en 'V' Inversé", phase: "deplacement", theme: "Vitesse", duration: 15, description: "Alternance balle courte au filet et balle longue au fond. Avancer et reculer sans perdre l'équilibre.", material: "Balles" },
-    { id: 'ch_d3', name: "Le Grand Huit (8)", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Déplacement en forme de 8 couvrant toute la table. Focus sur les petits pas d'ajustement.", material: "Balles" },
-    { id: 'ch_d4', name: "Pas de Géant - Couverture Totale", phase: "deplacement", theme: "Vitesse", duration: 15, description: "Balle plein RV puis plein CD. Utilisation de grands pas chassés explosifs.", material: "Panier de balles" },
-    { id: 'ch_d5', name: "Pivot & Replacement Rapide", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Enchaînement pivot CD suivi d'un replacement immédiat pour couvrir le plein CD.", material: "Balles" },
-    { id: 'ch_d6', name: "Le 'Y' Chinois", phase: "deplacement", theme: "Vitesse", duration: 20, description: "Déplacement : Court CD -> Long RV -> Long CD. Travail de la profondeur et de la largeur.", material: "Panier de balles" },
-    { id: 'ch_d7', name: "Pas de Pivot & Glissade", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Pivot explosif suivi d'un grand pas glissé pour atteindre le coin opposé.", material: "Balles" },
+    { id: 'ch_beg_d1', name: "Le Pas du Crabe", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Débutant : Apprendre le pas chassé de base. Se déplacer entre deux plots en restant toujours face à la table.", material: "Plots" },
 
     // --- SCHÉMA DE JEU ---
     { id: 'ch_s1', name: "3ème Balle : Service / Remise / Attaque", phase: "schema", theme: "Incertitude", duration: 20, description: "Service court, remise poussette longue, attaque immédiate en topspin.", material: "Balles" },
-    { id: 'ch_s2', name: "Transition Court-Long", phase: "schema", theme: "Tactique", duration: 15, description: "Remise courte dans le service, puis bloc actif sur le premier démarrage adverse.", material: "Balles" },
-    { id: 'ch_s3', name: "Schéma 2-1 (2 RV, 1 CD Pivot)", phase: "schema", theme: "Tactique", duration: 20, description: "Fixation en revers puis accélération décisive en pivot coup droit.", material: "Balles" },
-    { id: 'ch_s4', name: "Service Court / Remise Longue / Contre", phase: "schema", theme: "Contre-initiative", duration: 20, description: "Provoquer l'attaque adverse pour mieux la contrer en bloc actif ou contre-top.", material: "Balles" },
-    { id: 'ch_s5', name: "5ème Balle : Enchaînement Attaque", phase: "schema", theme: "Tactique", duration: 20, description: "Service, 3ème balle placée, 5ème balle pour conclure le point.", material: "Balles" },
-    { id: 'ch_s6', name: "Schéma de Contre-Attaque", phase: "schema", theme: "Contre-initiative", duration: 20, description: "Subir le premier topspin, bloquer court, puis contre-attaquer sur la balle suivante.", material: "Balles" },
-    { id: 'ch_s7', name: "3ème Balle - Placement Extrême", phase: "schema", theme: "Tactique", duration: 20, description: "Service, puis attaque obligatoire dans le 'petit côté' ou le coude de l'adversaire.", material: "Balles" },
+    { id: 'ch_beg_s1', name: "Service & Première Touche", phase: "schema", theme: "Tactique", duration: 15, description: "Débutant : Réaliser un service réglementaire suivi d'une remise libre. Comprendre le cycle du point.", material: "Balles" },
 
     // --- MATCHS ---
     { id: 'ch_m1', name: "Match à Handicap (9-9)", phase: "matchs", theme: "Mental", duration: 15, description: "Le set commence à 9-9. Chaque point est crucial. Gestion du stress.", material: "Balles" },
-    { id: 'ch_m2', name: "Le Roi de la Table", phase: "matchs", theme: "Compétition", duration: 20, description: "Matchs de 2 minutes. Le gagnant monte de table, le perdant descend.", material: "Balles" },
-    { id: 'ch_m3', name: "Match de 1 Point (Mort Subite)", phase: "matchs", theme: "Mental", duration: 10, description: "Un seul point décide du vainqueur. Concentration maximale dès la première balle.", material: "Balles" },
-    { id: 'ch_m4', name: "Service Interdit (Jeu de Remise)", phase: "matchs", theme: "Tactique", duration: 15, description: "L'engagement se fait par une poussette. Focus sur la construction du point sans l'avantage du service.", material: "Balles" },
-    { id: 'ch_m5', name: "Match de 3 Coups", phase: "matchs", theme: "Tactique", duration: 15, description: "Le point s'arrête après 3 coups. Si le point n'est pas fini, personne ne marque. Force l'agressivité.", material: "Balles" },
-    { id: 'ch_m6', name: "Match de Service/Remise", phase: "matchs", theme: "Tactique", duration: 15, description: "On ne joue que les 4 premiers coups. Focus sur le début du point.", material: "Balles" },
+    { id: 'ch_beg_m1', name: "La Chasse aux Cibles", phase: "matchs", theme: "Compétition", duration: 20, description: "Débutant : Viser des cibles (bouteilles, plots) posées sur la table. Le premier qui touche 5 cibles gagne.", material: "Cibles" },
 
     // --- COGNITIF ---
     { id: 'ch_c1', name: "Réaction aux Couleurs", phase: "cognitif", theme: "Réflexes", duration: 10, description: "L'entraîneur annonce une couleur juste avant de distribuer. Placement obligatoire en zone.", material: "Plots de couleurs" },
-    { id: 'ch_c2', name: "Lecture d'Effet au Panier", phase: "cognitif", theme: "Réflexes", duration: 15, description: "L'entraîneur varie les effets sans prévenir. Le joueur doit identifier et adapter sa remise instantanément.", material: "Panier de balles" },
-    { id: 'ch_c3', name: "Signal Sonore - Changement de Rythme", phase: "cognitif", theme: "Réflexes", duration: 10, description: "Au signal sonore, le joueur doit changer radicalement le rythme de l'échange (accélérer ou ralentir).", material: "Sifflet" },
+    { id: 'ch_beg_c1', name: "Compte les Rebonds", phase: "cognitif", theme: "Réflexes", duration: 10, description: "Débutant : Frapper la balle et annoncer à voix haute le nombre de rebonds sur la table adverse.", material: "Balles" },
 
     // --- RETOUR AU CALME ---
-    { id: 'ch_rc1', name: "Respiration & Étirements 'Zen'", phase: "retour-au-calme", theme: "Retour au calme", duration: 10, description: "Exercices de respiration profonde et étirements statiques.", material: "Aucun" },
-    { id: 'ch_rc2', name: "Visualisation de la Victoire", phase: "retour-au-calme", theme: "Mental", duration: 5, description: "Analyse mentale de la séance et visualisation de gestes parfaits réussis.", material: "Aucun" },
-    { id: 'ch_rc3', name: "Auto-Correction Mentale", phase: "retour-au-calme", theme: "Mental", duration: 5, description: "Le joueur doit citer 3 erreurs techniques commises et comment les corriger.", material: "Aucun" }
+    { id: 'ch_rc1', name: "Respiration & Étirements 'Zen'", phase: "retour-au-calme", theme: "Retour au calme", duration: 10, description: "Exercices de respiration profonde et étirements statiques.", material: "Aucun" }
   ];
 };
 
