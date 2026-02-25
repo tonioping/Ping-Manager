@@ -23,7 +23,7 @@ export const GROUPS = [
 
 const generateExercises = (): Exercise[] => {
   const base: Exercise[] = [
-    // --- ÉCHAUFFEMENT VIDE ---
+    // --- ÉCHAUFFEMENT : STRICTEMENT VIDE ---
 
     // --- DÉVELOPPEMENT COGNITIF ---
     { id: 'cog1', name: 'Lecture de Couleur Flash', phase: 'cognitif', theme: 'Cognitif', duration: 10, description: 'L\'entraîneur montre un carton de couleur pendant le service. Rouge = Remise courte, Bleu = Remise longue agressive.', material: 'Cartons de couleurs' },
@@ -47,6 +47,7 @@ const generateExercises = (): Exercise[] => {
   ];
 
   const themes = ['Coup Droit', 'Revers', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Flip'];
+  // On exclut explicitement 'echauffement' de la génération automatique
   const phases: PhaseId[] = ['regularite', 'technique', 'deplacement', 'schema', 'matchs', 'cognitif'];
   
   for (let i = 1; i <= 60; i++) {
@@ -90,7 +91,7 @@ export const DEMO_SESSIONS: Session[] = [
         name: "Perfectionnement - Topspin Intensif",
         date: new Date().toISOString().split('T')[0],
         exercises: {
-            echauffement: [],
+            echauffement: [], // Corrigé : strictement vide
             regularite: [INITIAL_EXERCISES[8]],
             technique: [INITIAL_EXERCISES[9]],
             deplacement: [INITIAL_EXERCISES[10]],
