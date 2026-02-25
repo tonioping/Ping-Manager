@@ -28,44 +28,43 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_e1', name: "Shadow Play - 8 Directions", phase: "echauffement", theme: "Mobilisation", duration: 10, description: "Sans balle, reproduire les gestes de base (CD, RV, Pivot) en se déplaçant sur 8 points cardinaux. Focus sur le transfert de poids.", material: "Aucun" },
     { id: 'ch_e2', name: "Réveil Articulaire Dynamique", phase: "echauffement", theme: "Mobilisation", duration: 5, description: "Rotations rapides des poignets, coudes et épaules. Sauts sur place avec rotations du bassin.", material: "Aucun" },
     { id: 'ch_e3', name: "Coordination Échelle de Rythme", phase: "echauffement", theme: "Motricité", duration: 10, description: "Travail d'appuis rapides au sol. Fréquence maximale des pieds pour préparer les déplacements latéraux.", material: "Échelle de rythme" },
-    { id: 'ch_e4', name: "Shadow Play - Pivot Explosif", phase: "echauffement", theme: "Jeu de jambes", duration: 5, description: "Focus spécifique sur le saut de pivot pour libérer le coup droit depuis le milieu de table.", material: "Aucun" },
-    { id: 'ch_e5', name: "Shadow Play - Liaison CD/RV", phase: "echauffement", theme: "Coordination", duration: 5, description: "Alternance rapide CD et RV sans balle. Focus sur le relâchement de l'épaule et la stabilité des appuis.", material: "Aucun" },
-    { id: 'ch_beg_e1', name: "L'Équilibre de la Perle", phase: "echauffement", theme: "Habileté", duration: 10, description: "Débutant : Se déplacer dans la salle en maintenant la balle en équilibre sur la raquette. Varier les hauteurs et les vitesses.", material: "Raquette et Balle" },
-    { id: 'ch_beg_e2', name: "Le Miroir du Maître", phase: "echauffement", theme: "Coordination", duration: 5, description: "Face à face, le débutant doit imiter les déplacements latéraux et les postures du coach en temps réel.", material: "Aucun" },
+    { id: 'ch_beg_e1', name: "L'Équilibre de la Perle", phase: "echauffement", theme: "Habileté", duration: 10, description: "Débutant : Se déplacer dans la salle en maintenant la balle en équilibre sur la raquette.", material: "Raquette et Balle" },
 
     // --- RÉGULARITÉ ---
-    { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. L'objectif est d'atteindre 100 échanges sans faute. Discipline mentale absolue.", material: "Balles" },
-    { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis et varier la longueur.", material: "Balles" },
-    { id: 'ch_r3', name: "Triangle de Régularité (RV-CD-CD)", phase: "regularite", theme: "Liaison", duration: 20, description: "1 RV milieu, 1 CD milieu, 1 CD plein coup droit. Rythme constant, placement précis dans les coins.", material: "Balles" },
-    { id: 'ch_beg_r1', name: "Le Mur de Soie (CD)", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Débutant : Réaliser 10 échanges consécutifs en coup droit avec le coach. Focus sur la régularité du rebond.", material: "Balles" },
-    { id: 'ch_beg_r2', name: "Revers de Velours", phase: "regularite", theme: "Revers (RV)", duration: 15, description: "Débutant : Échanges simples en revers. Garder la raquette devant soi, geste court et contrôlé.", material: "Balles" },
+    { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. L'objectif est d'atteindre 100 échanges sans faute.", material: "Balles" },
+    { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis.", material: "Balles" },
+    { id: 'ch_beg_r1', name: "Le Mur de Soie (CD)", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Débutant : Réaliser 10 échanges consécutifs en coup droit avec le coach.", material: "Balles" },
 
     // --- TECHNIQUE ---
-    { id: 'ch_t1', name: "Topspin CD sur Balle Coupée", phase: "technique", theme: "Topspin", duration: 20, description: "L'entraîneur distribue des balles coupées lourdes. Action forte de l'avant-bras et des jambes. Focus sur le 'frotté'.", material: "Panier de balles" },
-    { id: 'ch_t2', name: "Service 'Ghost' Court", phase: "technique", theme: "Service", duration: 15, description: "Service coupé très court qui doit revenir vers le filet. Travail de la finesse du toucher.", material: "Balles" },
-    { id: 'ch_t3', name: "Flip Banane (Chiquita)", phase: "technique", theme: "Flip", duration: 20, description: "Remise de service court en revers avec une action latérale du poignet pour surprendre l'adversaire.", material: "Panier de balles" },
-    { id: 'ch_beg_t1', name: "La Pince d'Or (Prise de raquette)", phase: "technique", theme: "Habileté", duration: 10, description: "Débutant : Apprendre la prise correcte (CD/RV). Exercices de jonglages alternés CD/RV pour automatiser la tenue.", material: "Raquette" },
-    { id: 'ch_beg_t2', name: "Première Poussette", phase: "technique", theme: "Poussette", duration: 20, description: "Débutant : Apprendre à 'caresser' le dessous de la balle pour créer un effet coupé. Geste lent et ample.", material: "Panier de balles" },
+    { id: 'ch_t1', name: "Topspin CD sur Balle Coupée", phase: "technique", theme: "Topspin", duration: 20, description: "L'entraîneur distribue des balles coupées lourdes. Action forte de l'avant-bras.", material: "Panier de balles" },
+    { id: 'ch_t_p1', name: "Panier : Topspin CD (Rotation Max)", phase: "technique", theme: "Topspin", duration: 20, description: "Distribution lente de balles très coupées. Le joueur doit générer un maximum de rotation avec une action de jambe et d'avant-bras explosive.", material: "Panier de balles" },
+    { id: 'ch_t_p2', name: "Panier : Liaison RV / CD (Fréquence)", phase: "technique", theme: "Coordination", duration: 15, description: "Distribution rapide alternée RV/CD sur un point fixe. Focus sur la vitesse de remplacement de la raquette et le relâchement.", material: "Panier de balles" },
+    { id: 'ch_t_p3', name: "Panier : Contre-Topspin au Sommet", phase: "technique", theme: "Contre-initiative", duration: 20, description: "Distribution de balles liftées rapides. Le joueur doit contrer au sommet du rebond avec un geste court et une inclinaison de raquette précise.", material: "Panier de balles" },
+    { id: 'ch_t_p4', name: "Panier : Flip RV Intensif", phase: "technique", theme: "Flip", duration: 15, description: "Série de 20 balles courtes en revers. Travail de l'engagement du coude et du poignet pour une accélération sèche.", material: "Panier de balles" },
+    { id: 'ch_beg_t1', name: "La Pince d'Or (Prise de raquette)", phase: "technique", theme: "Habileté", duration: 10, description: "Débutant : Apprendre la prise correcte (CD/RV).", material: "Raquette" },
 
     // --- DÉPLACEMENT ---
     { id: 'ch_d1', name: "Le 'Falkenberg' Chinois", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : 1 RV milieu, 1 CD milieu (pivot), 1 CD plein coup droit. Intensité maximale.", material: "Balles" },
-    { id: 'ch_d2', name: "Déplacement en 'V' Inversé", phase: "deplacement", theme: "Vitesse", duration: 15, description: "Alternance balle courte au filet et balle longue au fond. Avancer et reculer sans perdre l'équilibre.", material: "Balles" },
-    { id: 'ch_beg_d1', name: "Le Pas du Crabe", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Débutant : Apprendre le pas chassé de base. Se déplacer entre deux plots en restant toujours face à la table.", material: "Plots" },
+    { id: 'ch_d_p1', name: "Panier : Déplacement 'Grande Amplitude'", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Distribution alternée plein RV / plein CD. Le joueur doit utiliser des pas chassés explosifs pour couvrir toute la table.", material: "Panier de balles" },
+    { id: 'ch_d_p2', name: "Panier : Le 'Falkenberg' Intensif", phase: "deplacement", theme: "Vitesse", duration: 20, description: "Version panier de balles du Falkenberg. Rythme imposé par le coach pour pousser le joueur dans ses retranchements physiques.", material: "Panier de balles" },
+    { id: 'ch_d_p3', name: "Panier : Travail de l'Appui Droit (CD)", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Distribution de balles s'écartant de plus en plus vers le coup droit. Focus sur la poussée de la jambe gauche et l'ancrage de la droite.", material: "Panier de balles" },
+    { id: 'ch_beg_d1', name: "Le Pas du Crabe", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Débutant : Apprendre le pas chassé de base.", material: "Plots" },
 
     // --- SCHÉMA DE JEU ---
     { id: 'ch_s1', name: "3ème Balle : Service / Remise / Attaque", phase: "schema", theme: "Incertitude", duration: 20, description: "Service court, remise poussette longue, attaque immédiate en topspin.", material: "Balles" },
-    { id: 'ch_beg_s1', name: "Service & Première Touche", phase: "schema", theme: "Tactique", duration: 15, description: "Débutant : Réaliser un service réglementaire suivi d'une remise libre. Comprendre le cycle du point.", material: "Balles" },
+    { id: 'ch_s_p1', name: "Panier : Schéma d'Attaque 3ème Balle", phase: "schema", theme: "Tactique", duration: 20, description: "Le coach simule une remise courte (balle posée) puis une remise longue (balle lancée). Le joueur doit flipper puis enchaîner en topspin.", material: "Panier de balles" },
+    { id: 'ch_beg_s1', name: "Service & Première Touche", phase: "schema", theme: "Tactique", duration: 15, description: "Débutant : Réaliser un service réglementaire suivi d'une remise libre.", material: "Balles" },
 
     // --- MATCHS ---
-    { id: 'ch_m1', name: "Match à Handicap (9-9)", phase: "matchs", theme: "Mental", duration: 15, description: "Le set commence à 9-9. Chaque point est crucial. Gestion du stress.", material: "Balles" },
-    { id: 'ch_beg_m1', name: "La Chasse aux Cibles", phase: "matchs", theme: "Compétition", duration: 20, description: "Débutant : Viser des cibles (bouteilles, plots) posées sur la table. Le premier qui touche 5 cibles gagne.", material: "Cibles" },
+    { id: 'ch_m1', name: "Match à Handicap (9-9)", phase: "matchs", theme: "Mental", duration: 15, description: "Le set commence à 9-9. Chaque point est crucial.", material: "Balles" },
+    { id: 'ch_beg_m1', name: "La Chasse aux Cibles", phase: "matchs", theme: "Compétition", duration: 20, description: "Débutant : Viser des cibles posées sur la table.", material: "Cibles" },
 
     // --- COGNITIF ---
-    { id: 'ch_c1', name: "Réaction aux Couleurs", phase: "cognitif", theme: "Réflexes", duration: 10, description: "L'entraîneur annonce une couleur juste avant de distribuer. Placement obligatoire en zone.", material: "Plots de couleurs" },
-    { id: 'ch_beg_c1', name: "Compte les Rebonds", phase: "cognitif", theme: "Réflexes", duration: 10, description: "Débutant : Frapper la balle et annoncer à voix haute le nombre de rebonds sur la table adverse.", material: "Balles" },
+    { id: 'ch_c1', name: "Réaction aux Couleurs", phase: "cognitif", theme: "Réflexes", duration: 10, description: "L'entraîneur annonce une couleur juste avant de distribuer.", material: "Plots de couleurs" },
+    { id: 'ch_c_p1', name: "Panier : Incertitude Totale", phase: "cognitif", theme: "Réflexes", duration: 15, description: "Distribution aléatoire sur toute la table (court/long, CD/RV). Le joueur doit réagir sans anticipation.", material: "Panier de balles" },
 
     // --- RETOUR AU CALME ---
-    { id: 'ch_rc1', name: "Respiration & Étirements 'Zen'", phase: "retour-au-calme", theme: "Retour au calme", duration: 10, description: "Exercices de respiration profonde et étirements statiques.", material: "Aucun" }
+    { id: 'ch_rc1', name: "Respiration & Étirements 'Zen'", phase: "retour-au-calme", theme: "Retour au calme", duration: 10, description: "Exercices de respiration profonde.", material: "Aucun" }
   ];
 };
 
