@@ -6,10 +6,11 @@ export const PHASES: Phase[] = [
   { id: 'technique', label: 'TECHNIQUE', duration: 25, color: 'bg-indigo-50 border-indigo-200 text-slate-900' },
   { id: 'deplacement', label: 'DÉPLACEMENT', duration: 20, color: 'bg-fuchsia-50 border-fuchsia-200 text-slate-900' },
   { id: 'schema', label: 'SCHÉMA DE JEU', duration: 15, color: 'bg-emerald-50 border-emerald-200 text-slate-900' },
-  { id: 'matchs', label: 'MATCHS VARIÉS', duration: 15, color: 'bg-rose-50 border-rose-200 text-slate-900' }
+  { id: 'matchs', label: 'MATCHS VARIÉS', duration: 15, color: 'bg-rose-50 border-rose-200 text-slate-900' },
+  { id: 'cognitif', label: 'DÉV. COGNITIF', duration: 15, color: 'bg-violet-50 border-violet-200 text-slate-900' }
 ];
 
-export const THEMES: string[] = ['Coup Droit (CD)', 'Revers (RV)', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Contre-initiative', 'Flip', 'Remise de service', 'Incertitude', 'Coordination', 'Vitesse'];
+export const THEMES: string[] = ['Coup Droit (CD)', 'Revers (RV)', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Contre-initiative', 'Flip', 'Remise de service', 'Incertitude', 'Coordination', 'Vitesse', 'Cognitif'];
 
 export const GROUPS = [
     { id: 'debutant', label: 'Débutant', color: 'bg-emerald-100 text-slate-900 border-emerald-200' },
@@ -22,7 +23,30 @@ export const GROUPS = [
 
 const generateExercises = (): Exercise[] => {
   const base: Exercise[] = [
-    // Échauffements Enfants (-10 ans)
+    // --- DÉVELOPPEMENT COGNITIF (Nouveau) ---
+    { id: 'cog1', name: 'Lecture de Couleur Flash', phase: 'cognitif', theme: 'Cognitif', duration: 10, description: 'L\'entraîneur montre un carton de couleur pendant le service. Rouge = Remise courte, Bleu = Remise longue agressive. Force la prise de décision ultra-rapide.', material: 'Cartons de couleurs' },
+    { id: 'cog2', name: 'Incertitude Totale (Panier)', phase: 'cognitif', theme: 'Incertitude', duration: 15, description: 'L\'entraîneur envoie des balles n\'importe où sur la table avec des effets variés. Le joueur doit identifier l\'effet et la zone en moins de 0.2s.', material: 'Panier de balles' },
+    { id: 'cog3', name: 'Calcul Mental & Topspin', phase: 'cognitif', theme: 'Cognitif', duration: 12, description: 'Le joueur doit résoudre une addition simple criée par l\'entraîneur tout en effectuant un topspin CD. Travaille la dissociation et la concentration sous effort.', material: 'Balles' },
+
+    // --- ÉCHAUFFEMENT (Style Chinois) ---
+    { id: 'chi_ech1', name: 'Shadow Play Intensif', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Déplacements à vide (sans balle) à vitesse maximale. 30s effort / 30s repos. Focus sur la position basse et l\'explosivité des appuis.', material: 'Aucun' },
+    
+    // --- RÉGULARITÉ (Style Chinois) ---
+    { id: 'chi_reg1', name: 'Le Mur de 100 Balles', phase: 'regularite', theme: 'Coup Droit (CD)', duration: 20, description: 'Échanges en CD diagonale. L\'objectif est d\'atteindre 100 échanges sans faute à une cadence de 80 balles/minute. Si faute, on recommence à zéro.', material: 'Balles' },
+
+    // --- TECHNIQUE (Style Chinois) ---
+    { id: 'chi_tec1', name: 'Pivot Topspin Précision', phase: 'technique', theme: 'Topspin', duration: 20, description: 'Panier de balles : 1 balle RV, 1 balle Pivot CD. L\'entraîneur exige que chaque balle touche une cible de 10x10cm dans le coin opposé.', material: 'Panier de balles, Cibles' },
+
+    // --- DÉPLACEMENT (Style Chinois) ---
+    { id: 'chi_dep1', name: 'Le Triangle de Feu', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: 'Panier de balles : Milieu -> CD -> RV -> Milieu. Rythme effréné. Le joueur doit rester parfaitement gainé malgré la fatigue.', material: 'Panier de balles' },
+
+    // --- SCHÉMA DE JEU (Style Chinois) ---
+    { id: 'chi_sch1', name: 'Transition Court-Long', phase: 'schema', theme: 'Remise de service', duration: 15, description: 'Service court coupé -> Remise courte -> Poussette longue -> Démarrage Topspin. Travaille la transition entre le jeu de table et le jeu lancé.', material: 'Balles' },
+
+    // --- MATCHS (Style Chinois) ---
+    { id: 'chi_mat1', name: 'Match à Handicap (8-8)', phase: 'matchs', theme: null, duration: 20, description: 'Les sets commencent à 8-8. Chaque point est crucial. Simule la pression de fin de set pour forcer la lucidité tactique.', material: 'Balles' },
+
+    // Échauffements Enfants existants
     { id: 'kid1', name: 'Le Miroir Magique', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Les enfants sont par deux face à face. L\'un est le meneur et fait des pas chassés, l\'autre doit l\'imiter exactement comme un miroir.', material: 'Aucun' },
     { id: 'kid2', name: 'Relais Équilibre', phase: 'echauffement', theme: 'Coordination', duration: 12, description: 'Course de relais par équipe. Chaque enfant doit parcourir une distance avec une balle en équilibre sur sa raquette sans la faire tomber.', material: 'Raquettes, Balles, Plots' },
     { id: 'kid3', name: 'La Chasse aux Trésors', phase: 'echauffement', theme: 'Vitesse', duration: 8, description: 'Disperser 50 balles au sol. Au signal, les enfants doivent ramasser le plus de balles possible et les ramener dans leur camp une par une.', material: 'Balles, Paniers' },
@@ -32,22 +56,13 @@ const generateExercises = (): Exercise[] => {
     { id: 'kid7', name: 'La Rivière aux Crocodiles', phase: 'echauffement', theme: 'Coordination', duration: 12, description: 'Traverser la salle en marchant sur des "pierres" (plots) sans toucher le sol, tout en faisant rebondir la balle sur sa raquette.', material: 'Plots, Raquettes, Balles' },
     { id: 'kid8', name: 'Le Chef d\'Orchestre', phase: 'echauffement', theme: 'Coordination', duration: 8, description: 'Un enfant fait des gestes techniques (CD, RV, Pivot) et les autres doivent l\'imiter le plus vite possible. On change de chef toutes les 2 minutes.', material: 'Raquettes' },
     { id: 'kid9', name: 'Le Bowling Ping', phase: 'echauffement', theme: 'Coordination', duration: 15, description: 'Placer des gobelets ou des plots sur la table. L\'enfant doit les renverser en lançant la balle avec sa raquette (coup droit ou revers).', material: 'Gobelets/Plots, Balles, Raquettes' },
-    { id: 'kid10', name: 'La Course aux Couleurs', phase: 'echauffement', theme: 'Vitesse', duration: 10, description: 'L\'entraîneur annonce une couleur. Les enfants doivent courir toucher le plot de cette couleur le plus vite possible et revenir en position de base.', material: 'Plots de couleurs différentes' },
-    
-    // Exercices standards existants
-    { id: 'e1', name: 'Échauffement articulaire', phase: 'echauffement', theme: null, duration: 5, description: 'Rotation des poignets, épaules, chevilles, genoux et nuque.', material: 'Aucun' },
-    { id: 'e2', name: 'Jeu du loup', phase: 'echauffement', theme: 'Jeu de jambes', duration: 8, description: 'Déplacements ludiques autour des tables.', material: 'Plots' },
-    { id: 'pb1', name: 'PB - Initiation Topspin CD', phase: 'technique', theme: 'Topspin', duration: 15, description: 'Balles coupées envoyées en CD. Focus sur l\'ouverture de raquette.', material: 'Panier de balles' },
-    { id: 'pb2', name: 'PB - Falkenberg', phase: 'deplacement', theme: 'Jeu de jambes', duration: 15, description: '1 Revers -> 1 Pivot CD -> 1 Plein CD.', material: 'Panier de balles' },
-    { id: 'r1', name: 'Gammes CD/RV Diagonales', phase: 'regularite', theme: 'Coup Droit (CD)', duration: 15, description: 'Échanges en diagonale pour le contrôle.', material: 'Balles' },
-    { id: 's1', name: 'Service + Attaque 3ème balle', phase: 'schema', theme: 'Service', duration: 15, description: 'Service, remise, attaque immédiate.', material: 'Balles' },
-    { id: 'm1', name: 'Match classique', phase: 'matchs', theme: null, duration: 15, description: 'Matchs officiels en 3 sets.', material: 'Balles' },
+    { id: 'kid10', name: 'La Course aux Couleurs', phase: 'echauffement', theme: 'Vitesse', duration: 10, description: 'L\'entraîneur annonce une couleur. Les enfants doivent courir toucher le plot de cette couleur le plus vite possible et revenir en position de base.', material: 'Plots de couleurs différentes' }
   ];
 
   const themes = ['Coup Droit', 'Revers', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Flip'];
-  const phases: PhaseId[] = ['echauffement', 'regularite', 'technique', 'deplacement', 'schema', 'matchs'];
+  const phases: PhaseId[] = ['echauffement', 'regularite', 'technique', 'deplacement', 'schema', 'matchs', 'cognitif'];
   
-  for (let i = 1; i <= 83; i++) {
+  for (let i = 1; i <= 70; i++) {
     const phase = phases[i % phases.length];
     const theme = themes[i % themes.length];
     base.push({
@@ -93,7 +108,8 @@ export const DEMO_SESSIONS: Session[] = [
             technique: [INITIAL_EXERCISES[2]],
             deplacement: [INITIAL_EXERCISES[3]],
             schema: [INITIAL_EXERCISES[5]],
-            matchs: [INITIAL_EXERCISES[6]]
+            matchs: [INITIAL_EXERCISES[6]],
+            cognitif: []
         }
     }
 ];
@@ -119,7 +135,7 @@ export const EMPTY_SESSION: Session = {
     id: 0,
     name: '',
     date: new Date().toISOString().split('T')[0],
-    exercises: { echauffement: [], regularite: [], technique: [], deplacement: [], schema: [], matchs: [] }
+    exercises: { echauffement: [], regularite: [], technique: [], deplacement: [], schema: [], matchs: [], cognitif: [] }
 };
 
 export const CYCLE_TYPES: Record<string, { value: string; label: string; color: string; icon: string }> = {
