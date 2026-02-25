@@ -23,15 +23,7 @@ export const GROUPS = [
 
 const generateExercises = (): Exercise[] => {
   const base: Exercise[] = [
-    // --- ÉCHAUFFEMENT (STRICTEMENT HORS TABLE) ---
-    { id: 'ech_art', name: 'Réveil Articulaire Complet', phase: 'echauffement', theme: 'Coordination', duration: 5, description: 'Rotation systématique : poignets, coudes, épaules, nuque, bassin, genoux et chevilles. Indispensable avant l\'effort.', material: 'Aucun' },
-    { id: 'ech_sha', name: 'Shadow Play : Pas Chassés', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Simuler des coups droits et revers en déplacement latéral sans table. Focus sur l\'équilibre et la vitesse des appuis.', material: 'Raquette' },
-    { id: 'ech_lou', name: 'Le Loup Glacé', phase: 'echauffement', theme: 'Vitesse', duration: 8, description: 'Jeu de poursuite dans la salle. Les joueurs doivent se déplacer uniquement en pas chassés de pongiste.', material: 'Aucun' },
-    { id: 'ech_cor', name: 'Corde à Sauter Rythmée', phase: 'echauffement', theme: 'Jeu de jambes', duration: 10, description: 'Sauts pieds joints, alternés et montées de genoux. Travaille l\'explosivité des mollets.', material: 'Corde à sauter' },
-    { id: 'ech_rea', name: 'Réaction aux Signaux', phase: 'echauffement', theme: 'Vitesse', duration: 7, description: 'Sprint court au signal sonore ou visuel du coach. Travaille le temps de réaction.', material: 'Aucun' },
-    { id: 'ech_mir', name: 'Le Miroir Dynamique', phase: 'echauffement', theme: 'Coordination', duration: 8, description: 'Par deux, l\'un impose des déplacements et gestes à vide, l\'autre doit copier instantanément.', material: 'Aucun' },
-    { id: 'ech_gain', name: 'Gainage Actif & Fentes', phase: 'echauffement', theme: 'Coordination', duration: 10, description: 'Enchaînement de fentes latérales et gainage dynamique pour préparer le tronc et les jambes.', material: 'Aucun' },
-    { id: 'ech_bal', name: 'Jonglage Multi-surfaces', phase: 'echauffement', theme: 'Coordination', duration: 10, description: 'Jongler avec la balle sur la tranche, le manche, et alterner faces CD/RV en marchant.', material: 'Raquette, Balle' },
+    // --- ÉCHAUFFEMENT VIDE ---
 
     // --- DÉVELOPPEMENT COGNITIF ---
     { id: 'cog1', name: 'Lecture de Couleur Flash', phase: 'cognitif', theme: 'Cognitif', duration: 10, description: 'L\'entraîneur montre un carton de couleur pendant le service. Rouge = Remise courte, Bleu = Remise longue agressive.', material: 'Cartons de couleurs' },
@@ -57,7 +49,6 @@ const generateExercises = (): Exercise[] => {
   const themes = ['Coup Droit', 'Revers', 'Topspin', 'Service', 'Poussette', 'Jeu de jambes', 'Bloc', 'Flip'];
   const phases: PhaseId[] = ['regularite', 'technique', 'deplacement', 'schema', 'matchs', 'cognitif'];
   
-  // On génère le reste des exercices pour les autres phases
   for (let i = 1; i <= 60; i++) {
     const phase = phases[i % phases.length];
     const theme = themes[i % themes.length];
@@ -99,7 +90,7 @@ export const DEMO_SESSIONS: Session[] = [
         name: "Perfectionnement - Topspin Intensif",
         date: new Date().toISOString().split('T')[0],
         exercises: {
-            echauffement: [INITIAL_EXERCISES[0]],
+            echauffement: [],
             regularite: [INITIAL_EXERCISES[8]],
             technique: [INITIAL_EXERCISES[9]],
             deplacement: [INITIAL_EXERCISES[10]],
