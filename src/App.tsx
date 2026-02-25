@@ -143,22 +143,29 @@ export default function App() {
       return;
     }
 
-    const sessionData = {
+    const sessionData: any = {
       name: currentSession.name,
       date: currentSession.date,
       exercises: currentSession.exercises,
-      user_id: session?.user?.id
+      user_id: session?.user?.id,
+      group: currentSession.group || null
     };
 
     if (session && !isDemoMode) {
+      // Si l'ID est 0, on ne l'envoie pas pour laisser Supabase générer l'ID auto-incrémenté
+      if (currentSession.id !== 0) {
+        sessionData.id = currentSession.id;
+      }
+
       const { data, error } = await supabase
         .from('sessions')
-        .upsert(currentSession.id ? { ...sessionData, id: currentSession.id } : sessionData)
+        .upsert(sessionData)
         .select()
         .single();
 
       if (error) {
-        showToast("Erreur lors de la sauvegarde Cloud", "error");
+        console.error("Erreur Supabase Session:", error);
+        showToast(`Erreur : ${error.message}`, "error");
         return;
       }
       setSavedSessions(prev => {
@@ -228,25 +235,31 @@ export default function App() {
       return;
     }
 
-    const cycleData = {
+    const cycleData: any = {
       name: currentCycle.name,
       start_date: currentCycle.startDate,
       weeks: currentCycle.weeks,
       type: currentCycle.type,
       objectives: currentCycle.objectives,
-      group: currentCycle.group,
+      group: currentCycle.group || null,
       user_id: session?.user?.id
     };
 
     if (session && !isDemoMode) {
+      const cycleId = (currentCycle as any).id;
+      if (cycleId && cycleId !== 0) {
+        cycleData.id = cycleId;
+      }
+
       const { data, error } = await supabase
         .from('cycles')
-        .upsert((currentCycle as any).id ? { ...cycleData, id: (currentCycle as any).id } : cycleData)
+        .upsert(cycleData)
         .select()
         .single();
 
       if (error) {
-        showToast("Erreur lors de la sauvegarde du cycle", "error");
+        console.error("Erreur Supabase Cycle:", error);
+        showToast(`Erreur : ${error.message}`, "error");
         return;
       }
       const formatted = { ...data, startDate: data.start_date };
@@ -420,7 +433,8 @@ export default function App() {
     setCurrentSession({
       ...EMPTY_SESSION,
       name: `${group?.label || 'Séance'} - ${new Date().toLocaleDateString()}`,
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
+      group: selectedGroupId || undefined
     });
     setView('sessions');
   };
