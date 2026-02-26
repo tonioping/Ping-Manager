@@ -35,6 +35,10 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis.", material: "Balles" },
     { id: 'ch_r3', name: "Liaison 1-1 (CD/RV)", phase: "regularite", theme: "Coordination", duration: 15, description: "Intermédiaire : Alterner 1 coup droit et 1 revers sur le revers adverse. Focus sur le transfert de poids.", material: "Balles" },
     { id: 'ch_r4', name: "Huit de Chiffre (Diagonales)", phase: "regularite", theme: "Régularité", duration: 20, description: "Intermédiaire : Joueur A joue en ligne, Joueur B joue en diagonale. Travail de placement permanent.", material: "Balles" },
+    { id: 'ch_r5', name: "Le Triangle de Placement", phase: "regularite", theme: "Placement", duration: 20, description: "Intermédiaire : Joueur A distribue en RV. Joueur B alterne : 1 CD coin, 1 CD milieu, 1 CD coin. Focus sur le replacement.", material: "Balles" },
+    { id: 'ch_r6', name: "Régularité Revers 'Piston'", phase: "regularite", theme: "Revers (RV)", duration: 15, description: "Intermédiaire : Échanges rapides en revers sur revers. La balle doit être longue et toucher le dernier tiers de la table.", material: "Balles" },
+    { id: 'ch_r7', name: "Liaison CD/RV sur Pivot", phase: "regularite", theme: "Coordination", duration: 20, description: "Intermédiaire : 1 RV, 1 CD (pivot), 1 RV. Travail de la fluidité du haut du corps et des appuis.", material: "Balles" },
+    { id: 'ch_r8', name: "Contre-Top de Contrôle", phase: "regularite", theme: "Topspin", duration: 15, description: "Intermédiaire : À mi-distance, les deux joueurs font du topspin sur topspin à vitesse modérée. Focus sur la courbe.", material: "Balles" },
 
     // --- TECHNIQUE ---
     { id: 'ch_t1', name: "Topspin CD sur Balle Coupée", phase: "technique", theme: "Topspin", duration: 20, description: "L'entraîneur distribue des balles coupées lourdes. Action forte de l'avant-bras.", material: "Panier de balles" },
