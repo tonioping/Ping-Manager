@@ -20,12 +20,12 @@ export interface Exercise {
 }
 
 export interface Session {
-  id: number;
+  id?: number;
   name: string;
   date: string;
   exercises: Record<PhaseId, Exercise[]>;
   user_id?: string;
-  group?: string; // Groupe associé à la séance
+  group?: string; 
 }
 
 export interface Attendance {
@@ -47,7 +47,7 @@ export interface CycleWeek {
 export type CycleType = 'developpement' | 'competition' | 'recuperation' | 'pre-saison';
 
 export interface Cycle {
-  id: number;
+  id?: number;
   name: string;
   startDate: string;
   weeks: CycleWeek[];

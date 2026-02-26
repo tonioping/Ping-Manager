@@ -151,12 +151,12 @@ export default function App() {
       group: currentSession.group || null
     };
 
-    if (session && !isDemoMode) {
-      // Si l'ID est 0, on ne l'envoie pas pour laisser Supabase générer l'ID auto-incrémenté
-      if (currentSession.id !== 0) {
-        sessionData.id = currentSession.id;
-      }
+    // On n'envoie l'ID que s'il existe et qu'il n'est pas 0
+    if (currentSession.id && currentSession.id !== 0) {
+      sessionData.id = currentSession.id;
+    }
 
+    if (session && !isDemoMode) {
       const { data, error } = await supabase
         .from('sessions')
         .upsert(sessionData)
@@ -245,12 +245,12 @@ export default function App() {
       user_id: session?.user?.id
     };
 
-    if (session && !isDemoMode) {
-      const cycleId = (currentCycle as any).id;
-      if (cycleId && cycleId !== 0) {
-        cycleData.id = cycleId;
-      }
+    const cycleId = (currentCycle as any).id;
+    if (cycleId && cycleId !== 0) {
+      cycleData.id = cycleId;
+    }
 
+    if (session && !isDemoMode) {
       const { data, error } = await supabase
         .from('cycles')
         .upsert(cycleData)
@@ -481,7 +481,7 @@ export default function App() {
                       <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-4">
                           <div className="flex items-center gap-4">
                               <h2 className="text-xl font-black italic uppercase dark:text-white">Mode Édition</h2>
-                              {currentSession.id !== 0 && <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Printer size={14}/> Imprimer</button>}
+                              {currentSession.id && currentSession.id !== 0 && <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Printer size={14}/> Imprimer</button>}
                           </div>
                           <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
                       </div>
