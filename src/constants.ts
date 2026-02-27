@@ -102,6 +102,12 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_t_p2', name: "Panier : Liaison RV / CD (Fréquence)", phase: "technique", theme: "Coordination", duration: 15, description: "Distribution rapide alternée RV/CD sur un point fixe.", material: "Panier de balles", level: 'avance' },
 
     // --- DÉPLACEMENT ---
+    { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus sur la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
+    { id: 'ch_d_beg2', name: "Le Carré Magique", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement en carré : Avancer, Pas chassé, Reculer, Pas chassé. Travail de l'équilibre.", material: "Plots", level: 'debutant' },
+    { id: 'ch_d_beg3', name: "Déplacement CD/RV Alterné", phase: "deplacement", theme: "Coordination", duration: 20, description: "Un coup droit au milieu, un revers au milieu. Petit saut de replacement entre chaque coup.", material: "Balles", level: 'debutant' },
+    { id: 'ch_d_beg4', name: "Le Miroir (Déplacement)", phase: "deplacement", theme: "Réflexes", duration: 10, description: "Suivre les déplacements latéraux du coach ou d'un partenaire sans balle. Réactivité maximale.", material: "Aucun", level: 'debutant' },
+    { id: 'ch_d_beg5', name: "Slalom Raquette en Main", phase: "deplacement", theme: "Motricité", duration: 15, description: "Slalom entre des plots en gardant la balle en équilibre sur la raquette. Travail de la dissociation haut/bas.", material: "Plots, Raquette, Balle", level: 'debutant' },
+
     { id: 'ch_d1', name: "Le 'Falkenberg' Chinois", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : 1 RV milieu, 1 CD milieu (pivot), 1 CD plein coup droit.", material: "Balles", level: 'pro' },
     { id: 'ch_d2', name: "Déplacement en Triangle", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Intermédiaire : 1 CD au milieu, 1 CD au coin, 1 CD au milieu. Petits pas de réajustement.", material: "Balles", level: 'avance' },
     { id: 'ch_d_p1', name: "Panier : Déplacement 'Grande Amplitude'", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Distribution alternée plein RV / plein CD. Pas chassés explosifs.", material: "Panier de balles", level: 'pro' },
