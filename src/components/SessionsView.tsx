@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Plus, Trash2, Clock, Sparkles, Users, Calendar, Target, 
-  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen
+  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart
 } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
-import { PHASES, THEMES } from '../constants';
+import { PHASES, THEMES, LEVELS } from '../constants';
 import { AttendanceModal } from './AttendanceModal';
 
 interface SessionsViewProps {
@@ -129,8 +129,13 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
               <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 font-medium leading-relaxed">
                 {ex.description}
               </p>
-              <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                <Clock size={10} /> {ex.duration} min • {ex.theme}
+              <div className="flex flex-wrap items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                <div className={`px-2 py-0.5 rounded-md flex items-center gap-1 ${LEVELS.find(l => l.id === ex.level)?.color || 'bg-slate-100'}`}>
+                  <BarChart size={8} /> {LEVELS.find(l => l.id === ex.level)?.label}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock size={10} /> {ex.duration} min
+                </div>
               </div>
             </div>
           ))}
@@ -200,6 +205,9 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                           <span className="font-black text-xs dark:text-white uppercase tracking-tight">{ex.name}</span>
+                          <div className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center gap-1 ${LEVELS.find(l => l.id === ex.level)?.color || 'bg-slate-100'}`}>
+                            <BarChart size={8} /> {LEVELS.find(l => l.id === ex.level)?.label}
+                          </div>
                           <span className="text-[9px] font-black text-accent uppercase bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-md">{ex.duration} min</span>
                         </div>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">

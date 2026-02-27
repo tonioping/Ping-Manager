@@ -1,4 +1,5 @@
 export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'deplacement' | 'schema' | 'matchs' | 'cognitif' | 'retour-au-calme';
+export type ExerciseLevel = 'debutant' | 'intermediaire' | 'avance' | 'pro';
 
 export interface Phase {
   id: PhaseId;
@@ -15,6 +16,7 @@ export interface Exercise {
   duration: number;
   description: string;
   material: string;
+  level: ExerciseLevel;
   instanceId?: number; 
   user_id?: string;
 }

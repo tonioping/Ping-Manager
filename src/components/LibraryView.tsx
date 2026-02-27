@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Clock, Box, Info, ChevronRight, Tag, Wrench } from 'lucide-react';
+import { Search, Filter, Clock, Box, Info, ChevronRight, Tag, Wrench, BarChart } from 'lucide-react';
 import { Exercise } from '../types';
-import { PHASES, THEMES } from '../constants';
+import { PHASES, THEMES, LEVELS } from '../constants';
 import { InfoBubble } from './InfoBubble';
 
 interface LibraryViewProps {
@@ -12,6 +12,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState<string>('all');
   const [selectedTheme, setSelectedTheme] = useState<string>('all');
+  const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedMaterial, setSelectedMaterial] = useState<string>('all');
 
   const filteredExercises = useMemo(() => {
@@ -20,12 +21,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises }) => {
                            ex.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPhase = selectedPhase === 'all' || ex.phase === selectedPhase;
       const matchesTheme = selectedTheme === 'all' || ex.theme === selectedTheme;
+      const matchesLevel = selectedLevel === 'all' || ex.level === selectedLevel;
       const matchesMaterial = selectedMaterial === 'all' || 
                              (selectedMaterial === 'panier' ? ex.material === 'Panier de balles' : ex.material !== 'Panier de balles');
       
-      return matchesSearch && matchesPhase && matchesTheme && matchesMaterial;
+      return matchesSearch && matchesPhase && matchesTheme && matchesLevel && matchesMaterial;
     });
-  }, [exercises, searchTerm, selectedPhase, selectedTheme, selectedMaterial]);
+  }, [exercises, searchTerm, selectedPhase, selectedTheme, selectedLevel, selectedMaterial]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12">
@@ -53,7 +55,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises }) => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Phase de séance</label>
             <select 
@@ -63,6 +65,18 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises }) => {
             >
               <option value="all">Toutes les phases</option>
               {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Niveau requis</label>
+            <select 
+              value={selectedLevel} 
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-accent/20"
+            >
+              <option value="all">Tous les niveaux</option>
+              {LEVELS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
           </div>
 
@@ -101,6 +115,9 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises }) => {
               <div className="flex flex-wrap gap-2">
                 <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${PHASES.find(p => p.id === ex.phase)?.color || 'bg-slate-100'}`}>
                   {PHASES.find(p => p.id === ex.phase)?.label}
+                </div>
+                <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${LEVELS.find(l => l.id === ex.level)?.color || 'bg-slate-100'}`}>
+                  <BarChart size={10} /> {LEVELS.find(l => l.id === ex.level)?.label}
                 </div>
                 {ex.theme && (
                   <div className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
@@ -146,7 +163,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises }) => {
           <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Aucun exercice trouvé</h3>
           <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">Ajustez vos filtres pour trouver ce que vous cherchez.</p>
           <button 
-            onClick={() => { setSearchTerm(''); setSelectedPhase('all'); setSelectedTheme('all'); setSelectedMaterial('all'); }}
+            onClick={() => { setSearchTerm(''); setSelectedPhase('all'); setSelectedTheme('all'); setSelectedLevel('all'); setSelectedMaterial('all'); }}
             className="mt-8 px-8 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:scale-105 transition-all shadow-xl"
           >
             Réinitialiser les filtres
