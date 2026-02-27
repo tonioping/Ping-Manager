@@ -70,6 +70,13 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_r_kid8', name: "L'Échange au Sommet", phase: "regularite", theme: "Habileté", duration: 10, description: "Faire des échanges avec une trajectoire haute (cloches) pour apprendre à contrôler le rebond et le timing.", material: "Balles", level: 'debutant' },
 
     // --- TECHNIQUE ---
+    { id: 'ch_t_beg1', name: "Apprentissage Geste CD", phase: "technique", theme: "Coup Droit (CD)", duration: 20, description: "Décomposition du geste de coup droit. Focus sur l'ouverture de la raquette et la fin de geste au front.", material: "Balles", level: 'debutant' },
+    { id: 'ch_t_beg2', name: "Apprentissage Geste RV", phase: "technique", theme: "Revers (RV)", duration: 20, description: "Décomposition du geste de revers. Focus sur l'action du coude et l'accompagnement vers l'avant.", material: "Balles", level: 'debutant' },
+    { id: 'ch_t_beg3', name: "Panier : CD sur Balle Lancée", phase: "technique", theme: "Coup Droit (CD)", duration: 15, description: "Le coach lance des balles douces à la main. Le joueur doit toucher une zone précise en coup droit.", material: "Panier de balles", level: 'debutant' },
+    { id: 'ch_t_beg4', name: "Panier : RV sur Balle Lancée", phase: "technique", theme: "Revers (RV)", duration: 15, description: "Le coach lance des balles douces à la main. Le joueur doit toucher une zone précise en revers.", material: "Panier de balles", level: 'debutant' },
+    { id: 'ch_t_beg5', name: "Liaison CD/RV Lente", phase: "technique", theme: "Coordination", duration: 20, description: "Alterner un coup droit et un revers sur des balles très lentes. Focus sur le passage d'une prise à l'autre.", material: "Balles", level: 'debutant' },
+    { id: 'ch_t_beg6', name: "La Poussette de Base", phase: "technique", theme: "Poussette", duration: 15, description: "Apprendre à passer sous la balle pour la renvoyer coupée. Geste court et précis.", material: "Balles", level: 'debutant' },
+
     { id: 'ch_t1', name: "Topspin CD sur Balle Coupée", phase: "technique", theme: "Topspin", duration: 20, description: "L'entraîneur distribue des balles coupées lourdes. Action forte de l'avant-bras.", material: "Panier de balles", level: 'avance' },
     { id: 'ch_t2', name: "Topspin de Rotation (Sauce)", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : Produire un maximum de rotation sur balle coupée lente. La balle doit 'gicler' au rebond.", material: "Balles", level: 'avance' },
     { id: 'ch_t3', name: "Contre-Bloc Actif RV", phase: "technique", theme: "Bloc", duration: 15, description: "Intermédiaire : Sur un topspin adverse, fermer la raquette et avancer pour accélérer la balle.", material: "Balles", level: 'pro' },
