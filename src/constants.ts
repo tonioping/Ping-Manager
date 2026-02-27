@@ -29,6 +29,16 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_e2', name: "Réveil Articulaire Dynamique", phase: "echauffement", theme: "Mobilisation", duration: 5, description: "Rotations rapides des poignets, coudes et épaules. Sauts sur place.", material: "Aucun" },
     { id: 'ch_e3', name: "Coordination Échelle de Rythme", phase: "echauffement", theme: "Motricité", duration: 10, description: "Travail d'appuis rapides au sol. Fréquence maximale des pieds.", material: "Échelle de rythme" },
     { id: 'ch_beg_e1', name: "L'Équilibre de la Perle", phase: "echauffement", theme: "Habileté", duration: 10, description: "Débutant : Se déplacer en maintenant la balle en équilibre sur la raquette.", material: "Raquette et Balle" },
+    
+    // --- ÉCHAUFFEMENT ENFANTS (-10 ANS) ---
+    { id: 'ch_kid1', name: "Le Miroir Magique", phase: "echauffement", theme: "Coordination", duration: 5, description: "Par deux, l'un imite les déplacements et gestes de l'autre le plus vite possible.", material: "Aucun" },
+    { id: 'ch_kid2', name: "La Chasse aux Trésors", phase: "echauffement", theme: "Vitesse", duration: 10, description: "Ramasser le plus de balles possible éparpillées au sol et les ramener dans son camp en courant.", material: "Balles et Paniers" },
+    { id: 'ch_kid3', name: "Le Parcours de l'Espace", phase: "echauffement", theme: "Motricité", duration: 10, description: "Slalom entre des plots, saut au-dessus de mini-haies et passage sous un banc.", material: "Plots, Haies, Banc" },
+    { id: 'ch_kid4', name: "Jacques a dit... Ping !", phase: "echauffement", theme: "Réflexes", duration: 5, description: "Le coach donne des ordres (CD, RV, Saut, Touche le sol). On n'exécute que si 'Jacques a dit' est prononcé.", material: "Aucun" },
+    { id: 'ch_kid5', name: "Le Relais des Kangourous", phase: "echauffement", theme: "Physique", duration: 10, description: "Course en sautant pieds joints avec la raquette à la main. Passage de témoin (balle).", material: "Raquette et Balle" },
+    { id: 'ch_kid6', name: "L'Horloge Humaine", phase: "echauffement", theme: "Orientation", duration: 5, description: "Les enfants sont au centre. Le coach crie une heure (ex: 12h = devant, 6h = derrière). Course rapide vers la zone.", material: "Plots" },
+    { id: 'ch_kid7', name: "Le Gardien de But", phase: "echauffement", theme: "Réflexes", duration: 10, description: "Un enfant protège sa moitié de table avec sa raquette pendant que l'autre essaie de faire rouler la balle au fond.", material: "Balle" },
+    { id: 'ch_kid8', name: "La Danse des Raquettes", phase: "echauffement", theme: "Habileté", duration: 5, description: "Faire tourner la raquette autour de sa taille, entre ses jambes, changer de main sans la faire tomber.", material: "Raquette" },
 
     // --- RÉGULARITÉ ---
     { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. Objectif : 100 échanges sans faute.", material: "Balles" },
