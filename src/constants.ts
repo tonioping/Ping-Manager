@@ -52,6 +52,16 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_r7', name: "Liaison CD/RV sur Pivot", phase: "regularite", theme: "Coordination", duration: 20, description: "Intermédiaire : 1 RV, 1 CD (pivot), 1 RV. Travail de la fluidité du haut du corps et des appuis.", material: "Balles" },
     { id: 'ch_r8', name: "Contre-Top de Contrôle", phase: "regularite", theme: "Topspin", duration: 15, description: "Intermédiaire : À mi-distance, les deux joueurs font du topspin sur topspin à vitesse modérée. Focus sur la courbe.", material: "Balles" },
 
+    // --- RÉGULARITÉ ENFANTS (-10 ANS) ---
+    { id: 'ch_r_kid1', name: "Le Mur Infranchissable", phase: "regularite", theme: "Régularité", duration: 10, description: "Échanges libres au milieu de la table. L'objectif est de garder la balle en jeu le plus longtemps possible sans chercher à gagner le point.", material: "Balles" },
+    { id: 'ch_r_kid2', name: "La Diagonale des Champions", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges uniquement en coup droit dans la diagonale. Compter le record de touches consécutives.", material: "Balles" },
+    { id: 'ch_r_kid3', name: "Le Revers de Fer", phase: "regularite", theme: "Revers (RV)", duration: 15, description: "Échanges uniquement en revers dans la diagonale. Essayer de battre le record du groupe.", material: "Balles" },
+    { id: 'ch_r_kid4', name: "Le Ping-Pong Coopératif", phase: "regularite", theme: "Coordination", duration: 10, description: "Alterner un coup droit et un revers très doucement. Le partenaire fait de même pour maintenir l'échange.", material: "Balles" },
+    { id: 'ch_r_kid5', name: "La Cible Magique", phase: "regularite", theme: "Placement", duration: 15, description: "Placer une feuille de papier sur la table. Essayer de la toucher 5 fois de suite en régularité.", material: "Balles, Feuilles de papier" },
+    { id: 'ch_r_kid6', name: "Le Jeu du 10", phase: "regularite", theme: "Régularité", duration: 10, description: "Réaliser 10 échanges sans faute. Si réussi, on recule d'un pas et on recommence.", material: "Balles" },
+    { id: 'ch_r_kid7', name: "Le Slalom de la Balle", phase: "regularite", theme: "Placement", duration: 15, description: "Envoyer la balle alternativement à gauche, puis à droite du partenaire qui reste fixe.", material: "Balles" },
+    { id: 'ch_r_kid8', name: "L'Échange au Sommet", phase: "regularite", theme: "Habileté", duration: 10, description: "Faire des échanges avec une trajectoire haute (cloches) pour apprendre à contrôler le rebond et le timing.", material: "Balles" },
+
     // --- TECHNIQUE ---
     { id: 'ch_t1', name: "Topspin CD sur Balle Coupée", phase: "technique", theme: "Topspin", duration: 20, description: "L'entraîneur distribue des balles coupées lourdes. Action forte de l'avant-bras.", material: "Panier de balles" },
     { id: 'ch_t2', name: "Topspin de Rotation (Sauce)", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : Produire un maximum de rotation sur balle coupée lente. La balle doit 'gicler' au rebond.", material: "Balles" },
