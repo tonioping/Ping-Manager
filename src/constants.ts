@@ -46,11 +46,17 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_r3', name: "Liaison 1-1 (CD/RV)", phase: "regularite", theme: "Coordination", duration: 15, description: "Intermédiaire : Alterner 1 coup droit et 1 revers sur le revers adverse. Focus sur le transfert de poids.", material: "Balles" },
     { id: 'ch_r4', name: "Huit de Chiffre (Classique)", phase: "regularite", theme: "Régularité", duration: 20, description: "Joueur A joue toujours en ligne, Joueur B joue toujours en diagonale. Dessine un 8 sur la table.", material: "Balles" },
     { id: 'ch_r4_v2', name: "Le Grand 8 (Amplitude)", phase: "regularite", theme: "Jeu de jambes", duration: 20, description: "Variante du 8 : Joueur A joue ligne/diagonale alternativement, Joueur B bloque en ligne. Force des déplacements latéraux plus larges.", material: "Balles" },
-    { id: 'ch_r9', name: "Le Papillon (Butterfly)", phase: "regularite", theme: "Placement", duration: 20, description: "Séquence : CD croisé, RV croisé, CD ligne, RV ligne. Travail de précision extrême et de rythme.", material: "Balles" },
     { id: 'ch_r5', name: "Le Triangle de Placement", phase: "regularite", theme: "Placement", duration: 20, description: "Intermédiaire : Joueur A distribue en RV. Joueur B alterne : 1 CD coin, 1 CD milieu, 1 CD coin. Focus sur le replacement.", material: "Balles" },
     { id: 'ch_r6', name: "Régularité Revers 'Piston'", phase: "regularite", theme: "Revers (RV)", duration: 15, description: "Intermédiaire : Échanges rapides en revers sur revers. La balle doit être longue et toucher le dernier tiers de la table.", material: "Balles" },
     { id: 'ch_r7', name: "Liaison CD/RV sur Pivot", phase: "regularite", theme: "Coordination", duration: 20, description: "Intermédiaire : 1 RV, 1 CD (pivot), 1 RV. Travail de la fluidité du haut du corps et des appuis.", material: "Balles" },
     { id: 'ch_r8', name: "Contre-Top de Contrôle", phase: "regularite", theme: "Topspin", duration: 15, description: "Intermédiaire : À mi-distance, les deux joueurs font du topspin sur topspin à vitesse modérée. Focus sur la courbe.", material: "Balles" },
+    
+    // --- RÉGULARITÉ INTERMÉDIAIRE ---
+    { id: 'ch_r9', name: "Le Papillon (Butterfly)", phase: "regularite", theme: "Placement", duration: 20, description: "Séquence : CD croisé, RV croisé, CD ligne, RV ligne. Travail de précision extrême et de rythme.", material: "Balles" },
+    { id: 'ch_r10', name: "Liaison 2-2 (CD/RV)", phase: "regularite", theme: "Coordination", duration: 20, description: "2 Coups Droits suivis de 2 Revers sur le revers adverse. Améliore la transition et le placement des pieds.", material: "Balles" },
+    { id: 'ch_r11', name: "Régularité CD en ligne", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en ligne droite (CD sur CD). Plus difficile que la diagonale, demande un meilleur contrôle.", material: "Balles" },
+    { id: 'ch_r12', name: "Régularité RV en ligne", phase: "regularite", theme: "Revers (RV)", duration: 15, description: "Échanges en ligne droite (RV sur RV). Travail de la stabilité du poignet.", material: "Balles" },
+    { id: 'ch_r13', name: "Le 'V' de Placement", phase: "regularite", theme: "Placement", duration: 20, description: "Joueur A distribue au milieu. Joueur B alterne CD coin et RV coin. Dessine un V sur la table.", material: "Balles" },
 
     // --- RÉGULARITÉ ENFANTS (-10 ANS) ---
     { id: 'ch_r_kid1', name: "Le Mur Infranchissable", phase: "regularite", theme: "Régularité", duration: 10, description: "Échanges libres au milieu de la table. L'objectif est de garder la balle en jeu le plus longtemps possible sans chercher à gagner le point.", material: "Balles" },
