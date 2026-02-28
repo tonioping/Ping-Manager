@@ -119,6 +119,12 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_d_p1', name: "Panier : Déplacement 'Grande Amplitude'", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Distribution alternée plein RV / plein CD. Pas chassés explosifs.", material: "Panier de balles", level: 'pro' },
 
     // --- SCHÉMA DE JEU ---
+    { id: 'ch_s_int1', name: "Schéma : Service Court / Remise Longue / Top CD", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Service court, remise adverse longue en CD, démarrage immédiat en topspin CD.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int2', name: "Schéma : Service Long / Bloc / Contre-initiative", phase: "schema", theme: "Contre-initiative", duration: 20, description: "Intermédiaire : Service long pour provoquer l'attaque, bloc précis, puis contre-attaque sur la balle suivante.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int3', name: "Schéma : Poussette RV / Poussette CD / Top CD", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Duel de poussettes, puis accélération en topspin CD dès que la balle est favorable.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int4', name: "Schéma : Service RV / Remise Milieu / Top RV", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Service revers, remise adverse au milieu, démarrage en topspin revers.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int5', name: "Schéma : Service CD / Remise RV / Bloc CD", phase: "schema", theme: "Bloc", duration: 20, description: "Intermédiaire : Service CD, remise adverse agressive en RV, bloc de contrôle en CD.", material: "Balles", level: 'intermediaire' },
+
     { id: 'ch_s1', name: "3ème Balle : Service / Remise / Attaque", phase: "schema", theme: "Incertitude", duration: 20, description: "Service court, remise poussette longue, attaque immédiate.", material: "Balles", level: 'avance' },
     { id: 'ch_s2', name: "Incertitude Milieu/Côté", phase: "schema", theme: "Incertitude", duration: 20, description: "Intermédiaire : Le bloqueur distribue aléatoirement soit au milieu, soit sur le côté. Réaction visuelle.", material: "Balles", level: 'avance' },
     { id: 'ch_s3', name: "Service Latéral / Flip RV", phase: "schema", theme: "Flip", duration: 15, description: "Intermédiaire : Service latéral sortant, remise courte, flip revers agressif pour prendre l'initiative.", material: "Balles", level: 'pro' },
