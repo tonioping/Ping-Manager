@@ -77,8 +77,8 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_t_beg5', name: "Liaison CD/RV Lente", phase: "technique", theme: "Coordination", duration: 20, description: "Alterner un coup droit et un revers sur des balles très lentes. Focus sur le passage d'une prise à l'autre.", material: "Balles", level: 'debutant' },
     { id: 'ch_t_beg6', name: "La Poussette de Base", phase: "technique", theme: "Poussette", duration: 15, description: "Apprendre à passer sous la balle pour la renvoyer coupée. Geste court et précis.", material: "Balles", level: 'debutant' },
 
-    { id: 'ch_t_int1', name: "Topspin CD sur Bloc", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : Enchaîner des topspins CD sur un bloc passif. Focus sur le replacement et la jambe d'appui.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_t_int2', name: "Topspin RV sur Bloc", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : Enchaîner des topspins RV sur un bloc passif. Travail de la stabilité du coude.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_t_int1', name: "Topspin CD sur Bloc", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : Enchaîner des topspins CD on un bloc passif. Focus sur le replacement et la jambe d'appui.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_t_int2', name: "Topspin RV on Bloc", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : Enchaîner des topspins RV on un bloc passif. Travail de la stabilité du coude.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_t_int3', name: "Bloc Actif CD", phase: "technique", theme: "Bloc", duration: 15, description: "Intermédiaire : Sur un topspin adverse, fermer la raquette et avancer pour accélérer la balle en coup droit.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_t_int4', name: "Bloc Actif RV", phase: "technique", theme: "Bloc", duration: 15, description: "Intermédiaire : Sur un topspin adverse, fermer la raquette et avancer pour accélérer la balle en revers.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_t_int5', name: "Liaison Poussette / Top CD", phase: "technique", theme: "Topspin", duration: 20, description: "Intermédiaire : 1 poussette CD, puis 1 topspin CD sur balle longue. Travail de la transition défense/attaque.", material: "Balles", level: 'intermediaire' },
@@ -102,14 +102,14 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_t_p2', name: "Panier : Liaison RV / CD (Fréquence)", phase: "technique", theme: "Coordination", duration: 15, description: "Distribution rapide alternée RV/CD sur un point fixe.", material: "Panier de balles", level: 'avance' },
 
     // --- DÉPLACEMENT ---
-    { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus sur la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
+    { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus on la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
     { id: 'ch_d_beg2', name: "Le Carré Magique", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement en carré : Avancer, Pas chassé, Reculer, Pas chassé. Travail de l'équilibre.", material: "Plots", level: 'debutant' },
     { id: 'ch_d_beg3', name: "Déplacement CD/RV Alterné", phase: "deplacement", theme: "Coordination", duration: 20, description: "Un coup droit au milieu, un revers au milieu. Petit saut de replacement entre chaque coup.", material: "Balles", level: 'debutant' },
     { id: 'ch_d_beg4', name: "Le Miroir (Déplacement)", phase: "deplacement", theme: "Réflexes", duration: 10, description: "Suivre les déplacements latéraux du coach ou d'un partenaire sans balle. Réactivité maximale.", material: "Aucun", level: 'debutant' },
-    { id: 'ch_d_beg5', name: "Slalom Raquette en Main", phase: "deplacement", theme: "Motricité", duration: 15, description: "Slalom entre des plots en gardant la balle en équilibre sur la raquette. Travail de la dissociation haut/bas.", material: "Plots, Raquette, Balle", level: 'debutant' },
+    { id: 'ch_d_beg5', name: "Slalom Raquette en Main", phase: "deplacement", theme: "Motricité", duration: 15, description: "Slalom entre des plots en gardant la balle en équilibre on la raquette. Travail de la dissociation haut/bas.", material: "Plots, Raquette, Balle", level: 'debutant' },
 
     { id: 'ch_d_int1', name: "Petits Pas de Réajustement", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Intermédiaire : Le partenaire distribue des balles légèrement décalées. Obligation de faire des micro-ajustements pour être toujours bien placé.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_d_int2', name: "Déplacement Latéral CD/CD", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Intermédiaire : Frapper un coup droit au milieu, puis un coup droit au coin. Focus sur la vitesse latérale.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_d_int2', name: "Déplacement Latéral CD/CD", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Intermédiaire : Frapper un coup droit au milieu, puis un coup droit au coin. Focus on la vitesse latérale.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_d_int3', name: "Le Triangle (Intermédiaire)", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Intermédiaire : 1 RV coin, 1 CD milieu, 1 CD coin. Travail de la fluidité des appuis.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_d_int4', name: "Liaison Pivot / CD Large", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Intermédiaire : 1 CD en pivot (coin RV), puis 1 CD plein coup droit. Travail de l'amplitude.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_d_int5', name: "Déplacement Avant/Arrière (Court/Long)", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Intermédiaire : 1 poussette courte (avancer), 1 topspin long (reculer). Travail de la profondeur.", material: "Balles", level: 'intermediaire' },
@@ -120,14 +120,19 @@ const generateExercises = (): Exercise[] => {
 
     // --- SCHÉMA DE JEU ---
     { id: 'ch_s_int1', name: "Schéma : Service Court / Remise Longue / Top CD", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Service court, remise adverse longue en CD, démarrage immédiat en topspin CD.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_s_int2', name: "Schéma : Service Long / Bloc / Contre-initiative", phase: "schema", theme: "Contre-initiative", duration: 20, description: "Intermédiaire : Service long pour provoquer l'attaque, bloc précis, puis contre-attaque sur la balle suivante.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int2', name: "Schéma : Service Long / Bloc / Contre-initiative", phase: "schema", theme: "Contre-initiative", duration: 20, description: "Intermédiaire : Service long pour provoquer l'attaque, bloc précis, puis contre-attaque on la balle suivante.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_s_int3', name: "Schéma : Poussette RV / Poussette CD / Top CD", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Duel de poussettes, puis accélération en topspin CD dès que la balle est favorable.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_s_int4', name: "Schéma : Service RV / Remise Milieu / Top RV", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Service revers, remise adverse au milieu, démarrage en topspin revers.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_s_int5', name: "Schéma : Service CD / Remise RV / Bloc CD", phase: "schema", theme: "Bloc", duration: 20, description: "Intermédiaire : Service CD, remise adverse agressive en RV, bloc de contrôle en CD.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int6', name: "Schéma : Service Court CD / Remise CD / Top CD Ligne", phase: "schema", theme: "Placement", duration: 20, description: "Intermédiaire : Service court CD, remise adverse en CD, attaque en topspin CD le long de la ligne.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int7', name: "Schéma : Service Long RV / Bloc RV / Top CD Pivot", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Service long revers, bloc adverse en RV, pivot rapide pour attaquer en topspin CD.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int8', name: "Schéma : Poussette RV / Poussette RV / Top RV", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Échange de poussettes en revers, puis ouverture agressive en topspin revers.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int9', name: "Schéma : Court-Court / Poussette Longue / Top CD", phase: "schema", theme: "Topspin", duration: 20, description: "Intermédiaire : Échange court au-dessus de la table, puis démarrage sur la première balle longue adverse.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_int10', name: "Schéma : Service Milieu / Remise Aléatoire / Top CD", phase: "schema", theme: "Incertitude", duration: 20, description: "Intermédiaire : Service au milieu, remise adverse libre, réaction rapide pour attaquer en coup droit.", material: "Balles", level: 'intermediaire' },
 
     { id: 'ch_s1', name: "3ème Balle : Service / Remise / Attaque", phase: "schema", theme: "Incertitude", duration: 20, description: "Service court, remise poussette longue, attaque immédiate.", material: "Balles", level: 'avance' },
-    { id: 'ch_s2', name: "Incertitude Milieu/Côté", phase: "schema", theme: "Incertitude", duration: 20, description: "Intermédiaire : Le bloqueur distribue aléatoirement soit au milieu, soit sur le côté. Réaction visuelle.", material: "Balles", level: 'avance' },
-    { id: 'ch_s3', name: "Service Latéral / Flip RV", phase: "schema", theme: "Flip", duration: 15, description: "Intermédiaire : Service latéral sortant, remise courte, flip revers agressif pour prendre l'initiative.", material: "Balles", level: 'pro' },
+    { id: 'ch_s2', name: "Incertitude Milieu/Côté", phase: "schema", theme: "Incertitude", duration: 20, description: "Intermédiaire : Le bloqueur distribue aléatoirement soit au milieu, soit on le côté. Réaction visuelle.", material: "Balles", level: 'avance' },
+    { id: 'ch_s3', name: "Service Latéral / Flip RV", phase: "schema", theme: "Flip", duration: 15, description: "Intermédiaire : Service latéral sortant, remise courte, flip revers agressive pour prendre l'initiative.", material: "Balles", level: 'pro' },
 
     // --- MATCHS ---
     { id: 'ch_m1', name: "Match à Handicap (9-9)", phase: "matchs", theme: "Mental", duration: 15, description: "Le set commence à 9-9. Chaque point est crucial.", material: "Balles", level: 'intermediaire' },
@@ -186,7 +191,7 @@ export const DEMO_CYCLES: Cycle[] = [
         startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         type: 'competition',
         group: 'competition',
-        objectives: 'Gagner en régularité sur les premières balles d\'attaque.',
+        objectives: 'Gagner en régularité on les premières balles d\'attaque.',
         weeks: [
             { weekNumber: 1, theme: 'Volume de jeu', notes: 'Beaucoup de régularité diagonale', sessionId: 9991, sessionName: "Séance Vol. 1" },
             { weekNumber: 2, theme: 'Jeu de jambes', notes: 'Déplacements latéraux rapides', sessionId: 9991, sessionName: "Séance Vol. 2" },
