@@ -27,14 +27,27 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
   const [showAttendance, setShowAttendance] = useState(false);
   
   const groupPlayers = useMemo(() => players.filter(p => p.group === group.id), [players, group.id]);
+  const groupPlayerIds = useMemo(() => new Set(groupPlayers.map(p => p.id)), [groupPlayers]);
   
   const groupSessions = useMemo(() => {
-    // On filtre par ID de groupe ou par présence du nom du groupe dans le titre de la séance
-    // Puis on trie par date décroissante pour avoir les plus récentes en haut
+    // 1. Trouver les IDs de sessions qui ont des enregistrements de présence pour les joueurs de ce groupe
+    const sessionIdsWithGroupAttendance = new Set(
+      attendance
+        .filter(a => groupPlayerIds.has(a.player_id))
+        .map(a => a.session_id)
+    );
+
+    // 2. Filtrer les sessions
     return sessions
-      .filter(s => s.group === group.id || s.name.toLowerCase().includes(group.label.toLowerCase()))
+      .filter(s => {
+        const matchesId = s.group === group.id;
+        const matchesName = s.name.toLowerCase().includes(group.label.toLowerCase());
+        const hasAttendance = s.id && sessionIdsWithGroupAttendance.has(s.id);
+        
+        return matchesId || matchesName || hasAttendance;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sessions, group.id, group.label]);
+  }, [sessions, group.id, group.label, attendance, groupPlayerIds]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
