@@ -18,6 +18,7 @@ interface SessionsViewProps {
   players: Player[];
   attendance: Attendance[];
   onSaveAttendance: (playerId: string, status: 'present' | 'absent' | 'late') => void;
+  savedSessions?: Session[];
 }
 
 export const SessionsView: React.FC<SessionsViewProps> = ({
@@ -30,7 +31,8 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
   totalDuration,
   players,
   attendance,
-  onSaveAttendance
+  onSaveAttendance,
+  savedSessions = []
 }) => {
   const [showAttendance, setShowAttendance] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +48,11 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
       return matchesSearch && matchesPhase;
     });
   }, [exercises, searchTerm, filterPhase]);
+
+  const sessionPlayers = useMemo(() => {
+    if (!currentSession.group) return players;
+    return players.filter(p => p.group === currentSession.group);
+  }, [players, currentSession.group]);
 
   const addExercise = (phaseId: PhaseId, exercise: Exercise) => {
     const newEx = { ...exercise, instanceId: Date.now() };
@@ -271,10 +278,12 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
 
       {showAttendance && (
         <AttendanceModal 
-          players={players} 
+          players={sessionPlayers} 
           attendance={attendance} 
           onToggle={onSaveAttendance} 
           onClose={() => setShowAttendance(false)}
+          initialSessionId={currentSession.id}
+          sessions={savedSessions}
         />
       )}
     </div>

@@ -425,7 +425,11 @@ export default function App() {
     if (sessionId) {
       const sess = savedSessions.find(s => s.id === sessionId);
       if (sess) {
-        setCurrentSession({...sess});
+        // On force le lien avec le groupe si manquant
+        setCurrentSession({
+          ...sess,
+          group: sess.group || selectedGroupId || undefined
+        });
         setView('sessions');
         return;
       }
@@ -497,6 +501,7 @@ export default function App() {
                         players={players}
                         attendance={attendance.filter(a => a.session_id === currentSession.id)}
                         onSaveAttendance={saveAttendance}
+                        savedSessions={savedSessions}
                       />
                   </div>
               )}
