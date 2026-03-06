@@ -4,7 +4,7 @@ import {
   Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart, List, CheckCircle
 } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
-import { PHASES, THEMES, LEVELS } from '../constants';
+import { PHASES, THEMES, LEVELS, GROUPS } from '../constants';
 import { AttendanceModal } from './AttendanceModal';
 
 interface SessionsViewProps {
@@ -174,17 +174,30 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
 
       <div className={`${activeTab === 'session' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col gap-6 overflow-hidden h-full`}>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex-1 w-full flex items-center gap-4">
+          <div className="flex-1 w-full flex flex-col sm:flex-row items-center gap-4">
             <div className="p-2 bg-slate-900 dark:bg-white rounded-xl hidden sm:block">
               <Target className="text-accent" size={20} />
             </div>
-            <input 
-              type="text" 
-              value={currentSession.name} 
-              onChange={e => setCurrentSession(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Titre de la séance..."
-              className="text-lg font-black uppercase italic tracking-tighter bg-transparent border-none outline-none w-full dark:text-white"
-            />
+            <div className="flex-1 w-full space-y-2">
+              <input 
+                type="text" 
+                value={currentSession.name} 
+                onChange={e => setCurrentSession(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Titre de la séance..."
+                className="text-lg font-black uppercase italic tracking-tighter bg-transparent border-none outline-none w-full dark:text-white"
+              />
+              <div className="flex items-center gap-2">
+                <Users size={12} className="text-slate-400" />
+                <select 
+                  value={currentSession.group || ''} 
+                  onChange={e => setCurrentSession(prev => ({ ...prev, group: e.target.value || undefined }))}
+                  className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-slate-400 outline-none focus:text-accent transition-colors"
+                >
+                  <option value="">Aucun groupe</option>
+                  {GROUPS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
+                </select>
+              </div>
+            </div>
           </div>
           <div className="flex items-center justify-between w-full md:w-auto gap-3">
             <button 

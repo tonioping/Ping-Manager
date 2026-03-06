@@ -37,7 +37,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
         .map(a => a.session_id)
     );
 
-    // 2. Filtrer les sessions
+    // 2. Filtrer les sessions pour l'historique visuel
     return sessions
       .filter(s => {
         const matchesId = s.group === group.id;
@@ -68,8 +68,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
               <h3 className="text-xl font-black uppercase italic tracking-tighter dark:text-white">Effectif du groupe</h3>
               <button 
                 onClick={() => setShowAttendance(true)} 
-                disabled={groupSessions.length === 0}
-                className="px-6 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                className="px-6 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center gap-2 hover:scale-105 transition-all"
               >
                 <CheckCircle size={16}/> Faire l'appel
               </button>
@@ -150,7 +149,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           onToggle={onSaveAttendance} 
           onClose={() => setShowAttendance(false)}
           groupName={group.label}
-          sessions={groupSessions}
+          sessions={sessions} // On passe TOUTES les séances ici pour être sûr de tout trouver
         />
       )}
     </div>
