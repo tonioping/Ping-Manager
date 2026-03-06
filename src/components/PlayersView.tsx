@@ -120,6 +120,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
       }).filter(d => d.score > 0);
   }, [currentPlayerEvals, historySkillFilter]);
 
+  const isEquipmentOld = useMemo(() => {
+    if (!currentPlayer?.last_equipment_change) return false;
+    const changeDate = new Date(currentPlayer.last_equipment_change);
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    return changeDate < sixMonthsAgo;
+  }, [currentPlayer?.last_equipment_change]);
+
   const filteredPlayers = useMemo(() => {
       if (filterGroup === 'all') return players;
       return players.filter(p => p.group === filterGroup);
