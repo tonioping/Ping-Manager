@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon } from 'lucide-react';
 import { Cycle, CycleType, Session } from '../types';
-import { CYCLE_TYPES } from '../constants';
+import { CYCLE_TYPES, GROUPS } from '../constants';
 
 interface CyclesViewProps {
   cycles: Cycle[];
@@ -33,6 +33,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
       startDate: new Date().toISOString().split('T')[0],
       type: 'developpement',
       objectives: '',
+      group: '',
       weeks: Array.from({ length: 12 }, (_, i) => ({ weekNumber: i + 1, theme: '', notes: '' }))
     });
   };
@@ -66,6 +67,11 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                         <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${CYCLE_TYPES[cycle.type]?.color}`}>
                             {CYCLE_TYPES[cycle.type]?.label}
                         </div>
+                        {cycle.group && (
+                          <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${GROUPS.find(g => g.id === cycle.group)?.color}`}>
+                            {GROUPS.find(g => g.id === cycle.group)?.label}
+                          </div>
+                        )}
                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
                             <Calendar size={14}/> Début : {new Date(cycle.startDate).toLocaleDateString()}
                         </p>
@@ -126,6 +132,13 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Nom du cycle</label>
                 <input type="text" value={currentCycle.name} onChange={e => setCurrentCycle({...currentCycle, name: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold dark:text-white" placeholder="Ex: Préparation Championnat"/>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Groupe concerné</label>
+                <select value={currentCycle.group || ''} onChange={e => setCurrentCycle({...currentCycle, group: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold dark:text-white">
+                  <option value="">Tous les groupes</option>
+                  {GROUPS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Type de cycle</label>

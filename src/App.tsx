@@ -143,7 +143,6 @@ export default function App() {
       return;
     }
 
-    // Construction propre de l'objet de données
     const sessionData: any = {
       name: currentSession.name,
       date: currentSession.date,
@@ -152,7 +151,6 @@ export default function App() {
       group: currentSession.group || null
     };
 
-    // On n'ajoute l'ID que s'il est valide (différent de 0 et existant)
     if (currentSession.id && currentSession.id !== 0) {
       sessionData.id = currentSession.id;
     }

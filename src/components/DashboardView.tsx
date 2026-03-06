@@ -74,6 +74,7 @@ export const DashboardView: React.FC<any> = React.memo(({
             <div className="flex flex-col items-center"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Séances</span><span className="text-2xl font-black text-slate-900 dark:text-white">{savedSessions.length}</span></div>
         </div>
       </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8">
               <div className="relative group bg-slate-900 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl border border-slate-800 h-full flex flex-col justify-center overflow-hidden">
@@ -110,6 +111,50 @@ export const DashboardView: React.FC<any> = React.memo(({
              <button onClick={() => setView('players')} className="mt-8 w-full py-4 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all shadow-sm">Détails joueurs</button>
           </div>
       </div>
+
+      <div className="space-y-6">
+          <div className="flex items-center gap-3 px-4">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Mes Groupes</h3>
+              <InfoBubble content="Suivez l'état d'avancement des cycles par groupe et accédez rapidement à l'appel." />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {groupsStatus.map(group => (
+                  <div key={group.id} onClick={() => onSelectGroup(group.id)} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/groupcard relative overflow-hidden">
+                      <div className="flex justify-between items-start mb-6">
+                          <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${group.color}`}>
+                              {group.label}
+                          </div>
+                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-300 group-hover/groupcard:text-accent transition-colors">
+                              <ChevronRight size={20} />
+                          </div>
+                      </div>
+                      
+                      {group.activeData ? (
+                          <div className="space-y-4">
+                              <div>
+                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cycle en cours</div>
+                                  <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate">{group.activeData.cycleName}</div>
+                              </div>
+                              <div className="space-y-2">
+                                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                                      <span className="text-accent">Semaine {group.activeData.weekNum}/{group.activeData.totalWeeks}</span>
+                                      <span className="text-slate-400">{group.activeData.progress}%</span>
+                                  </div>
+                                  <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                      <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${group.activeData.progress}%` }}></div>
+                                  </div>
+                              </div>
+                          </div>
+                      ) : (
+                          <div className="py-4 text-center">
+                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun cycle actif</p>
+                          </div>
+                      )}
+                  </div>
+              ))}
+          </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Bibliothèque', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo' },
