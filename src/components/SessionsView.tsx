@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Plus, Trash2, Clock, Sparkles, Users, Calendar, Target, 
-  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart
+  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart, List
 } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
 import { PHASES, THEMES, LEVELS } from '../constants';
@@ -36,6 +36,7 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPhase, setFilterPhase] = useState<string>('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
+  const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => {
@@ -55,6 +56,10 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
         [phaseId]: [...(prev.exercises[phaseId] || []), newEx]
       }
     }));
+    // Sur mobile, on bascule vers la séance après l'ajout
+    if (window.innerWidth < 1024) {
+      setActiveTab('session');
+    }
   };
 
   const removeExercise = (phaseId: PhaseId, instanceId: number) => {
@@ -87,9 +92,25 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-120px)] animate-fade-in">
+    <div className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-180px)] animate-fade-in">
+      {/* TABS MOBILE */}
+      <div className="lg:hidden flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-2">
+        <button 
+          onClick={() => setActiveTab('session')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'session' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}
+        >
+          <List size={16} /> Ma Séance
+        </button>
+        <button 
+          onClick={() => setActiveTab('library')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'library' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}
+        >
+          <BookOpen size={16} /> Bibliothèque
+        </button>
+      </div>
+
       {/* COLONNE GAUCHE : BIBLIOTHÈQUE */}
-      <div className="w-full lg:w-80 xl:w-96 flex flex-col bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className={`${activeTab === 'library' ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 xl:w-96 flex-col bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden h-[60vh] lg:h-full`}>
         <div className="p-6 border-b border-slate-50 dark:border-slate-800 space-y-4">
           <h3 className="text-lg font-black uppercase italic tracking-tighter dark:text-white flex items-center gap-2">
             <BookOpen size={18} className="text-accent"/> Bibliothèque
@@ -124,7 +145,9 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
             >
               <div className="flex justify-between items-start mb-2">
                 <span className="font-black text-[11px] uppercase tracking-tight dark:text-white group-hover:text-accent transition-colors">{ex.name}</span>
-                <Plus size={14} className="text-slate-300 group-hover:text-accent cursor-pointer" onClick={() => addExercise(ex.phase, ex)}/>
+                <button onClick={() => addExercise(ex.phase, ex)} className="p-1 text-slate-300 hover:text-accent transition-colors">
+                  <Plus size={18} />
+                </button>
               </div>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 font-medium leading-relaxed">
                 {ex.description}
@@ -153,10 +176,10 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
       </div>
 
       {/* COLONNE DROITE : CONSTRUCTEUR DE SÉANCE */}
-      <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+      <div className={`${activeTab === 'session' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col gap-6 overflow-hidden h-full`}>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex-1 w-full flex items-center gap-4">
-            <div className="p-2 bg-slate-900 dark:bg-white rounded-xl">
+            <div className="p-2 bg-slate-900 dark:bg-white rounded-xl hidden sm:block">
               <Target className="text-accent" size={20} />
             </div>
             <input 
@@ -164,20 +187,20 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
               value={currentSession.name} 
               onChange={e => setCurrentSession(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Titre de la séance..."
-              className="text-xl font-black uppercase italic tracking-tighter bg-transparent border-none outline-none w-full dark:text-white"
+              className="text-lg font-black uppercase italic tracking-tighter bg-transparent border-none outline-none w-full dark:text-white"
             />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between w-full md:w-auto gap-4">
             <div className="text-accent font-black text-[10px] uppercase tracking-widest bg-orange-50 dark:bg-orange-900/20 px-4 py-2 rounded-xl">
               {totalDuration} min
             </div>
-            <button onClick={saveSession} className="px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all">
+            <button onClick={saveSession} className="flex-1 md:flex-none px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all">
               Enregistrer
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar pb-20 lg:pb-0">
           {PHASES.map(phase => (
             <div 
               key={phase.id}
@@ -198,12 +221,12 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
               <div className="p-4 space-y-3 min-h-[80px]">
                 {currentSession.exercises[phase.id]?.length > 0 ? (
                   currentSession.exercises[phase.id].map((ex, idx) => (
-                    <div key={ex.instanceId || idx} className="flex items-start gap-4 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group/item">
-                      <div className="mt-1 text-slate-300 group-hover/item:text-accent transition-colors">
+                    <div key={ex.instanceId || idx} className="flex items-start gap-4 p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 group/item">
+                      <div className="mt-1 text-slate-300 group-hover/item:text-accent transition-colors hidden sm:block">
                         <GripVertical size={18} />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="font-black text-xs dark:text-white uppercase tracking-tight">{ex.name}</span>
                           <div className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase flex items-center gap-1 ${LEVELS.find(l => l.id === ex.level)?.color || 'bg-slate-100'}`}>
                             <BarChart size={8} /> {LEVELS.find(l => l.id === ex.level)?.label}
@@ -214,14 +237,14 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
                           {ex.description}
                         </p>
                       </div>
-                      <button onClick={() => removeExercise(phase.id, ex.instanceId!)} className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/item:opacity-100">
+                      <button onClick={() => removeExercise(phase.id, ex.instanceId!)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
                         <Trash2 size={16}/>
                       </button>
                     </div>
                   ))
                 ) : (
                   <div className="h-full flex items-center justify-center py-4">
-                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Glissez un exercice ici</p>
+                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Aucun exercice</p>
                   </div>
                 )}
               </div>
