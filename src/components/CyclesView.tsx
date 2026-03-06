@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid } from 'lucide-react';
+import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon } from 'lucide-react';
 import { Cycle, CycleType, Session } from '../types';
 import { CYCLE_TYPES } from '../constants';
 
@@ -37,6 +37,12 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
     });
   };
 
+  const getWeekDate = (startDate: string, weekIndex: number) => {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + (weekIndex * 7));
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
       {!currentCycle ? (
@@ -68,20 +74,28 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                   </div>
                   <div className="flex gap-3">
                     <button onClick={() => setCurrentCycle(cycle)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all"><ChevronRight size={20}/></button>
-                    <button onClick={() => setCycleToDelete(cycle.id)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={20}/></button>
+                    <button onClick={() => setCycleToDelete(cycle.id!)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={20}/></button>
                   </div>
                 </div>
 
-                {/* CALENDAR GRID VIEW */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {Array.from({ length: 12 }).map((_, idx) => {
                         const week = cycle.weeks[idx];
+                        const weekDate = getWeekDate(cycle.startDate, idx);
                         return (
                             <div key={idx} className={`p-4 rounded-2xl border transition-all ${week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}>
-                                <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${week?.theme ? 'text-accent' : 'text-slate-300'}`}>Sem. {idx + 1}</div>
+                                <div className="flex justify-between items-start mb-1">
+                                  <div className={`text-[10px] font-black uppercase tracking-widest ${week?.theme ? 'text-accent' : 'text-slate-300'}`}>S{idx + 1}</div>
+                                  <div className="text-[8px] font-bold text-slate-400 uppercase">{weekDate}</div>
+                                </div>
                                 <div className={`text-[11px] font-bold truncate ${week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
                                     {week?.theme || 'Libre'}
                                 </div>
+                                {week?.sessionName && (
+                                  <div className="mt-2 flex items-center gap-1 text-[8px] font-black text-accent uppercase truncate">
+                                    <LinkIcon size={8}/> {week.sessionName}
+                                  </div>
+                                )}
                             </div>
                         );
                     })}
@@ -92,16 +106,16 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-          <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
+          <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
                 <button onClick={() => setCurrentCycle(null)} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"><ChevronRight className="rotate-180" size={20}/></button>
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter dark:text-white">Configuration du Cycle (12 Semaines)</h3>
+                <h3 className="text-2xl font-black uppercase italic tracking-tighter dark:text-white">Configuration du Cycle</h3>
             </div>
-            <div className="flex gap-3">
-              <button onClick={handleGenerateCycle} disabled={isLoadingAI} className="px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center gap-2 hover:bg-indigo-100 transition-all disabled:opacity-50">
-                <Sparkles size={18}/> {isLoadingAI ? 'Génération...' : 'Planifier avec IA'}
+            <div className="flex gap-3 w-full md:w-auto">
+              <button onClick={handleGenerateCycle} disabled={isLoadingAI} className="flex-1 md:flex-none px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all disabled:opacity-50">
+                <Sparkles size={18}/> {isLoadingAI ? 'Génération...' : 'IA'}
               </button>
-              <button onClick={saveCycle} className="px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all">
+              <button onClick={saveCycle} className="flex-1 md:flex-none px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all">
                 Enregistrer
               </button>
             </div>
@@ -110,7 +124,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
           <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Nom du cycle / Objectif</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Nom du cycle</label>
                 <input type="text" value={currentCycle.name} onChange={e => setCurrentCycle({...currentCycle, name: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold dark:text-white" placeholder="Ex: Préparation Championnat"/>
               </div>
               <div className="space-y-2">
@@ -126,12 +140,17 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
             </div>
 
             <div className="lg:col-span-2 space-y-4">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Calendrier du Trimestre (12 Semaines)</h4>
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Calendrier (12 Semaines)</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {currentCycle.weeks.map((week: any, idx: number) => (
-                  <div key={idx} className="p-5 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex gap-4 items-start border border-slate-100 dark:border-slate-700">
-                    <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-accent shadow-sm text-xs">S{week.weekNumber}</div>
-                    <div className="flex-1 space-y-2">
+                  <div key={idx} className="p-5 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex flex-col gap-4 border border-slate-100 dark:border-slate-700">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex-shrink-0 flex items-center justify-center font-black text-accent shadow-sm text-xs">S{week.weekNumber}</div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{getWeekDate(currentCycle.startDate, idx)}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
                       <input 
                         type="text" 
                         value={week.theme} 
@@ -143,16 +162,24 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                         placeholder="Thème technique..."
                         className="w-full bg-transparent border-none font-black uppercase tracking-tighter text-slate-900 dark:text-white outline-none text-sm"
                       />
-                      <textarea 
-                        value={week.notes} 
-                        onChange={e => {
-                          const newWeeks = [...currentCycle.weeks];
-                          newWeeks[idx].notes = e.target.value;
-                          setCurrentCycle({...currentCycle, weeks: newWeeks});
-                        }}
-                        placeholder="Notes ou exercices clés..."
-                        className="w-full bg-transparent border-none text-[11px] font-bold text-slate-400 outline-none resize-none h-12"
-                      />
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Séance rattachée</label>
+                        <select 
+                          value={week.sessionId || ''} 
+                          onChange={e => {
+                            const newWeeks = [...currentCycle.weeks];
+                            const sessId = parseInt(e.target.value);
+                            const sess = savedSessions.find(s => s.id === sessId);
+                            newWeeks[idx].sessionId = sessId || undefined;
+                            newWeeks[idx].sessionName = sess ? sess.name : undefined;
+                            setCurrentCycle({...currentCycle, weeks: newWeeks});
+                          }}
+                          className="w-full p-2 bg-white dark:bg-slate-900 border-none rounded-xl text-[10px] font-bold dark:text-white outline-none"
+                        >
+                          <option value="">Aucune séance</option>
+                          {savedSessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 ))}
