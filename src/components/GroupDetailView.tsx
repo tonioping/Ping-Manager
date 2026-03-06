@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Users, Calendar, PlayCircle, TrendingUp, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, PlayCircle, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 import { Player, Session, Attendance } from '../types';
 import { AttendanceModal } from './AttendanceModal';
 
@@ -27,7 +29,11 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
   const groupPlayers = useMemo(() => players.filter(p => p.group === group.id), [players, group.id]);
   
   const groupSessions = useMemo(() => {
-    return sessions.filter(s => s.group === group.id || s.name.toLowerCase().includes(group.label.toLowerCase()));
+    // On filtre par ID de groupe ou par présence du nom du groupe dans le titre de la séance
+    // Puis on trie par date décroissante pour avoir les plus récentes en haut
+    return sessions
+      .filter(s => s.group === group.id || s.name.toLowerCase().includes(group.label.toLowerCase()))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, group.id, group.label]);
 
   return (
@@ -38,7 +44,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
         </button>
         <div>
           <h2 className="text-4xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Groupe <span className="text-accent">{group.label}</span></h2>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">{groupPlayers.length} Joueurs actifs</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">{groupPlayers.length} Joueurs actifs • {groupSessions.length} Séances</p>
         </div>
       </div>
 
@@ -74,7 +80,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
 
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xl font-black uppercase italic tracking-tighter dark:text-white">Dernières séances</h3>
+              <h3 className="text-xl font-black uppercase italic tracking-tighter dark:text-white">Historique des séances</h3>
               <button onClick={() => onLaunchSession()} className="px-6 py-3 bg-accent text-white rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center gap-2 hover:scale-105 transition-all">
                 <PlayCircle size={16}/> Nouvelle séance
               </button>
@@ -83,10 +89,17 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
               {groupSessions.length === 0 ? (
                 <p className="text-center py-8 text-slate-400 font-bold uppercase text-xs tracking-widest">Aucune séance pour ce groupe</p>
               ) : groupSessions.map(session => (
-                <div key={session.id} className="p-6 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center group">
-                  <div>
-                    <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter">{session.name}</div>
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(session.date).toLocaleDateString()}</div>
+                <div key={session.id} className="p-6 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center group hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-xl text-accent shadow-sm">
+                      <Calendar size={20} />
+                    </div>
+                    <div>
+                      <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter">{session.name}</div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Clock size={12} /> {new Date(session.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    </div>
                   </div>
                   <button onClick={() => onLaunchSession(session.id)} className="p-3 bg-white dark:bg-slate-900 rounded-xl text-slate-400 hover:text-accent transition-all shadow-sm">
                     <PlayCircle size={20}/>
