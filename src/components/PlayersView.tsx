@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock, BarChart as BarChartIcon } from 'lucide-react';
 // @ts-ignore
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, Legend, Cell } from 'recharts';
 import { Player, PlayerEvaluation, Skill, Attendance, Session, Exercise } from '../types';
 import { DEFAULT_SKILLS, GROUPS } from '../constants';
 import { InfoBubble } from './InfoBubble';
@@ -44,20 +44,55 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
       return playerEvals.filter(ev => ev.player_id === currentPlayer.id);
   }, [playerEvals, currentPlayer]);
 
-  const trainingVolume = useMemo(() => {
-    if (!currentPlayer) return 0;
-    const playerAttendance = attendance.filter(a => a.player_id === currentPlayer.id && (a.status === 'present' || a.status === 'late'));
+  // Calcul des stats par joueur
+  const getPlayerStats = useCallback((playerId: string) => {
+    const playerAttendance = attendance.filter(a => a.player_id === playerId && (a.status === 'present' || a.status === 'late'));
     
     let totalMinutes = 0;
+    let matchCount = 0;
+
     playerAttendance.forEach(record => {
         const session = sessions.find(s => s.id === record.session_id);
         if (session) {
             const sessionMinutes = Object.values(session.exercises).flat().reduce((sum, ex) => sum + (ex?.duration || 0), 0);
             totalMinutes += sessionMinutes;
+            
+            // On compte un match si la séance contient des exercices en phase 'matchs'
+            if (session.exercises['matchs'] && session.exercises['matchs'].length > 0) {
+                matchCount++;
+            }
         }
     });
-    return Math.round(totalMinutes / 60);
-  }, [currentPlayer, attendance, sessions]);
+
+    return {
+        hours: Math.round(totalMinutes / 60),
+        matches: matchCount
+    };
+  }, [attendance, sessions]);
+
+  // Stats globales pour le graphique
+  const globalStatsData = useMemo(() => {
+    const groupsToProcess = filterGroup === 'all' ? GROUPS : GROUPS.filter(g => g.id === filterGroup);
+    
+    return groupsToProcess.map(group => {
+        const groupPlayers = players.filter(p => p.group === group.id);
+        let totalHours = 0;
+        let totalMatches = 0;
+
+        groupPlayers.forEach(p => {
+            const stats = getPlayerStats(p.id);
+            totalHours += stats.hours;
+            totalMatches += stats.matches;
+        });
+
+        return {
+            name: group.label,
+            heures: totalHours,
+            matchs: totalMatches,
+            color: group.color.split(' ')[0].replace('bg-', '#') // Approximation simple pour Recharts
+        };
+    });
+  }, [players, filterGroup, getPlayerStats]);
 
   const radarData = useMemo(() => { 
       if (!currentPlayerEvals.length) return DEFAULT_SKILLS.map(s => ({ subject: s.name, A: 0, fullMark: 5 })); 
@@ -93,14 +128,6 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
       }).filter(d => d.score > 0);
   }, [currentPlayerEvals, historySkillFilter]);
 
-  const isEquipmentOld = useMemo(() => {
-    if (!currentPlayer?.last_equipment_change) return false;
-    const changeDate = new Date(currentPlayer.last_equipment_change);
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    return changeDate < sixMonthsAgo;
-  }, [currentPlayer?.last_equipment_change]);
-
   const filteredPlayers = useMemo(() => {
       if (filterGroup === 'all') return players;
       return players.filter(p => p.group === filterGroup);
@@ -124,17 +151,49 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
   };
 
   return (
-     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in pb-12">
         {!currentPlayer && !newPlayerMode && (
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter"><GraduationCap className="text-accent" size={28}/> Joueurs</h2>
-                        <InfoBubble content="Gérez vos effectifs et suivez la progression technique individuelle de chaque licencié." />
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter"><GraduationCap className="text-accent" size={32}/> Effectifs & Stats</h2>
+                        <InfoBubble content="Suivez l'activité globale de vos groupes et la progression individuelle." />
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <PlayerCSVActions players={players} onImport={handleImportPlayers} />
                         <button onClick={() => { setCurrentPlayer({ id: crypto.randomUUID(), first_name: '', last_name: '', level: 'Debutants' }); setNewPlayerMode(true); }} className="bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs tracking-widest uppercase flex items-center gap-2 shadow-xl hover:bg-slate-800 transition transform hover:scale-105 active:scale-95"><Plus size={18} /> Nouveau</button>
+                    </div>
+                </div>
+
+                {/* Graphique de Statistiques Globales */}
+                <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center justify-between mb-8">
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <BarChartIcon size={14} className="text-accent" /> Activité par Groupe
+                        </h3>
+                        <div className="flex gap-2">
+                            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                <div className="w-2 h-2 rounded-full bg-accent"></div> Heures
+                            </div>
+                            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div> Matchs
+                            </div>
+                        </div>
+                    </div>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={globalStatsData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                <Tooltip 
+                                    cursor={{ fill: '#f8fafc' }}
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                                />
+                                <Bar dataKey="heures" fill="#f97316" radius={[4, 4, 0, 0]} barSize={30} />
+                                <Bar dataKey="matchs" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
@@ -146,32 +205,54 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredPlayers.map(p => (
-                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card relative">
-                            <button 
-                              onClick={(e) => handleDeletePlayer(e, p.id, `${p.first_name} ${p.last_name}`)}
-                              className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/card:opacity-100"
-                              title="Supprimer le joueur"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black group-hover/card:scale-110 transition-transform">
-                                    {p.first_name[0]}{p.last_name[0]}
+                    {filteredPlayers.map(p => {
+                        const stats = getPlayerStats(p.id);
+                        return (
+                            <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card relative overflow-hidden">
+                                <button 
+                                  onClick={(e) => handleDeletePlayer(e, p.id, `${p.first_name} ${p.last_name}`)}
+                                  className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/card:opacity-100 z-10"
+                                  title="Supprimer le joueur"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                                
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black group-hover/card:scale-110 transition-transform shadow-lg">
+                                        {p.first_name[0]}{p.last_name[0]}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-lg">{p.first_name} {p.last_name}</h3>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{p.level}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tighter">{p.first_name} {p.last_name}</h3>
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{p.level}</span>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Entraînement</div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock size={12} className="text-accent" />
+                                            <span className="font-black text-slate-900 dark:text-white text-sm">{stats.hours}h</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                        <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Matchs</div>
+                                        <div className="flex items-center gap-2">
+                                            <Trophy size={12} className="text-blue-500" />
+                                            <span className="font-black text-slate-900 dark:text-white text-sm">{stats.matches}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
+                                    <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${GROUPS.find(g => g.id === p.group)?.color || 'bg-slate-100 text-slate-400'}`}>
+                                        {GROUPS.find(g => g.id === p.group)?.label || 'Sans Groupe'}
+                                    </span>
+                                    <ArrowRight className="text-slate-300 group-hover/card:translate-x-1 transition-transform" size={16} />
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
-                                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${GROUPS.find(g => g.id === p.group)?.color || 'bg-slate-100 text-slate-400'}`}>
-                                    {GROUPS.find(g => g.id === p.group)?.label || 'Sans Groupe'}
-                                </span>
-                                <ArrowRight className="text-slate-300 group-hover/card:translate-x-1 transition-transform" size={16} />
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         )}
@@ -193,7 +274,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
                 <div className="p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
                      <div className="lg:col-span-4 space-y-10">
-                        {!newPlayerMode && (
+                        {!newPlayerMode && currentPlayer && (
                             <div className="bg-accent text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group/volume">
                                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/20 rounded-full blur-3xl group-hover/volume:scale-150 transition-transform duration-700"></div>
                                 <div className="relative z-10">
@@ -201,7 +282,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                         <Clock size={14}/> Volume d'entraînement
                                     </div>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-5xl font-black italic tracking-tighter">{trainingVolume}</span>
+                                        <span className="text-5xl font-black italic tracking-tighter">{getPlayerStats(currentPlayer.id).hours}</span>
                                         <span className="text-xl font-bold uppercase italic opacity-80">Heures</span>
                                     </div>
                                     <p className="text-[9px] font-black uppercase tracking-widest mt-4 opacity-60">Total cumulé cette saison</p>
