@@ -42,8 +42,9 @@ export interface CycleWeek {
   weekNumber: number;
   theme: string;
   notes: string;
-  sessionId?: number;
-  sessionName?: string;
+  sessions?: { id: number; name: string }[];
+  sessionId?: number; // Pour compatibilité ascendante
+  sessionName?: string; // Pour compatibilité ascendante
 }
 
 export type CycleType = 'developpement' | 'competition' | 'recuperation' | 'pre-saison';

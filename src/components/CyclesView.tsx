@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon } from 'lucide-react';
+import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon, X } from 'lucide-react';
 import { Cycle, CycleType, Session } from '../types';
 import { CYCLE_TYPES, GROUPS } from '../constants';
 
@@ -34,7 +34,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
       type: 'developpement',
       objectives: '',
       group: '',
-      weeks: Array.from({ length: 12 }, (_, i) => ({ weekNumber: i + 1, theme: '', notes: '' }))
+      weeks: Array.from({ length: 12 }, (_, i) => ({ weekNumber: i + 1, theme: '', notes: '', sessions: [] }))
     });
   };
 
@@ -42,6 +42,26 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
     const date = new Date(startDate);
     date.setDate(date.getDate() + (weekIndex * 7));
     return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
+  const addSessionToWeek = (weekIdx: number, sessionId: number) => {
+    const session = savedSessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    const newWeeks = [...currentCycle.weeks];
+    const week = newWeeks[weekIdx];
+    const sessions = week.sessions || [];
+    
+    if (!sessions.find((s: any) => s.id === sessionId)) {
+      newWeeks[weekIdx].sessions = [...sessions, { id: session.id, name: session.name }];
+      setCurrentCycle({ ...currentCycle, weeks: newWeeks });
+    }
+  };
+
+  const removeSessionFromWeek = (weekIdx: number, sessionId: number) => {
+    const newWeeks = [...currentCycle.weeks];
+    newWeeks[weekIdx].sessions = (newWeeks[weekIdx].sessions || []).filter((s: any) => s.id !== sessionId);
+    setCurrentCycle({ ...currentCycle, weeks: newWeeks });
   };
 
   return (
@@ -88,6 +108,8 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                     {Array.from({ length: 12 }).map((_, idx) => {
                         const week = cycle.weeks[idx];
                         const weekDate = getWeekDate(cycle.startDate, idx);
+                        const weekSessions = week?.sessions || (week?.sessionId ? [{ id: week.sessionId, name: week.sessionName }] : []);
+                        
                         return (
                             <div key={idx} className={`p-4 rounded-2xl border transition-all ${week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}>
                                 <div className="flex justify-between items-start mb-1">
@@ -97,11 +119,13 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                                 <div className={`text-[11px] font-bold truncate ${week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
                                     {week?.theme || 'Libre'}
                                 </div>
-                                {week?.sessionName && (
-                                  <div className="mt-2 flex items-center gap-1 text-[8px] font-black text-accent uppercase truncate">
-                                    <LinkIcon size={8}/> {week.sessionName}
-                                  </div>
-                                )}
+                                <div className="mt-2 space-y-1">
+                                  {weekSessions.map((s: any) => (
+                                    <div key={s.id} className="flex items-center gap-1 text-[8px] font-black text-accent uppercase truncate">
+                                      <LinkIcon size={8}/> {s.name}
+                                    </div>
+                                  ))}
+                                </div>
                             </div>
                         );
                     })}
@@ -175,22 +199,25 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                         placeholder="Thème technique..."
                         className="w-full bg-transparent border-none font-black uppercase tracking-tighter text-slate-900 dark:text-white outline-none text-sm"
                       />
-                      <div className="space-y-1">
-                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Séance rattachée</label>
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Séances rattachées</label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {(week.sessions || []).map((s: any) => (
+                            <div key={s.id} className="flex items-center gap-1 px-2 py-1 bg-white dark:bg-slate-900 rounded-lg text-[9px] font-bold dark:text-white border border-slate-100 dark:border-slate-700">
+                              <span className="truncate max-w-[100px]">{s.name}</span>
+                              <button onClick={() => removeSessionFromWeek(idx, s.id)} className="text-slate-400 hover:text-red-500"><X size={10}/></button>
+                            </div>
+                          ))}
+                        </div>
                         <select 
-                          value={week.sessionId || ''} 
-                          onChange={e => {
-                            const newWeeks = [...currentCycle.weeks];
-                            const sessId = parseInt(e.target.value);
-                            const sess = savedSessions.find(s => s.id === sessId);
-                            newWeeks[idx].sessionId = sessId || undefined;
-                            newWeeks[idx].sessionName = sess ? sess.name : undefined;
-                            setCurrentCycle({...currentCycle, weeks: newWeeks});
-                          }}
+                          value="" 
+                          onChange={e => addSessionToWeek(idx, parseInt(e.target.value))}
                           className="w-full p-2 bg-white dark:bg-slate-900 border-none rounded-xl text-[10px] font-bold dark:text-white outline-none"
                         >
-                          <option value="">Aucune séance</option>
-                          {savedSessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          <option value="">Ajouter une séance...</option>
+                          {savedSessions.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
