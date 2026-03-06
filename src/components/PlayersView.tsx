@@ -112,6 +112,17 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
     });
   }, [savePlayer]);
 
+  const handleDeletePlayer = (e: React.MouseEvent, playerId: string, name: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le profil de ${name} ? Cette action est irréversible.`)) {
+      deletePlayer(playerId);
+      if (currentPlayer?.id === playerId) {
+        setCurrentPlayer(null);
+        setNewPlayerMode(false);
+      }
+    }
+  };
+
   return (
      <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
         {!currentPlayer && !newPlayerMode && (
@@ -136,7 +147,14 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredPlayers.map(p => (
-                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card">
+                        <div key={p.id} onClick={() => setCurrentPlayer(p)} className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/card relative">
+                            <button 
+                              onClick={(e) => handleDeletePlayer(e, p.id, `${p.first_name} ${p.last_name}`)}
+                              className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover/card:opacity-100"
+                              title="Supprimer le joueur"
+                            >
+                              <Trash2 size={18} />
+                            </button>
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center text-white font-black group-hover/card:scale-110 transition-transform">
                                     {p.first_name[0]}{p.last_name[0]}
@@ -210,6 +228,15 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                     </select>
                                 </div>
                             </div>
+                            
+                            {!newPlayerMode && currentPlayer && (
+                              <button 
+                                onClick={(e) => handleDeletePlayer(e, currentPlayer.id, `${currentPlayer.first_name} ${currentPlayer.last_name}`)}
+                                className="w-full py-4 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-900/20 transition-all border border-red-100 dark:border-red-900/20"
+                              >
+                                <Trash2 size={16}/> Supprimer le profil
+                              </button>
+                            )}
                         </div>
 
                         <div className="bg-slate-900 text-slate-200 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group/gear">
