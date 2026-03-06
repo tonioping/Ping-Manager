@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Plus, Trash2, Clock, Sparkles, Users, Calendar, Target, 
-  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart, List
+  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart, List, CheckCircle
 } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
 import { PHASES, THEMES, LEVELS } from '../constants';
@@ -56,7 +56,6 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
         [phaseId]: [...(prev.exercises[phaseId] || []), newEx]
       }
     }));
-    // Sur mobile, on bascule vers la séance après l'ajout
     if (window.innerWidth < 1024) {
       setActiveTab('session');
     }
@@ -93,7 +92,6 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full lg:h-[calc(100vh-180px)] animate-fade-in">
-      {/* TABS MOBILE */}
       <div className="lg:hidden flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-2">
         <button 
           onClick={() => setActiveTab('session')}
@@ -109,7 +107,6 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
         </button>
       </div>
 
-      {/* COLONNE GAUCHE : BIBLIOTHÈQUE */}
       <div className={`${activeTab === 'library' ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 xl:w-96 flex-col bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden h-[60vh] lg:h-full`}>
         <div className="p-6 border-b border-slate-50 dark:border-slate-800 space-y-4">
           <h3 className="text-lg font-black uppercase italic tracking-tighter dark:text-white flex items-center gap-2">
@@ -175,7 +172,6 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
         </div>
       </div>
 
-      {/* COLONNE DROITE : CONSTRUCTEUR DE SÉANCE */}
       <div className={`${activeTab === 'session' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col gap-6 overflow-hidden h-full`}>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex-1 w-full flex items-center gap-4">
@@ -190,7 +186,14 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
               className="text-lg font-black uppercase italic tracking-tighter bg-transparent border-none outline-none w-full dark:text-white"
             />
           </div>
-          <div className="flex items-center justify-between w-full md:w-auto gap-4">
+          <div className="flex items-center justify-between w-full md:w-auto gap-3">
+            <button 
+              onClick={() => setShowAttendance(true)}
+              className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-accent hover:text-white transition-all shadow-sm"
+              title="Faire l'appel"
+            >
+              <Users size={20} />
+            </button>
             <div className="text-accent font-black text-[10px] uppercase tracking-widest bg-orange-50 dark:bg-orange-900/20 px-4 py-2 rounded-xl">
               {totalDuration} min
             </div>
