@@ -57,7 +57,6 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
             const sessionMinutes = Object.values(session.exercises).flat().reduce((sum, ex) => sum + (ex?.duration || 0), 0);
             totalMinutes += sessionMinutes;
             
-            // On compte un match si la séance contient des exercices en phase 'matchs'
             if (session.exercises['matchs'] && session.exercises['matchs'].length > 0) {
                 matchCount++;
             }
@@ -70,26 +69,19 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
     };
   }, [attendance, sessions]);
 
-  // Stats globales pour le graphique
-  const globalStatsData = useMemo(() => {
-    const groupsToProcess = filterGroup === 'all' ? GROUPS : GROUPS.filter(g => g.id === filterGroup);
+  // Données pour le graphique par joueur
+  const playerStatsData = useMemo(() => {
+    const targetPlayers = filterGroup === 'all' 
+      ? [...players].sort((a, b) => getPlayerStats(b.id).hours - getPlayerStats(a.id).hours).slice(0, 10)
+      : players.filter(p => p.group === filterGroup);
     
-    return groupsToProcess.map(group => {
-        const groupPlayers = players.filter(p => p.group === group.id);
-        let totalHours = 0;
-        let totalMatches = 0;
-
-        groupPlayers.forEach(p => {
-            const stats = getPlayerStats(p.id);
-            totalHours += stats.hours;
-            totalMatches += stats.matches;
-        });
-
+    return targetPlayers.map(p => {
+        const stats = getPlayerStats(p.id);
         return {
-            name: group.label,
-            heures: totalHours,
-            matchs: totalMatches,
-            color: group.color.split(' ')[0].replace('bg-', '#') // Approximation simple pour Recharts
+            name: p.first_name,
+            fullName: `${p.first_name} ${p.last_name}`,
+            heures: stats.hours,
+            matchs: stats.matches
         };
     });
   }, [players, filterGroup, getPlayerStats]);
@@ -157,7 +149,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-center gap-3">
                         <h2 className="text-3xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter"><GraduationCap className="text-accent" size={32}/> Effectifs & Stats</h2>
-                        <InfoBubble content="Suivez l'activité globale de vos groupes et la progression individuelle." />
+                        <InfoBubble content="Suivez l'activité individuelle au sein de vos groupes." />
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <PlayerCSVActions players={players} onImport={handleImportPlayers} />
@@ -165,13 +157,16 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                     </div>
                 </div>
 
-                {/* Graphique de Statistiques Globales */}
+                {/* Graphique de Statistiques par Joueur */}
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <BarChartIcon size={14} className="text-accent" /> Activité par Groupe
-                        </h3>
-                        <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                        <div>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <BarChartIcon size={14} className="text-accent" /> 
+                                {filterGroup === 'all' ? 'Top 10 Activité Club' : `Activité : ${GROUPS.find(g => g.id === filterGroup)?.label}`}
+                            </h3>
+                        </div>
+                        <div className="flex gap-4">
                             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
                                 <div className="w-2 h-2 rounded-full bg-accent"></div> Heures
                             </div>
@@ -180,20 +175,38 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                             </div>
                         </div>
                     </div>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={globalStatsData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                <Tooltip 
-                                    cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-                                />
-                                <Bar dataKey="heures" fill="#f97316" radius={[4, 4, 0, 0]} barSize={30} />
-                                <Bar dataKey="matchs" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <div className="h-[300px] w-full">
+                        {playerStatsData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={playerStatsData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis 
+                                        dataKey="name" 
+                                        tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }} 
+                                        axisLine={false} 
+                                        tickLine={false}
+                                        interval={0}
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={60}
+                                    />
+                                    <YAxis tick={{ fontSize: 9, fontWeight: 800, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                    <Tooltip 
+                                        cursor={{ fill: '#f8fafc' }}
+                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                                        labelStyle={{ color: '#0f172a', marginBottom: '4px' }}
+                                        formatter={(value: any, name: string) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}
+                                        labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
+                                    />
+                                    <Bar dataKey="heures" fill="#f97316" radius={[4, 4, 0, 0]} barSize={25} />
+                                    <Bar dataKey="matchs" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={25} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-slate-300 font-black uppercase text-[10px] tracking-widest">
+                                Aucun joueur dans ce groupe
+                            </div>
+                        )}
                     </div>
                 </div>
 
