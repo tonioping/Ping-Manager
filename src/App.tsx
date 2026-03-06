@@ -186,14 +186,16 @@ export default function App() {
     showToast("Séance enregistrée avec succès !");
   }, [currentSession, session, isDemoMode, showToast]);
 
-  const saveAttendance = useCallback(async (playerId: string, status: 'present' | 'absent' | 'late') => {
-    if (!currentSession.id || currentSession.id === 0) {
-        showToast("Enregistrez d'abord la séance pour faire l'appel", "error");
+  const saveAttendance = useCallback(async (playerId: string, status: 'present' | 'absent' | 'late', sessionId?: number) => {
+    const targetSessionId = sessionId || currentSession.id;
+    
+    if (!targetSessionId || targetSessionId === 0) {
+        showToast("Veuillez sélectionner une séance pour faire l'appel", "error");
         return;
     }
 
     const record = {
-        session_id: currentSession.id,
+        session_id: targetSessionId,
         player_id: playerId,
         status,
         user_id: session?.user?.id
@@ -221,8 +223,8 @@ export default function App() {
         }
     } else {
         setAttendance(prev => {
-            const exists = prev.find(a => a.session_id === currentSession.id && a.player_id === playerId);
-            if (exists) return prev.map(a => a.session_id === currentSession.id && a.player_id === playerId ? { ...record } : a);
+            const exists = prev.find(a => a.session_id === targetSessionId && a.player_id === playerId);
+            if (exists) return prev.map(a => a.session_id === targetSessionId && a.player_id === playerId ? { ...record } : a);
             return [...prev, { ...record }];
         });
     }

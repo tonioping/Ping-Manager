@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Users, Calendar, PlayCircle, TrendingUp, CheckCircle } from 'lucide-react';
 import { Player, Session, Attendance } from '../types';
 import { AttendanceModal } from './AttendanceModal';
@@ -10,7 +10,7 @@ interface GroupDetailViewProps {
   attendance: Attendance[];
   onBack: () => void;
   onLaunchSession: (sessionId?: number) => void;
-  onSaveAttendance: (playerId: string, status: 'present' | 'absent' | 'late') => void;
+  onSaveAttendance: (playerId: string, status: 'present' | 'absent' | 'late', sessionId: number) => void;
 }
 
 export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
@@ -23,8 +23,12 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
   onSaveAttendance
 }) => {
   const [showAttendance, setShowAttendance] = useState(false);
-  const groupPlayers = players.filter(p => p.group === group.id);
-  const groupSessions = sessions.filter(s => s.name.includes(group.label));
+  
+  const groupPlayers = useMemo(() => players.filter(p => p.group === group.id), [players, group.id]);
+  
+  const groupSessions = useMemo(() => {
+    return sessions.filter(s => s.group === group.id || s.name.toLowerCase().includes(group.label.toLowerCase()));
+  }, [sessions, group.id, group.label]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
@@ -43,12 +47,18 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-xl font-black uppercase italic tracking-tighter dark:text-white">Effectif du groupe</h3>
-              <button onClick={() => setShowAttendance(true)} className="px-6 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center gap-2 hover:scale-105 transition-all">
+              <button 
+                onClick={() => setShowAttendance(true)} 
+                disabled={groupSessions.length === 0}
+                className="px-6 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+              >
                 <CheckCircle size={16}/> Faire l'appel
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {groupPlayers.map(player => (
+              {groupPlayers.length === 0 ? (
+                <p className="col-span-2 text-center py-8 text-slate-400 font-bold uppercase text-xs tracking-widest">Aucun joueur assigné à ce groupe</p>
+              ) : groupPlayers.map(player => (
                 <div key={player.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black text-xs dark:text-white shadow-sm">
                     {player.first_name[0]}{player.last_name[0]}
@@ -70,7 +80,9 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
               </button>
             </div>
             <div className="space-y-4">
-              {groupSessions.map(session => (
+              {groupSessions.length === 0 ? (
+                <p className="text-center py-8 text-slate-400 font-bold uppercase text-xs tracking-widest">Aucune séance pour ce groupe</p>
+              ) : groupSessions.map(session => (
                 <div key={session.id} className="p-6 bg-slate-50 dark:bg-slate-800 rounded-2xl flex justify-between items-center group">
                   <div>
                     <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter">{session.name}</div>
@@ -112,6 +124,7 @@ export const GroupDetailView: React.FC<GroupDetailViewProps> = ({
           onToggle={onSaveAttendance} 
           onClose={() => setShowAttendance(false)}
           groupName={group.label}
+          sessions={groupSessions}
         />
       )}
     </div>
