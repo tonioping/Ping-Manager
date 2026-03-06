@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock, BarChart as BarChartIcon } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock, BarChart as BarChartIcon, FileText } from 'lucide-react';
 // @ts-ignore
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, Legend, Cell } from 'recharts';
 import { Player, PlayerEvaluation, Skill, Attendance, Session, Exercise } from '../types';
@@ -328,6 +328,15 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                                         <option value="">Sélectionner un groupe</option>
                                         {GROUPS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
                                     </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Notes & Observations</label>
+                                    <textarea 
+                                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-accent/20 outline-none font-bold text-slate-900 dark:text-white min-h-[120px] resize-none" 
+                                        placeholder="Points forts, axes d'amélioration, comportement..." 
+                                        value={currentPlayer?.notes || ''} 
+                                        onChange={e => setCurrentPlayer(prev => prev ? {...prev, notes: e.target.value} : null)} 
+                                    />
                                 </div>
                             </div>
                             

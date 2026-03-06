@@ -329,21 +329,37 @@ export default function App() {
   }, [session, isDemoMode, showToast]);
 
   const saveEvaluation = useCallback(async (playerId: string, skillId: string, score: number) => {
+    const today = new Date().toISOString().split('T')[0];
     const evalData = {
       player_id: playerId,
       skill_id: skillId,
       score,
-      date: new Date().toISOString().split('T')[0],
+      date: today,
       user_id: session?.user?.id
     };
 
     if (session && !isDemoMode) {
-      const { data, error } = await supabase.from('player_evaluations').insert(evalData).select().single();
-      if (!error && data) setPlayerEvals(prev => [...prev, data]);
+      const { data, error } = await supabase
+        .from('player_evaluations')
+        .upsert(evalData, { onConflict: 'player_id,skill_id,date' })
+        .select()
+        .single();
+      
+      if (!error && data) {
+        setPlayerEvals(prev => {
+          const exists = prev.find(e => e.player_id === data.player_id && e.skill_id === data.skill_id && e.date === data.date);
+          if (exists) return prev.map(e => e.player_id === data.player_id && e.skill_id === data.skill_id && e.date === data.date ? data : e);
+          return [...prev, data];
+        });
+      }
     } else {
-      setPlayerEvals(prev => [...prev, { ...evalData, id: Date.now() }]);
+      setPlayerEvals(prev => {
+        const exists = prev.find(e => e.player_id === playerId && e.skill_id === skillId && e.date === today);
+        if (exists) return prev.map(e => e.player_id === playerId && e.skill_id === skillId && e.date === today ? { ...evalData, id: e.id } : e);
+        return [...prev, { ...evalData, id: Date.now() }];
+      });
     }
-    showToast("Évaluation enregistrée");
+    showToast("Évaluation mise à jour");
   }, [session, isDemoMode, showToast]);
 
   const handleSuggestExercises = useCallback(async () => {
