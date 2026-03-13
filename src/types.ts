@@ -1,4 +1,4 @@
-export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'deplacement' | 'schema' | 'matchs' | 'cognitif' | 'retour-au-calme';
+export type PhaseId = 'echauffement' | 'regularite' | 'technique' | 'panier' | 'deplacement' | 'schema' | 'matchs' | 'cognitif' | 'retour-au-calme';
 export type ExerciseLevel = 'debutant' | 'intermediaire' | 'avance' | 'pro';
 
 export interface Phase {
