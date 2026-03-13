@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { 
   Plus, Target, Calendar as CalendarIcon, 
   Clock, Zap, ChevronRight, PlayCircle, Lightbulb,
-  Rocket, TrendingUp as ProgressIcon, GraduationCap, Globe, Activity, Trophy, ListChecks, BookOpen
+  Rocket, TrendingUp as ProgressIcon, GraduationCap, Globe, Activity, Trophy, ListChecks, BookOpen, Users, CheckCircle
 } from 'lucide-react';
 import { Session, Cycle, Player, CoachProfile, View, Attendance } from '../types';
 import { GROUPS, INITIAL_EXERCISES, PHASES } from '../constants';
 import { InfoBubble } from './InfoBubble';
-import { AttendanceModal } from './AttendanceModal';
 
 const FashionLogo = () => (
   <div className="relative group cursor-pointer flex items-center justify-center scale-90 md:scale-100">
@@ -27,7 +26,6 @@ const FashionLogo = () => (
 
 export const DashboardView: React.FC<any> = React.memo(({
   coachProfile,
-  session,
   savedSessions,
   players,
   cycles,
@@ -38,21 +36,25 @@ export const DashboardView: React.FC<any> = React.memo(({
   attendance,
   onSaveAttendance
 }) => {
-  const [showNextSessionSummary, setShowNextSessionSummary] = useState(false);
-
-  const nextSession = useMemo(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return [...savedSessions]
-      .filter(s => new Date(s.date) >= now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-  }, [savedSessions]);
+  const [selectedSessionForModal, setSelectedSessionForModal] = useState<Session | null>(null);
 
   const groupsStatus = useMemo(() => {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
+      
       return GROUPS.map(group => {
-          const activeCycle = [...cycles].filter(c => c.group === group.id && c.startDate).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+          // Trouver la prochaine séance pour ce groupe
+          const groupSessions = savedSessions
+            .filter(s => s.group === group.id && new Date(s.date) >= now)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
+          const nextGroupSession = groupSessions[0];
+
+          // Trouver le cycle actif
+          const activeCycle = [...cycles]
+            .filter(c => c.group === group.id && c.startDate)
+            .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+          
           let currentWeekData = null;
           if (activeCycle) {
               const [y, m, d] = activeCycle.startDate.split('-').map(Number);
@@ -62,15 +64,23 @@ export const DashboardView: React.FC<any> = React.memo(({
               const totalWeeks = activeCycle.weeks.length;
               if (weekIdx >= 0 && weekIdx < totalWeeks) {
                   const currentWeek = activeCycle.weeks[weekIdx];
-                  currentWeekData = { cycleName: activeCycle.name, weekNum: weekIdx + 1, totalWeeks, theme: currentWeek.theme, progress: Math.round(((weekIdx + 1) / totalWeeks) * 100) };
+                  currentWeekData = { 
+                    cycleName: activeCycle.name, 
+                    weekNum: weekIdx + 1, 
+                    totalWeeks, 
+                    theme: currentWeek.theme, 
+                    progress: Math.round(((weekIdx + 1) / totalWeeks) * 100) 
+                  };
               }
           }
-          return { ...group, activeData: currentWeekData };
+          
+          return { ...group, activeData: currentWeekData, nextSession: nextGroupSession };
       });
-  }, [cycles]);
+  }, [cycles, savedSessions]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12 px-2 md:px-0">
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-visible relative">
         <div className="flex items-center gap-6">
           <FashionLogo />
@@ -88,117 +98,78 @@ export const DashboardView: React.FC<any> = React.memo(({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8">
-              <div className="relative group bg-slate-900 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl border border-slate-800 h-full flex flex-col justify-center overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700 overflow-hidden rounded-[3rem] w-full h-full"><Rocket size={250} className="rotate-12 absolute -right-10 top-0" /></div>
-                  <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-                    <div className="text-center md:text-left space-y-4">
-                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-white text-[10px] font-black tracking-widest uppercase shadow-lg shadow-orange-500/20"><Zap size={12} fill="currentColor" /> Prochaine Étape</div>
-                      <h2 className="text-5xl font-black leading-none tracking-tight">Prêt pour <span className="text-accent italic">l'entraînement ?</span></h2>
-                      <p className="text-slate-400 text-lg font-bold">Gérez vos séances et suivez vos joueurs avec l'IA.</p>
-                    </div>
-                    <button onClick={() => setView('sessions')} className="group/btn relative px-10 py-8 rounded-[2rem] font-black text-lg flex items-center gap-5 transition-all transform hover:scale-105 shadow-2xl active:scale-95 bg-accent shadow-orange-500/30">
-                      <div className="p-3 bg-white/20 rounded-2xl group-hover/btn:rotate-12 transition-transform"><Plus size={32} /></div>
-                      <div className="text-left"><div className="leading-none tracking-tighter uppercase text-xl">CRÉER</div><div className="text-[10px] opacity-70 font-black tracking-[0.2em] mt-1 uppercase">SÉANCE</div></div>
-                    </button>
-                  </div>
-              </div>
-          </div>
-          
-          <div className="lg:col-span-4 space-y-6">
-            {/* Widget Prochaine Séance */}
-            <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm group/next relative overflow-hidden">
-                <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2"><div className="p-2 bg-orange-50 dark:bg-orange-900/30 text-accent rounded-lg"><CalendarIcon size={18}/></div><h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest italic">Prochaine Séance</h3></div>
-                    </div>
-                    {nextSession ? (
-                        <div className="space-y-4">
-                            <div>
-                                <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-xl group-hover/next:text-accent transition-colors">{nextSession.name}</div>
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(nextSession.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</div>
-                            </div>
-                            <button 
-                                onClick={() => setShowNextSessionSummary(true)}
-                                className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2"
-                            >
-                                <ListChecks size={16} /> Détails & Appel
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="py-6 text-center">
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucune séance prévue</p>
-                            <button onClick={() => setView('sessions')} className="mt-4 text-accent font-black text-[10px] uppercase tracking-widest hover:underline">Planifier maintenant</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between group/widget relative overflow-hidden">
-                <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2"><div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><ProgressIcon size={18}/></div><h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest italic">Top Progression</h3></div>
-                    </div>
-                    <div className="space-y-4">
-                        {players.length > 0 ? players.slice(0, 3).map((p, idx) => (
-                            <div key={p.id} onClick={() => { setCurrentPlayer(p); setView('players'); }} className="flex items-center justify-between cursor-pointer group/row">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-accent text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>{idx + 1}</div>
-                                    <div><div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm group-hover/row:text-accent transition-colors">{p.first_name}</div></div>
-                                </div>
-                            </div>
-                        )) : <div className="py-4 text-center text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-widest">En attente de données...</div>}
-                    </div>
-                </div>
-                <button onClick={() => setView('players')} className="mt-6 w-full py-3 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all shadow-sm">Détails joueurs</button>
-            </div>
-          </div>
-      </div>
-
+      {/* SECTION GROUPES & PROCHAINES SÉANCES */}
       <div className="space-y-6">
-          <div className="flex items-center gap-3 px-4">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Mes Groupes</h3>
-              <InfoBubble content="Suivez l'état d'avancement des cycles par groupe et accédez rapidement à l'appel." />
+          <div className="flex items-center justify-between px-4">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Pilotage par Groupe</h3>
+                <InfoBubble content="Visualisez la prochaine séance de chaque groupe et accédez directement à l'appel des joueurs." />
+              </div>
+              <button onClick={() => setView('sessions')} className="hidden md:flex items-center gap-2 text-[10px] font-black text-accent uppercase tracking-widest hover:underline">
+                <Plus size={14}/> Planifier une séance
+              </button>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {groupsStatus.map(group => (
-                  <div key={group.id} onClick={() => onSelectGroup(group.id)} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer group/groupcard relative overflow-hidden">
+                  <div key={group.id} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group/groupcard relative overflow-hidden flex flex-col">
                       <div className="flex justify-between items-start mb-6">
                           <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${group.color}`}>
                               {group.label}
                           </div>
-                          <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-300 group-hover/groupcard:text-accent transition-colors">
+                          <button onClick={() => onSelectGroup(group.id)} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-300 group-hover/groupcard:text-accent transition-colors">
                               <ChevronRight size={20} />
-                          </div>
+                          </button>
                       </div>
                       
-                      {group.activeData ? (
-                          <div className="space-y-4">
-                              <div>
-                                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cycle en cours</div>
-                                  <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate">{group.activeData.cycleName}</div>
-                              </div>
-                              <div className="space-y-2">
-                                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
-                                      <span className="text-accent">Semaine {group.activeData.weekNum}/{group.activeData.totalWeeks}</span>
-                                      <span className="text-slate-400">{group.activeData.progress}%</span>
-                                  </div>
-                                  <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                      <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${group.activeData.progress}%` }}></div>
-                                  </div>
-                              </div>
-                          </div>
-                      ) : (
-                          <div className="py-4 text-center">
-                              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun cycle actif</p>
-                          </div>
-                      )}
+                      <div className="flex-1 space-y-6">
+                        {/* PROCHAINE SÉANCE DU GROUPE */}
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700">
+                            <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                                <CalendarIcon size={12} className="text-accent" /> Prochaine séance
+                            </div>
+                            {group.nextSession ? (
+                                <div className="space-y-3">
+                                    <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-lg leading-tight truncate">
+                                        {group.nextSession.name}
+                                    </div>
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        {new Date(group.nextSession.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                                    </div>
+                                    <button 
+                                        onClick={() => setSelectedSessionForModal(group.nextSession)}
+                                        className="w-full mt-2 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-lg"
+                                    >
+                                        <ListChecks size={14} /> Détails & Appel
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="py-4 text-center">
+                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Aucune séance prévue</p>
+                                    <button onClick={() => { setCurrentSession({...INITIAL_EXERCISES, group: group.id}); setView('sessions'); }} className="mt-2 text-accent font-black text-[9px] uppercase tracking-widest hover:underline">Créer maintenant</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* PROGRESSION DU CYCLE */}
+                        {group.activeData && (
+                            <div className="px-2 space-y-2">
+                                <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                                    <span className="text-slate-400">Cycle : {group.activeData.cycleName}</span>
+                                    <span className="text-accent">Sem. {group.activeData.weekNum}/{group.activeData.totalWeeks}</span>
+                                </div>
+                                <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${group.activeData.progress}%` }}></div>
+                                </div>
+                            </div>
+                        )}
+                      </div>
                   </div>
               ))}
           </div>
       </div>
 
+      {/* RACCOURCIS RAPIDES */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Bibliothèque', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo' },
@@ -213,8 +184,8 @@ export const DashboardView: React.FC<any> = React.memo(({
         ))}
       </div>
 
-      {/* Modal Résumé & Appel */}
-      {showNextSessionSummary && nextSession && (
+      {/* MODAL RÉSUMÉ & APPEL (RÉUTILISABLE) */}
+      {selectedSessionForModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col">
             <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
@@ -223,11 +194,11 @@ export const DashboardView: React.FC<any> = React.memo(({
                   <BookOpen size={24} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">{nextSession.name}</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(nextSession.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">{selectedSessionForModal.name}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(selectedSessionForModal.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
               </div>
-              <button onClick={() => setShowNextSessionSummary(false)} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm"><Plus className="rotate-45 text-slate-400" size={24}/></button>
+              <button onClick={() => setSelectedSessionForModal(null)} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm"><Plus className="rotate-45 text-slate-400" size={24}/></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-12 custom-scrollbar">
@@ -238,7 +209,7 @@ export const DashboardView: React.FC<any> = React.memo(({
                 </h4>
                 <div className="space-y-6">
                   {PHASES.map(phase => {
-                    const phaseExos = nextSession.exercises[phase.id] || [];
+                    const phaseExos = selectedSessionForModal.exercises[phase.id] || [];
                     if (phaseExos.length === 0) return null;
                     return (
                       <div key={phase.id} className="space-y-3">
@@ -263,11 +234,11 @@ export const DashboardView: React.FC<any> = React.memo(({
               {/* Appel des joueurs */}
               <div className="space-y-8">
                 <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-                  <ListChecks size={14} className="text-emerald-500" /> Faire l'appel
+                  <CheckCircle size={14} className="text-emerald-500" /> Faire l'appel
                 </h4>
                 <div className="space-y-3">
-                  {(nextSession.group ? players.filter(p => p.group === nextSession.group) : players).map(player => {
-                    const record = attendance.find(a => a.session_id === nextSession.id && a.player_id === player.id);
+                  {(selectedSessionForModal.group ? players.filter(p => p.group === selectedSessionForModal.group) : players).map(player => {
+                    const record = attendance.find(a => a.session_id === selectedSessionForModal.id && a.player_id === player.id);
                     const status = record?.status || 'absent';
                     return (
                       <div key={player.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -276,9 +247,9 @@ export const DashboardView: React.FC<any> = React.memo(({
                           <span className="font-bold text-slate-900 dark:text-white text-sm">{player.first_name} {player.last_name}</span>
                         </div>
                         <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                          <button onClick={() => onSaveAttendance(player.id, 'present', nextSession.id)} className={`p-2 rounded-lg transition-all ${status === 'present' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-300 hover:text-emerald-500'}`}><Trophy size={16} /></button>
-                          <button onClick={() => onSaveAttendance(player.id, 'late', nextSession.id)} className={`p-2 rounded-lg transition-all ${status === 'late' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-300 hover:text-amber-500'}`}><Clock size={16} /></button>
-                          <button onClick={() => onSaveAttendance(player.id, 'absent', nextSession.id)} className={`p-2 rounded-lg transition-all ${status === 'absent' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-300 hover:text-rose-500'}`}><Plus className="rotate-45" size={16} /></button>
+                          <button onClick={() => onSaveAttendance(player.id, 'present', selectedSessionForModal.id)} className={`p-2 rounded-lg transition-all ${status === 'present' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-300 hover:text-emerald-500'}`}><Trophy size={16} /></button>
+                          <button onClick={() => onSaveAttendance(player.id, 'late', selectedSessionForModal.id)} className={`p-2 rounded-lg transition-all ${status === 'late' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-300 hover:text-amber-500'}`}><Clock size={16} /></button>
+                          <button onClick={() => onSaveAttendance(player.id, 'absent', selectedSessionForModal.id)} className={`p-2 rounded-lg transition-all ${status === 'absent' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-300 hover:text-rose-500'}`}><Plus className="rotate-45" size={16} /></button>
                         </div>
                       </div>
                     );
@@ -288,7 +259,7 @@ export const DashboardView: React.FC<any> = React.memo(({
             </div>
 
             <div className="p-8 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 flex justify-center">
-              <button onClick={() => setShowNextSessionSummary(false)} className="px-12 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl hover:scale-105 transition-all">Terminer l'entraînement</button>
+              <button onClick={() => setSelectedSessionForModal(null)} className="px-12 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl hover:scale-105 transition-all">Terminer l'entraînement</button>
             </div>
           </div>
         </div>
