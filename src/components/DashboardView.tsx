@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Plus, Target, Calendar as CalendarIcon, 
   Clock, Zap, ChevronRight, PlayCircle, Lightbulb,
-  Rocket, TrendingUp as ProgressIcon, GraduationCap, Globe, Activity, Trophy
+  Rocket, TrendingUp as ProgressIcon, GraduationCap, Globe, Activity, Trophy, ListChecks, BookOpen
 } from 'lucide-react';
-import { Session, Cycle, Player, CoachProfile, View } from '../types';
-import { GROUPS, INITIAL_EXERCISES } from '../constants';
+import { Session, Cycle, Player, CoachProfile, View, Attendance } from '../types';
+import { GROUPS, INITIAL_EXERCISES, PHASES } from '../constants';
 import { InfoBubble } from './InfoBubble';
+import { AttendanceModal } from './AttendanceModal';
 
 const FashionLogo = () => (
   <div className="relative group cursor-pointer flex items-center justify-center scale-90 md:scale-100">
@@ -33,8 +34,20 @@ export const DashboardView: React.FC<any> = React.memo(({
   setView,
   setCurrentSession,
   setCurrentPlayer,
-  onSelectGroup
+  onSelectGroup,
+  attendance,
+  onSaveAttendance
 }) => {
+  const [showNextSessionSummary, setShowNextSessionSummary] = useState(false);
+
+  const nextSession = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return [...savedSessions]
+      .filter(s => new Date(s.date) >= now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  }, [savedSessions]);
+
   const groupsStatus = useMemo(() => {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
@@ -92,23 +105,54 @@ export const DashboardView: React.FC<any> = React.memo(({
                   </div>
               </div>
           </div>
-          <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-[3rem] p-10 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between group/widget relative overflow-hidden">
-             <div className="relative z-10">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-2"><div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><ProgressIcon size={18}/></div><h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest italic">Top Progression</h3></div>
-                </div>
-                <div className="space-y-6">
-                    {players.length > 0 ? players.slice(0, 3).map((p, idx) => (
-                        <div key={p.id} onClick={() => { setCurrentPlayer(p); setView('players'); }} className="flex items-center justify-between cursor-pointer group/row">
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-accent text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>{idx + 1}</div>
-                                <div><div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm group-hover/row:text-accent transition-colors">{p.first_name}</div></div>
+          
+          <div className="lg:col-span-4 space-y-6">
+            {/* Widget Prochaine Séance */}
+            <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm group/next relative overflow-hidden">
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2"><div className="p-2 bg-orange-50 dark:bg-orange-900/30 text-accent rounded-lg"><CalendarIcon size={18}/></div><h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest italic">Prochaine Séance</h3></div>
+                    </div>
+                    {nextSession ? (
+                        <div className="space-y-4">
+                            <div>
+                                <div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-xl group-hover/next:text-accent transition-colors">{nextSession.name}</div>
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(nextSession.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</div>
                             </div>
+                            <button 
+                                onClick={() => setShowNextSessionSummary(true)}
+                                className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <ListChecks size={16} /> Détails & Appel
+                            </button>
                         </div>
-                    )) : <div className="py-8 text-center text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-widest">En attente de données...</div>}
+                    ) : (
+                        <div className="py-6 text-center">
+                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucune séance prévue</p>
+                            <button onClick={() => setView('sessions')} className="mt-4 text-accent font-black text-[10px] uppercase tracking-widest hover:underline">Planifier maintenant</button>
+                        </div>
+                    )}
                 </div>
-             </div>
-             <button onClick={() => setView('players')} className="mt-8 w-full py-4 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all shadow-sm">Détails joueurs</button>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between group/widget relative overflow-hidden">
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2"><div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><ProgressIcon size={18}/></div><h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest italic">Top Progression</h3></div>
+                    </div>
+                    <div className="space-y-4">
+                        {players.length > 0 ? players.slice(0, 3).map((p, idx) => (
+                            <div key={p.id} onClick={() => { setCurrentPlayer(p); setView('players'); }} className="flex items-center justify-between cursor-pointer group/row">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-accent text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>{idx + 1}</div>
+                                    <div><div className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-sm group-hover/row:text-accent transition-colors">{p.first_name}</div></div>
+                                </div>
+                            </div>
+                        )) : <div className="py-4 text-center text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-widest">En attente de données...</div>}
+                    </div>
+                </div>
+                <button onClick={() => setView('players')} className="mt-6 w-full py-3 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all shadow-sm">Détails joueurs</button>
+            </div>
           </div>
       </div>
 
@@ -168,6 +212,87 @@ export const DashboardView: React.FC<any> = React.memo(({
           </button>
         ))}
       </div>
+
+      {/* Modal Résumé & Appel */}
+      {showNextSessionSummary && nextSession && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col">
+            <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-slate-900 dark:bg-white rounded-2xl text-accent shadow-lg">
+                  <BookOpen size={24} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">{nextSession.name}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(nextSession.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowNextSessionSummary(false)} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm"><Plus className="rotate-45 text-slate-400" size={24}/></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-12 custom-scrollbar">
+              {/* Résumé Technique */}
+              <div className="space-y-8">
+                <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <Target size={14} className="text-accent" /> Contenu de la séance
+                </h4>
+                <div className="space-y-6">
+                  {PHASES.map(phase => {
+                    const phaseExos = nextSession.exercises[phase.id] || [];
+                    if (phaseExos.length === 0) return null;
+                    return (
+                      <div key={phase.id} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{phase.label}</span>
+                          <span className="text-[9px] font-black text-accent uppercase">{phaseExos.reduce((sum, e) => sum + e.duration, 0)} min</span>
+                        </div>
+                        <div className="space-y-2">
+                          {phaseExos.map((ex, i) => (
+                            <div key={i} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="font-bold text-slate-900 dark:text-white text-sm mb-1">{ex.name}</div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{ex.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Appel des joueurs */}
+              <div className="space-y-8">
+                <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <ListChecks size={14} className="text-emerald-500" /> Faire l'appel
+                </h4>
+                <div className="space-y-3">
+                  {(nextSession.group ? players.filter(p => p.group === nextSession.group) : players).map(player => {
+                    const record = attendance.find(a => a.session_id === nextSession.id && a.player_id === player.id);
+                    const status = record?.status || 'absent';
+                    return (
+                      <div key={player.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${status === 'present' ? 'bg-emerald-500 text-white' : status === 'late' ? 'bg-amber-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'}`}>{player.first_name[0]}{player.last_name[0]}</div>
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">{player.first_name} {player.last_name}</span>
+                        </div>
+                        <div className="flex gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                          <button onClick={() => onSaveAttendance(player.id, 'present', nextSession.id)} className={`p-2 rounded-lg transition-all ${status === 'present' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-300 hover:text-emerald-500'}`}><Trophy size={16} /></button>
+                          <button onClick={() => onSaveAttendance(player.id, 'late', nextSession.id)} className={`p-2 rounded-lg transition-all ${status === 'late' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-300 hover:text-amber-500'}`}><Clock size={16} /></button>
+                          <button onClick={() => onSaveAttendance(player.id, 'absent', nextSession.id)} className={`p-2 rounded-lg transition-all ${status === 'absent' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-300 hover:text-rose-500'}`}><Plus className="rotate-45" size={16} /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 flex justify-center">
+              <button onClick={() => setShowNextSessionSummary(false)} className="px-12 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl hover:scale-105 transition-all">Terminer l'entraînement</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

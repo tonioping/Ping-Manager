@@ -481,7 +481,22 @@ export default function App() {
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 dark:text-slate-400"><Menu /></button>
             </header>
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
-              {view === 'dashboard' && <DashboardView coachProfile={coachProfile} session={session} savedSessions={savedSessions} players={players} cycles={cycles} activeCycleData={null} setView={setView} setCurrentSession={setCurrentSession} setCurrentPlayer={setCurrentPlayer} onSelectGroup={handleSelectGroup} />}
+              {view === 'dashboard' && (
+                <DashboardView 
+                  coachProfile={coachProfile} 
+                  session={session} 
+                  savedSessions={savedSessions} 
+                  players={players} 
+                  cycles={cycles} 
+                  activeCycleData={null} 
+                  setView={setView} 
+                  setCurrentSession={setCurrentSession} 
+                  setCurrentPlayer={setCurrentPlayer} 
+                  onSelectGroup={handleSelectGroup}
+                  attendance={attendance}
+                  onSaveAttendance={saveAttendance}
+                />
+              )}
               
               {view === 'group-detail' && selectedGroupId && (
                 <GroupDetailView 
