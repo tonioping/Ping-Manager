@@ -76,7 +76,12 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_t5', name: "Flip Revers (Chiquita)", phase: "technique", theme: "Flip", duration: 15, description: "Intermédiaire : Sur balle courte, passer sous la balle avec un mouvement circulaire du poignet pour attaquer en rotation.", material: "Balles", level: 'pro' },
 
     // --- DÉPLACEMENT ---
-    { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus on la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
+    { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus sur la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
+    { id: 'ch_d_int1', name: "Déplacement en Triangle", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : RV coin, CD milieu, CD coin. Travail de la liaison et du replacement central.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_d_adv1', name: "Pas Croisés (Grande Amplitude)", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Distribution alternée plein RV / plein CD. Utilisation obligatoire du pas croisé pour couvrir la distance.", material: "Balles", level: 'avance' },
+    { id: 'ch_d_adv2', name: "Déplacement Avant/Arrière", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "1 poussette courte (entrée dans la table), 1 topspin long (sortie de table). Focus sur l'équilibre.", material: "Balles", level: 'avance' },
+    { id: 'ch_d_pro1', name: "Le 'V' (Service / Pivot)", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Simulation service court, puis pivot immédiat pour attaquer en plein CD. Déplacement explosif.", material: "Balles", level: 'pro' },
+    { id: 'ch_d_int2', name: "Incertitude Latérale (2 points)", phase: "deplacement", theme: "Incertitude", duration: 15, description: "Distribution aléatoire sur 2/3 de table. Réaction visuelle et petits pas d'ajustement.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_d1', name: "Le 'Falkenberg' Chinois", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : 1 RV milieu, 1 CD milieu (pivot), 1 CD plein coup droit.", material: "Balles", level: 'pro' },
 
     // --- SCHÉMA DE JEU ---
