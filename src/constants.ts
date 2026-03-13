@@ -58,10 +58,11 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_t_lud4', name: "Le Piège du Coude", phase: "technique", theme: "Placement", duration: 20, description: "Exercice de match : Le serveur doit servir long dans le coude (le 'ventre') de l'adversaire. Si l'adversaire hésite entre CD et RV, point bonus.", material: "Balles", level: 'avance' },
     { id: 'ch_t_lud5', name: "Le Duel des Diagonales", phase: "technique", theme: "Régularité", duration: 20, description: "Match en 11 pts : Uniquement en diagonale. Si un joueur joue en ligne, il perd le point immédiatement. Travail de la tenue de balle et de l'angle.", material: "Balles", level: 'debutant' },
 
-    // --- DÉPLACEMENT ---
-    { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus sur la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
-    { id: 'ch_d_int1', name: "Déplacement en Triangle", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : RV coin, CD milieu, CD coin. Travail de la liaison et du replacement central.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_d_adv1', name: "Pas Croisés (Grande Amplitude)", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Distribution alternée plein RV / plein CD. Utilisation obligatoire du pas croisé pour couvrir la distance.", material: "Balles", level: 'avance' },
+    // --- DÉPLACEMENT (DYNAMIQUES & LUDIQUES) ---
+    { id: 'ch_d_lud1', name: "Le Chasseur de Zones", phase: "deplacement", theme: "Incertitude", duration: 20, description: "Distribution aléatoire sur 3 zones (RV, Milieu, CD). Le joueur doit toucher la zone annoncée par l'entraîneur au dernier moment. 10 réussites pour gagner.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_d_lud2', name: "Navette Latérale Chrono", phase: "deplacement", theme: "Vitesse", duration: 15, description: "Déplacement plein CD / plein RV. Combien de touches en 30 secondes ? Record à battre : 25 touches. Focus sur l'explosivité des appuis.", material: "Chronomètre", level: 'avance' },
+    { id: 'ch_d_lud3', name: "Le Huit Explosif", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Parcours : RV coin -> Milieu (pivot) -> CD coin -> Milieu (RV). Dessine un 8. Le joueur doit toujours viser le revers adverse.", material: "Balles", level: 'pro' },
+    { id: 'ch_d_lud4', name: "L'Essuie-Glace à 3 Points", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence fixe : 1 RV, 1 Milieu, 1 CD. Le joueur doit rester en CD sur les 3 balles (travail de pivot et de décalage).", material: "Balles", level: 'intermediaire' },
     { id: 'ch_d1', name: "Le 'Falkenberg' Chinois", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : 1 RV milieu, 1 CD milieu (pivot), 1 CD plein coup droit.", material: "Balles", level: 'pro' },
 
     // --- SCHÉMA DE JEU (SCÉNARISÉS) ---
