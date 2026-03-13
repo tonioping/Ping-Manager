@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon, X, Umbrella, Palmtree } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon, X, Umbrella, Palmtree, Check, Edit3 } from 'lucide-react';
 import { Cycle, CycleType, Session } from '../types';
 import { CYCLE_TYPES, GROUPS } from '../constants';
 import { getSeasonWeeks, isZoneAHoliday, getMonthName } from '../utils/dateHelper';
@@ -26,8 +26,11 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
   setCycleToDelete,
   handleGenerateCycle,
   isLoadingAI,
-  savedSessions
+  savedSessions,
+  onUpdateCycle
 }) => {
+  const [quickEditWeek, setQuickEditWeek] = useState<{ cycleId: number, weekIdx: number } | null>(null);
+
   const startNewCycle = () => {
     const startYear = new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1;
     const startDate = `${startYear}-09-01`;
@@ -49,24 +52,48 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
     });
   };
 
-  const addSessionToWeek = (weekIdx: number, sessionId: number) => {
+  const addSessionToWeek = (weekIdx: number, sessionId: number, cycleToUpdate?: any) => {
     const session = savedSessions.find(s => s.id === sessionId);
     if (!session) return;
 
-    const newWeeks = [...currentCycle.weeks];
+    const target = cycleToUpdate || currentCycle;
+    const newWeeks = [...target.weeks];
     const week = newWeeks[weekIdx];
     const sessions = week.sessions || [];
     
     if (!sessions.find((s: any) => s.id === sessionId)) {
       newWeeks[weekIdx].sessions = [...sessions, { id: session.id, name: session.name }];
-      setCurrentCycle({ ...currentCycle, weeks: newWeeks });
+      const updated = { ...target, weeks: newWeeks };
+      if (cycleToUpdate) {
+        onUpdateCycle(updated);
+      } else {
+        setCurrentCycle(updated);
+      }
     }
   };
 
-  const removeSessionFromWeek = (weekIdx: number, sessionId: number) => {
-    const newWeeks = [...currentCycle.weeks];
+  const removeSessionFromWeek = (weekIdx: number, sessionId: number, cycleToUpdate?: any) => {
+    const target = cycleToUpdate || currentCycle;
+    const newWeeks = [...target.weeks];
     newWeeks[weekIdx].sessions = (newWeeks[weekIdx].sessions || []).filter((s: any) => s.id !== sessionId);
-    setCurrentCycle({ ...currentCycle, weeks: newWeeks });
+    const updated = { ...target, weeks: newWeeks };
+    if (cycleToUpdate) {
+      onUpdateCycle(updated);
+    } else {
+      setCurrentCycle(updated);
+    }
+  };
+
+  const updateWeekTheme = (weekIdx: number, theme: string, cycleToUpdate?: any) => {
+    const target = cycleToUpdate || currentCycle;
+    const newWeeks = [...target.weeks];
+    newWeeks[weekIdx].theme = theme;
+    const updated = { ...target, weeks: newWeeks };
+    if (cycleToUpdate) {
+      onUpdateCycle(updated);
+    } else {
+      setCurrentCycle(updated);
+    }
   };
 
   return (
@@ -99,7 +126,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                     <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{cycle.name}</h3>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={() => setCurrentCycle(cycle)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all"><ChevronRight size={20}/></button>
+                    <button onClick={() => setCurrentCycle(cycle)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest"><Edit3 size={18}/> Configurer</button>
                     <button onClick={() => setCycleToDelete(cycle.id!)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={20}/></button>
                   </div>
                 </div>
@@ -108,13 +135,16 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                     {cycle.weeks.map((week: any, idx: number) => {
                         const weekDate = new Date(week.date || new Date(new Date(cycle.startDate).getTime() + idx * 7 * 24 * 60 * 60 * 1000));
                         const holiday = isZoneAHoliday(weekDate);
-                        const weekSessions = week?.sessions || (week?.sessionId ? [{ id: week.sessionId, name: week.sessionName }] : []);
                         
                         return (
-                            <div key={idx} className={`p-3 rounded-2xl border transition-all ${holiday ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800' : week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}>
+                            <div 
+                              key={idx} 
+                              onClick={() => setQuickEditWeek({ cycleId: cycle.id!, weekIdx: idx })}
+                              className={`p-3 rounded-2xl border transition-all cursor-pointer hover:scale-105 active:scale-95 relative group/week ${holiday ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800' : week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}
+                            >
                                 <div className="flex justify-between items-start mb-1">
                                   <div className={`text-[9px] font-black uppercase tracking-widest ${holiday ? 'text-amber-500' : week?.theme ? 'text-accent' : 'text-slate-300'}`}>S{idx + 1}</div>
-                                  {holiday && <Umbrella size={10} className="text-amber-400" />}
+                                  {holiday ? <Umbrella size={10} className="text-amber-400" /> : <Plus size={10} className="text-slate-300 opacity-0 group-hover/week:opacity-100 transition-opacity" />}
                                 </div>
                                 <div className={`text-[10px] font-bold truncate ${holiday ? 'text-amber-600' : week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
                                     {holiday ? 'VACANCES' : week?.theme || 'Libre'}
@@ -203,11 +233,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                         <input 
                           type="text" 
                           value={week.theme} 
-                          onChange={e => {
-                            const newWeeks = [...currentCycle.weeks];
-                            newWeeks[idx].theme = e.target.value;
-                            setCurrentCycle({...currentCycle, weeks: newWeeks});
-                          }}
+                          onChange={e => updateWeekTheme(idx, e.target.value)}
                           placeholder={holiday ? "Stage / Repos..." : "Thème technique..."}
                           className="w-full bg-transparent border-none font-black uppercase tracking-tighter text-slate-900 dark:text-white outline-none text-sm"
                         />
@@ -237,6 +263,77 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL D'ÉDITION RAPIDE */}
+      {quickEditWeek && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 dark:border-slate-800">
+            {(() => {
+              const cycle = cycles.find(c => c.id === quickEditWeek.cycleId);
+              const week = cycle?.weeks[quickEditWeek.weekIdx];
+              const weekDate = week ? new Date(week.date) : new Date();
+              const holiday = isZoneAHoliday(weekDate);
+              
+              return (
+                <>
+                  <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900 font-black shadow-lg">S{quickEditWeek.weekIdx + 1}</div>
+                      <div>
+                        <h3 className="text-lg font-black uppercase italic tracking-tighter dark:text-white">{weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</h3>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cycle?.name}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setQuickEditWeek(null)} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-xl transition-all"><X size={20} className="text-slate-400"/></button>
+                  </div>
+                  
+                  <div className="p-8 space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Thème de la semaine</label>
+                      <input 
+                        type="text" 
+                        autoFocus
+                        value={week?.theme || ''} 
+                        onChange={e => updateWeekTheme(quickEditWeek.weekIdx, e.target.value, cycle)}
+                        placeholder={holiday ? "Stage / Repos..." : "Ex: Topspin CD..."}
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold dark:text-white outline-none focus:ring-2 focus:ring-accent/20"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Séances liées</label>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {(week?.sessions || []).map((s: any) => (
+                          <div key={s.id} className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold dark:text-white">
+                            {s.name}
+                            <button onClick={() => removeSessionFromWeek(quickEditWeek.weekIdx, s.id, cycle)} className="text-slate-400 hover:text-red-500"><X size={14}/></button>
+                          </div>
+                        ))}
+                      </div>
+                      <select 
+                        value="" 
+                        onChange={e => addSessionToWeek(quickEditWeek.weekIdx, parseInt(e.target.value), cycle)}
+                        className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold dark:text-white outline-none focus:ring-2 focus:ring-accent/20"
+                      >
+                        <option value="">+ Ajouter une séance</option>
+                        {savedSessions.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex justify-center">
+                    <button onClick={() => setQuickEditWeek(null)} className="px-10 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all flex items-center gap-2">
+                      <Check size={16}/> Terminer
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
