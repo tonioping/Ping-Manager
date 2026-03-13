@@ -38,47 +38,45 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_e3', name: "Coordination Échelle de Rythme", phase: "echauffement", theme: "Motricité", duration: 10, description: "Travail d'appuis rapides au sol. Fréquence maximale des pieds.", material: "Échelle de rythme", level: 'intermediaire' },
     { id: 'ch_beg_e1', name: "L'Équilibre de la Perle", phase: "echauffement", theme: "Habileté", duration: 10, description: "Débutant : Se déplacer en maintenant la balle en équilibre sur la raquette.", material: "Raquette et Balle", level: 'debutant' },
     
-    // --- PANIER DE BALLES (PRÉCISION & DÉFIS) ---
+    // --- PANIER DE BALLES ---
     { id: 'pb_lud1', name: "Le Balayage des Angles", phase: "panier", theme: "Placement", duration: 15, description: "Distribution alternée plein CD / plein RV. Le joueur doit viser les 'petits côtés' (angles sortants). 2 pts par angle touché, 0 pt si la balle passe au milieu.", material: "Panier de balles", level: 'intermediaire' },
     { id: 'pb_lud2', name: "Le Mur du Coude", phase: "panier", theme: "Placement", duration: 15, description: "Distribution rapide. Le joueur doit viser systématiquement le coude de l'entraîneur (zone d'indécision). Objectif : 10 impacts consécutifs.", material: "Panier de balles", level: 'avance' },
     { id: 'pb_lud3', name: "L'Attaque Éclair (3ème balle)", phase: "panier", theme: "Topspin", duration: 20, description: "Simulation service. L'entraîneur donne une balle coupée longue. Le joueur doit toper fort dans une zone cible (fond de table). Bonus si la balle touche la ligne.", material: "Panier de balles + Cibles", level: 'avance' },
     { id: 'pb_lud4', name: "Le Survivant du Multi-balles", phase: "panier", theme: "Réflexes", duration: 10, description: "Distribution aléatoire et très rapide. Le joueur doit tenir 30 secondes sans faire de faute. Travail de la lucidité sous fatigue.", material: "Panier de balles", level: 'pro' },
-    { id: 'pb_lud5', name: "Top CD 'Essuie-Glace'", phase: "panier", theme: "Jeu de jambes", duration: 15, description: "Distribution : 1 CD coin, 1 CD milieu, 1 CD coin. Le joueur doit rester en coup droit tout le long. Focus sur les petits pas.", material: "Panier de balles", level: 'intermediaire' },
 
     // --- RÉGULARITÉ ---
     { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. Objectif : 100 échanges sans faute.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis.", material: "Balles", level: 'avance' },
-    { id: 'ch_r4', name: "Huit de Chiffre (Classique)", phase: "regularite", theme: "Régularité", duration: 20, description: "Joueur A joue toujours en ligne, Joueur B joue toujours en diagonale. Dessine un 8 sur la table.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_r9', name: "Le Papillon (Butterfly)", phase: "regularite", theme: "Placement", duration: 20, description: "Séquence : CD croisé, RV croisé, CD ligne, RV ligne. Travail de précision extrême et de rythme.", material: "Balles", level: 'pro' },
 
-    // --- TECHNIQUE (LUDIQUE & PRÉCIS) ---
+    // --- TECHNIQUE ---
     { id: 'ch_t_lud1', name: "Le Sniper des Coins (Top CD)", phase: "technique", theme: "Topspin", duration: 20, description: "Placer 2 cibles (feuilles A4) dans les coins profonds. Le joueur doit toucher une cible en Top CD. 1 pt par cible, 5 pts si la balle sort de la table après l'impact.", material: "Cibles (A4)", level: 'intermediaire' },
     { id: 'ch_t_lud2', name: "Le Labyrinthe de Poussette", phase: "technique", theme: "Poussette", duration: 15, description: "Jeu de placement : 1 poussette courte (doit rebondir 2 fois), 1 poussette longue (doit toucher la ligne de fond). Si erreur de zone, le point va au partenaire.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_t_lud3', name: "L'Essuie-Glace Infernal (Top RV)", phase: "technique", theme: "Topspin", duration: 20, description: "Top RV alterné : 1 plein Revers, 1 plein Coup Droit (ligne). Le bloqueur ne bouge pas sa raquette, c'est le joueur qui doit viser les angles sortants.", material: "Balles", level: 'avance' },
     { id: 'ch_t_lud4', name: "Le Piège du Coude", phase: "technique", theme: "Placement", duration: 20, description: "Exercice de match : Le serveur doit servir long dans le coude (le 'ventre') de l'adversaire. Si l'adversaire hésite entre CD et RV, point bonus.", material: "Balles", level: 'avance' },
-    { id: 'ch_t_lud5', name: "Le Duel des Diagonales", phase: "technique", theme: "Régularité", duration: 20, description: "Match en 11 pts : Uniquement en diagonale. Si un joueur joue en ligne, il perd le point immédiatement. Travail de la tenue de balle et de l'angle.", material: "Balles", level: 'debutant' },
 
-    // --- DÉPLACEMENT (DYNAMIQUES & LUDIQUES) ---
+    // --- DÉPLACEMENT ---
     { id: 'ch_d_lud1', name: "Le Chasseur de Zones", phase: "deplacement", theme: "Incertitude", duration: 20, description: "Distribution aléatoire sur 3 zones (RV, Milieu, CD). Le joueur doit toucher la zone annoncée par l'entraîneur au dernier moment. 10 réussites pour gagner.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_d_lud2', name: "Navette Latérale Chrono", phase: "deplacement", theme: "Vitesse", duration: 15, description: "Déplacement plein CD / plein RV. Combien de touches en 30 secondes ? Record à battre : 25 touches. Focus sur l'explosivité des appuis.", material: "Chronomètre", level: 'avance' },
     { id: 'ch_d_lud3', name: "Le Huit Explosif", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Parcours : RV coin -> Milieu (pivot) -> CD coin -> Milieu (RV). Dessine un 8. Le joueur doit toujours viser le revers adverse.", material: "Balles", level: 'pro' },
-    { id: 'ch_d_lud4', name: "L'Essuie-Glace à 3 Points", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence fixe : 1 RV, 1 Milieu, 1 CD. Le joueur doit rester en CD sur les 3 balles (travail de pivot et de décalage).", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_d1', name: "Le 'Falkenberg' Chinois", phase: "deplacement", theme: "Jeu de jambes", duration: 20, description: "Séquence : 1 RV milieu, 1 CD milieu (pivot), 1 CD plein coup droit.", material: "Balles", level: 'pro' },
 
-    // --- SCHÉMA DE JEU (SCÉNARISÉS) ---
+    // --- SCHÉMA DE JEU ---
     { id: 'ch_s_lud1', name: "Le Piège de la Remise Courte", phase: "schema", theme: "Remise de service", duration: 20, description: "Service court. Le relanceur doit remettre court (2 rebonds). Si la balle sort, le serveur attaque. Jeu en 7 points : bonus si la remise est 'morte'.", material: "Balles", level: 'avance' },
-    { id: 'ch_s_lud2', name: "La Forteresse du Bloqueur", phase: "schema", theme: "Bloc", duration: 20, description: "Joueur A attaque librement. Joueur B doit bloquer uniquement dans le revers de A. Si B réussit 3 blocs, il gagne le point. Si A trouve un angle sortant, il gagne.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_s_lud3', name: "Le Contre-Attaquant du Pivot", phase: "schema", theme: "Contre-initiative", duration: 20, description: "Service long dans le revers. Le serveur doit pivoter immédiatement pour toper CD. L'adversaire doit bloquer en ligne. Travail de la vitesse de décision.", material: "Balles", level: 'pro' },
-    { id: 'ch_s_lud4', name: "Scénario 'Fin de Set' (9-9)", phase: "schema", theme: "Mental", duration: 15, description: "Matchs commençant à 9-9. Le serveur n'a qu'un seul service. Interdiction de servir long. Focus sur la gestion du stress et le placement de sécurité.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_s_lud5', name: "Le Duel du Premier Top", phase: "schema", theme: "Topspin", duration: 20, description: "Service libre. Le relanceur doit remettre long. Le serveur doit toper la première balle dans une zone précise. Si le top est réussi, le point continue normalement.", material: "Balles", level: 'avance' },
+    { id: 'ch_s_lud6', name: "L'Incertitude du Milieu", phase: "schema", theme: "Placement", duration: 20, description: "Match à thème : Tous les coups d'attaque doivent viser le coude de l'adversaire. Si l'adversaire est forcé de se décaler, point bonus.", material: "Balles", level: 'pro' },
+    { id: 'ch_s_lud4', name: "Scénario 'Fin de Set' (9-9)", phase: "schema", theme: "Mental", duration: 15, description: "Matchs commençant à 9-9. Le serveur n'a qu'un seul service. Interdiction de servir long. Focus sur la gestion du stress.", material: "Balles", level: 'intermediaire' },
 
     // --- MATCHS ---
+    { id: 'ch_m_lud1', name: "Match 'Cibles Vivantes'", phase: "matchs", theme: "Placement", duration: 20, description: "Match classique en 11 pts. Si un joueur gagne le point en touchant un angle de table (cible imaginaire), le point compte double.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_m_lud2', name: "Match 'Service Unique'", phase: "matchs", theme: "Mental", duration: 20, description: "Match classique mais le serveur n'a droit qu'à un seul service (pas de deuxième balle). Travail de la sécurité et de la concentration.", material: "Balles", level: 'avance' },
     { id: 'ch_m1', name: "Match à Handicap (9-9)", phase: "matchs", theme: "Mental", duration: 15, description: "Le set commence à 9-9. Chaque point est crucial.", material: "Balles", level: 'intermediaire' },
 
     // --- COGNITIF ---
     { id: 'ch_c1', name: "Réaction aux Couleurs", phase: "cognitif", theme: "Réflexes", duration: 10, description: "L'entraîneur annonce une couleur juste avant de distribuer.", material: "Plots de couleurs", level: 'debutant' },
 
     // --- RETOUR AU CALME ---
-    { id: 'ch_rc1', name: "Respiration & Étirements 'Zen'", phase: "retour-au-calme", theme: "Retour au calme", duration: 10, description: "Exercices de respiration profonde.", material: "Aucun", level: 'debutant' }
+    { id: 'ch_rc_lud1', name: "Shadow 'Slow Motion'", phase: "retour-au-calme", theme: "Technique", duration: 10, description: "Reproduire les gestes techniques (Top CD, RV) à 10% de la vitesse réelle. Focus sur la perfection du geste et la respiration.", material: "Raquette", level: 'debutant' },
+    { id: 'ch_rc_lud2', name: "Le Défi de la Précision Lente", phase: "retour-au-calme", theme: "Régularité", duration: 10, description: "Échanges en poussette ou bloc très lents. La balle doit être la plus haute possible sans sortir. Objectif : faire redescendre le rythme cardiaque.", material: "Balles", level: 'debutant' },
+    { id: 'ch_rc1', name: "Respiration & Étirements 'Zen'", phase: "retour-au-calme", theme: "Retour au calme", duration: 10, description: "Exercices de respiration profonde et étirements légers des avant-bras et des jambes.", material: "Aucun", level: 'debutant' }
   ];
 };
 
