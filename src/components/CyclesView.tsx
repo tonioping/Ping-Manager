@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon, X, Umbrella, Palmtree, Check, Edit3 } from 'lucide-react';
+import { Calendar, Plus, Trash2, Sparkles, ChevronRight, Target, LayoutGrid, Link as LinkIcon, X, Umbrella, Palmtree, Check, Edit3, Info } from 'lucide-react';
 import { Cycle, CycleType, Session } from '../types';
 import { CYCLE_TYPES, GROUPS } from '../constants';
 import { getSeasonWeeks, isZoneAHoliday, getMonthName } from '../utils/dateHelper';
@@ -147,14 +147,14 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                               <div 
                                 key={idx} 
                                 onClick={() => setQuickEditWeek({ cycleId: cycle.id!, weekIdx: idx })}
-                                className={`p-3 rounded-2xl border transition-all cursor-pointer hover:scale-105 active:scale-95 relative group/week ${holiday ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800' : week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}
+                                className={`p-3 rounded-2xl border transition-all cursor-pointer hover:scale-105 active:scale-95 relative group/week ${holiday ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 border-2' : week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}
                               >
                                   <div className="flex justify-between items-start mb-1">
-                                    <div className={`text-[9px] font-black uppercase tracking-widest ${holiday ? 'text-amber-500' : week?.theme ? 'text-accent' : 'text-slate-300'}`}>S{idx + 1}</div>
-                                    {holiday ? <Umbrella size={10} className="text-amber-400" /> : <Plus size={10} className="text-slate-300 opacity-0 group-hover/week:opacity-100 transition-opacity" />}
+                                    <div className={`text-[9px] font-black uppercase tracking-widest ${holiday ? 'text-amber-600' : week?.theme ? 'text-accent' : 'text-slate-300'}`}>S{idx + 1}</div>
+                                    {holiday ? <Umbrella size={10} className="text-amber-500" /> : <Plus size={10} className="text-slate-300 opacity-0 group-hover/week:opacity-100 transition-opacity" />}
                                   </div>
-                                  <div className={`text-[10px] font-bold truncate ${holiday ? 'text-amber-600' : week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
-                                      {holiday ? 'VACANCES' : week?.theme || 'Libre'}
+                                  <div className={`text-[10px] font-bold truncate ${holiday ? 'text-amber-700' : week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
+                                      {holiday ? holiday.name.toUpperCase() : week?.theme || 'Libre'}
                                   </div>
                                   <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">
                                     {weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
@@ -211,9 +211,9 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                   setCurrentCycle({...currentCycle, startDate: e.target.value, weeks: newWeeks});
                 }} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold dark:text-white"/>
               </div>
-              <div className="p-6 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] border border-amber-100 dark:border-amber-800">
+              <div className="p-6 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-black text-[10px] uppercase tracking-widest mb-2">
-                  <Umbrella size={14}/> Zone A (Saint-Loubès)
+                  <Umbrella size={14}/> Zone A (Bordeaux/Lyon)
                 </div>
                 <p className="text-[9px] text-amber-700 dark:text-amber-500 font-bold leading-relaxed">Les vacances scolaires sont automatiquement marquées pour vous aider à planifier vos stages ou repos.</p>
               </div>
@@ -226,7 +226,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                   const weekDate = new Date(week.date);
                   const holiday = isZoneAHoliday(weekDate);
                   return (
-                    <div key={idx} className={`p-5 rounded-[2rem] flex flex-col gap-4 border transition-all ${holiday ? 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
+                    <div key={idx} className={`p-5 rounded-[2rem] flex flex-col gap-4 border transition-all ${holiday ? 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-300 dark:border-amber-800 border-2' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black shadow-sm text-xs ${holiday ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-900 text-accent'}`}>S{week.weekNumber}</div>
