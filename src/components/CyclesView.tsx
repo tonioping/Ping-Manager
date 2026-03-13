@@ -111,53 +111,61 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 gap-8">
-            {cycles.map(cycle => (
-              <div key={cycle.id} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${CYCLE_TYPES[cycle.type]?.color}`}>
-                            {CYCLE_TYPES[cycle.type]?.label}
-                        </div>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                            <Calendar size={14}/> Saison {new Date(cycle.startDate).getFullYear()}
-                        </p>
-                    </div>
-                    <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{cycle.name}</h3>
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setCurrentCycle(cycle)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest"><Edit3 size={18}/> Configurer</button>
-                    <button onClick={() => setCycleToDelete(cycle.id!)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={20}/></button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
-                    {cycle.weeks.map((week: any, idx: number) => {
-                        const weekDate = new Date(week.date || new Date(new Date(cycle.startDate).getTime() + idx * 7 * 24 * 60 * 60 * 1000));
-                        const holiday = isZoneAHoliday(weekDate);
-                        
-                        return (
-                            <div 
-                              key={idx} 
-                              onClick={() => setQuickEditWeek({ cycleId: cycle.id!, weekIdx: idx })}
-                              className={`p-3 rounded-2xl border transition-all cursor-pointer hover:scale-105 active:scale-95 relative group/week ${holiday ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800' : week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}
-                            >
-                                <div className="flex justify-between items-start mb-1">
-                                  <div className={`text-[9px] font-black uppercase tracking-widest ${holiday ? 'text-amber-500' : week?.theme ? 'text-accent' : 'text-slate-300'}`}>S{idx + 1}</div>
-                                  {holiday ? <Umbrella size={10} className="text-amber-400" /> : <Plus size={10} className="text-slate-300 opacity-0 group-hover/week:opacity-100 transition-opacity" />}
-                                </div>
-                                <div className={`text-[10px] font-bold truncate ${holiday ? 'text-amber-600' : week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
-                                    {holiday ? 'VACANCES' : week?.theme || 'Libre'}
-                                </div>
-                                <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">
-                                  {weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                                </div>
+            {cycles.map(cycle => {
+              const group = GROUPS.find(g => g.id === cycle.group);
+              return (
+                <div key={cycle.id} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${CYCLE_TYPES[cycle.type]?.color}`}>
+                              {CYCLE_TYPES[cycle.type]?.label}
+                          </div>
+                          {group && (
+                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${group.color}`}>
+                                {group.label}
                             </div>
-                        );
-                    })}
+                          )}
+                          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                              <Calendar size={14}/> Saison {new Date(cycle.startDate).getFullYear()}
+                          </p>
+                      </div>
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{cycle.name}</h3>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setCurrentCycle(cycle)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest"><Edit3 size={18}/> Configurer</button>
+                      <button onClick={() => setCycleToDelete(cycle.id!)} className="p-3 bg-slate-50 dark:bg-slate-800 text-slate-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={20}/></button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                      {cycle.weeks.map((week: any, idx: number) => {
+                          const weekDate = new Date(week.date || new Date(new Date(cycle.startDate).getTime() + idx * 7 * 24 * 60 * 60 * 1000));
+                          const holiday = isZoneAHoliday(weekDate);
+                          
+                          return (
+                              <div 
+                                key={idx} 
+                                onClick={() => setQuickEditWeek({ cycleId: cycle.id!, weekIdx: idx })}
+                                className={`p-3 rounded-2xl border transition-all cursor-pointer hover:scale-105 active:scale-95 relative group/week ${holiday ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800' : week?.theme ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 border-dashed'}`}
+                              >
+                                  <div className="flex justify-between items-start mb-1">
+                                    <div className={`text-[9px] font-black uppercase tracking-widest ${holiday ? 'text-amber-500' : week?.theme ? 'text-accent' : 'text-slate-300'}`}>S{idx + 1}</div>
+                                    {holiday ? <Umbrella size={10} className="text-amber-400" /> : <Plus size={10} className="text-slate-300 opacity-0 group-hover/week:opacity-100 transition-opacity" />}
+                                  </div>
+                                  <div className={`text-[10px] font-bold truncate ${holiday ? 'text-amber-600' : week?.theme ? 'text-white dark:text-slate-900' : 'text-slate-300'}`}>
+                                      {holiday ? 'VACANCES' : week?.theme || 'Libre'}
+                                  </div>
+                                  <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">
+                                    {weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : (
