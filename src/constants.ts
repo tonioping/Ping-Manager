@@ -74,6 +74,14 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_t_adv2', name: "Bloc Actif vs Topspin", phase: "technique", theme: "Bloc", duration: 15, description: "Bloquer en avançant sur un topspin adverse pour accélérer la balle. Focus sur le timing et l'inclinaison de raquette.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_t_pro1', name: "Contre-Top à mi-distance", phase: "technique", theme: "Topspin", duration: 20, description: "Réaliser un topspin sur un topspin adverse loin de la table. Focus sur la puissance et la trajectoire bombée.", material: "Balles", level: 'pro' },
     { id: 'ch_t5', name: "Flip Revers (Chiquita)", phase: "technique", theme: "Flip", duration: 15, description: "Intermédiaire : Sur balle courte, passer sous la balle avec un mouvement circulaire du poignet pour attaquer en rotation.", material: "Balles", level: 'pro' },
+    
+    // Nouveaux ajouts techniques
+    { id: 'ch_t_topcd_line', name: "Topspin CD en ligne droite", phase: "technique", theme: "Topspin", duration: 20, description: "Travail de précision : réaliser des topspins CD uniquement en ligne droite. Focus sur l'orientation des épaules.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_t_topcd_active', name: "Topspin CD sur Bloc Actif", phase: "technique", theme: "Topspin", duration: 20, description: "Le partenaire bloque activement. Le joueur doit ajuster son timing et sa distance par rapport à la table.", material: "Balles", level: 'avance' },
+    { id: 'ch_t_toprv_diag', name: "Topspin RV en diagonale", phase: "technique", theme: "Topspin", duration: 20, description: "Régularité en topspin revers croisé. Focus sur l'action de l'avant-bras et du poignet.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_t_toprv_short', name: "Topspin RV sur balle coupée courte", phase: "technique", theme: "Topspin", duration: 15, description: "Démarrage revers sur balle courte. Nécessite une entrée de jambe et une action de poignet très vive.", material: "Balles", level: 'pro' },
+    { id: 'ch_t_pouss_long', name: "Poussette agressive longue", phase: "technique", theme: "Poussette", duration: 15, description: "Poussette rapide et profonde pour gêner l'adversaire. Focus sur l'accélération au moment du contact.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_t_pouss_side', name: "Poussette latérale (Sidespin)", phase: "technique", theme: "Poussette", duration: 15, description: "Ajouter un effet latéral à la poussette pour faire dévier la balle adverse. Travail de la finesse du contact.", material: "Balles", level: 'avance' },
 
     // --- DÉPLACEMENT ---
     { id: 'ch_d_beg1', name: "Pas Chassés de Base", phase: "deplacement", theme: "Jeu de jambes", duration: 15, description: "Déplacement latéral simple entre deux plots. Focus sur la flexion des jambes et le non-croisement des pieds.", material: "Plots", level: 'debutant' },
