@@ -60,8 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobi
             <SidebarItem view="calendar" currentView={view} setView={handleNavigation} icon={CalendarDays} label="Planification Annuelle" />
             <SidebarItem view="sessions" currentView={view} setView={handleNavigation} icon={Plus} label="Créer une séance" />
             <SidebarItem view="history" currentView={view} setView={handleNavigation} icon={BookOpen} label="Historique Séances" />
-            <SidebarItem view="players" currentView={view} setView={handleNavigation} icon={GraduationCap} label="Joueurs & Progression" />
             <SidebarItem view="library" currentView={view} setView={handleNavigation} icon={Filter} label="Bibliothèque Exos" />
+            <SidebarItem view="players" currentView={view} setView={handleNavigation} icon={GraduationCap} label="Joueurs & Progression" />
             <SidebarItem view="settings" currentView={view} setView={handleNavigation} icon={Settings} label="Paramètres" />
           </nav>
           <div className="p-4 border-t border-slate-800 bg-slate-900/20">
