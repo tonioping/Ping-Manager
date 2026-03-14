@@ -21,11 +21,11 @@ export const isZoneAHoliday = (date: Date) => {
   d.setHours(12, 0, 0, 0);
   const time = d.getTime();
   
-  // Vacances Zone A 2026 - Correction des index de mois (Octobre = 9, Novembre = 10)
+  // Vacances Zone A 2026 - Dates ajustées
   const holidays = [
     // Fin de saison 2025-2026
     { name: 'Hiver', start: new Date(2026, 1, 7), end: new Date(2026, 1, 22) },
-    { name: 'Printemps', start: new Date(2026, 3, 11), end: new Date(2026, 3, 26) },
+    { name: 'Printemps', start: new Date(2026, 3, 4), end: new Date(2026, 3, 19) }, // Du 4 au 20 Avril
     { name: 'Pont Ascension', start: new Date(2026, 4, 14), end: new Date(2026, 4, 17) },
     { name: 'Grandes Vacances', start: new Date(2026, 6, 4), end: new Date(2026, 8, 31) },
     
