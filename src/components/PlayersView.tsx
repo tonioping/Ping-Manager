@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock, BarChart as BarChartIcon, FileText } from 'lucide-react';
+import { Plus, ArrowRight, User, Activity, TrendingUp, Save, GraduationCap, Trash2, Sword, Circle, Hand, Trophy, AlertTriangle, Users, History, LineChart as LineChartIcon, Clock, BarChart as BarChartIcon, FileText, Info } from 'lucide-react';
 // @ts-ignore
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, Legend, Cell } from 'recharts';
 import { Player, PlayerEvaluation, Skill, Attendance, Session, Exercise } from '../types';
@@ -57,6 +57,7 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
             const sessionMinutes = Object.values(session.exercises).flat().reduce((sum, ex) => sum + (ex?.duration || 0), 0);
             totalMinutes += sessionMinutes;
             
+            // Un match est compté si la séance contient des exercices dans la phase 'matchs'
             if (session.exercises['matchs'] && session.exercises['matchs'].length > 0) {
                 matchCount++;
             }
@@ -168,11 +169,12 @@ export const PlayersView: React.FC<PlayersViewProps> = React.memo(({
                 {/* Graphique de Statistiques par Joueur */}
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-                        <div>
+                        <div className="flex items-center gap-2">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <BarChartIcon size={14} className="text-accent" /> 
                                 {filterGroup === 'all' ? 'Top 10 Activité Club' : `Activité : ${GROUPS.find(g => g.id === filterGroup)?.label}`}
                             </h3>
+                            <InfoBubble content="Le nombre de matchs est calculé automatiquement : il compte les séances 'avec matchs' (phase rose) auxquelles le joueur a participé." position="right" />
                         </div>
                         <div className="flex gap-4">
                             <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
