@@ -42,16 +42,26 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_e6', name: "Déplacements en Étoile", phase: "echauffement", theme: "Vitesse", duration: 10, description: "Placer 5 balles en étoile. Le joueur doit aller toucher chaque balle et revenir au centre en pas chassés le plus vite possible.", material: "5 Balles", level: 'intermediaire' },
     { id: 'ch_e7', name: "Réveil Musculaire Spécifique", phase: "echauffement", theme: "Physique", duration: 10, description: "Fentes latérales, gainage dynamique et montées de genoux. Focus sur les muscles sollicités au ping (cuisses, sangle abdominale).", material: "Aucun", level: 'avance' },
     
+    // --- RÉGULARITÉ ---
+    { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. Objectif : 100 échanges sans faute.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis.", material: "Balles", level: 'avance' },
+    { id: 'ch_r3', name: "CD/RV Alterné (1-1)", phase: "regularite", theme: "Coordination", duration: 15, description: "Alterner un coup droit et un revers sur le même point de la table. Focus sur la transition et le placement de la raquette.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_r4', name: "Le Triangle de Précision", phase: "regularite", theme: "Placement", duration: 20, description: "Séquence : CD croisé, CD milieu (coude), CD ligne. Le partenaire bloque passivement.", material: "Balles", level: 'avance' },
+    { id: 'ch_r5', name: "Bloc Actif vs Topspin", phase: "regularite", theme: "Bloc", duration: 15, description: "Le bloqueur doit diriger la balle activement pour faire travailler le topspineur. Travail du contrôle de balle.", material: "Balles", level: 'avance' },
+    { id: 'ch_r6', name: "Poussette Longue Diagonale", phase: "regularite", theme: "Poussette", duration: 15, description: "Échanges en poussette coupée longue dans la diagonale. La balle doit rester basse et profonde.", material: "Balles", level: 'debutant' },
+    { id: 'ch_r7', name: "Contre-Top Mi-distance", phase: "regularite", theme: "Topspin", duration: 20, description: "Les deux joueurs s'écartent de la table et échangent en topspin sur topspin. Focus sur la trajectoire courbe.", material: "Balles", level: 'pro' },
+    { id: 'ch_r8', name: "Le '8' Tactique (Croisé/Ligne)", phase: "regularite", theme: "Placement", duration: 20, description: "Un joueur joue systématiquement croisé, l'autre joue systématiquement ligne. Travail de lecture et de placement.", material: "Balles", level: 'intermediaire' },
+    { id: 'ch_r9', name: "Le Papillon (Butterfly)", phase: "regularite", theme: "Placement", duration: 20, description: "Séquence : CD croisé, RV croisé, CD ligne, RV ligne. Travail de précision extrême et de rythme.", material: "Balles", level: 'pro' },
+    { id: 'ch_r10', name: "Alternance Coude/Plein CD", phase: "regularite", theme: "Incertitude", duration: 15, description: "Le partenaire distribue aléatoirement soit dans le coude, soit plein coup droit. Le joueur doit s'ajuster.", material: "Balles", level: 'avance' },
+    { id: 'ch_r11', name: "Bloc RV vs Top Aléatoire", phase: "regularite", theme: "Bloc", duration: 15, description: "Le topspineur change de zone librement. Le bloqueur doit rester en revers et s'orienter vers la balle.", material: "Balles", level: 'avance' },
+    { id: 'ch_r12', name: "Défense Coupée vs Topspin", phase: "regularite", theme: "Habileté", duration: 20, description: "Un joueur défend en coupe loin de la table, l'autre topspin en régularité. Travail de la sensibilité.", material: "Balles", level: 'avance' },
+    { id: 'ch_r13', name: "Vitesse de Bras RV-RV", phase: "regularite", theme: "Revers (RV)", duration: 10, description: "Échanges très rapides en revers sur revers. Focus sur le relâchement du poignet et la vitesse d'exécution.", material: "Balles", level: 'pro' },
+
     // --- PANIER DE BALLES ---
     { id: 'pb_lud1', name: "Le Balayage des Angles", phase: "panier", theme: "Placement", duration: 15, description: "Distribution alternée plein CD / plein RV. Le joueur doit viser les 'petits côtés' (angles sortants). 2 pts par angle touché, 0 pt si la balle passe au milieu.", material: "Panier de balles", level: 'intermediaire' },
     { id: 'pb_lud2', name: "Le Mur du Coude", phase: "panier", theme: "Placement", duration: 15, description: "Distribution rapide. Le joueur doit viser systématiquement le coude de l'entraîneur (zone d'indécision). Objectif : 10 impacts consécutifs.", material: "Panier de balles", level: 'avance' },
     { id: 'pb_lud3', name: "L'Attaque Éclair (3ème balle)", phase: "panier", theme: "Topspin", duration: 20, description: "Simulation service. L'entraîneur donne une balle coupée longue. Le joueur doit toper fort dans une zone cible (fond de table). Bonus si la balle touche la ligne.", material: "Panier de balles + Cibles", level: 'avance' },
     { id: 'pb_lud4', name: "Le Survivant du Multi-balles", phase: "panier", theme: "Réflexes", duration: 10, description: "Distribution aléatoire et très rapide. Le joueur doit tenir 30 secondes sans faire de faute. Travail de la lucidité sous fatigue.", material: "Panier de balles", level: 'pro' },
-
-    // --- RÉGULARITÉ ---
-    { id: 'ch_r1', name: "100 Balles CD - Zéro Faute", phase: "regularite", theme: "Coup Droit (CD)", duration: 15, description: "Échanges en diagonale CD. Objectif : 100 échanges sans faute.", material: "Balles", level: 'intermediaire' },
-    { id: 'ch_r2', name: "Bloc RV vs Topspin CD", phase: "regularite", theme: "Bloc", duration: 15, description: "Un joueur topspin en CD sur le revers adverse. Le bloqueur doit rester précis.", material: "Balles", level: 'avance' },
-    { id: 'ch_r9', name: "Le Papillon (Butterfly)", phase: "regularite", theme: "Placement", duration: 20, description: "Séquence : CD croisé, RV croisé, CD ligne, RV ligne. Travail de précision extrême et de rythme.", material: "Balles", level: 'pro' },
 
     // --- TECHNIQUE ---
     { id: 'ch_t_lud1', name: "Le Sniper des Coins (Top CD)", phase: "technique", theme: "Topspin", duration: 20, description: "Placer 2 cibles (feuilles A4) dans les coins profonds. Le joueur doit toucher une cible en Top CD. 1 pt par cible, 5 pts si la balle sort de la table après l'impact.", material: "Cibles (A4)", level: 'intermediaire' },
@@ -74,7 +84,7 @@ const generateExercises = (): Exercise[] => {
     { id: 'ch_m_lud2', name: "Match 'Service Unique'", phase: "matchs", theme: "Mental", duration: 20, description: "Match classique mais le serveur n'a droit qu'à un seul service (pas de deuxième balle). Travail de la sécurité et de la concentration.", material: "Balles", level: 'avance' },
     { id: 'ch_m1', name: "Match à Handicap (9-9)", phase: "matchs", theme: "Mental", duration: 15, description: "Le set commence à 9-9. Chaque point est crucial.", material: "Balles", level: 'intermediaire' },
 
-    // --- COGNITIF (NOUVEAUX EXERCICES) ---
+    // --- COGNITIF ---
     { id: 'ch_c1', name: "Réaction aux Couleurs", phase: "cognitif", theme: "Réflexes", duration: 10, description: "L'entraîneur annonce une couleur juste avant de distribuer.", material: "Plots de couleurs", level: 'debutant' },
     { id: 'ch_c2', name: "Calcul Mental en Échange", phase: "cognitif", theme: "Multitâche", duration: 15, description: "Pendant un échange de régularité, l'entraîneur donne un calcul simple (ex: 5+3). Le joueur doit donner la réponse avant de toucher la balle suivante.", material: "Balles", level: 'intermediaire' },
     { id: 'ch_c3', name: "Le Signal Sonore Directionnel", phase: "cognitif", theme: "Réaction", duration: 10, description: "Le joueur est de dos. Au signal sonore (clap), il se retourne et doit bloquer une balle envoyée aléatoirement.", material: "Balles", level: 'avance' },
