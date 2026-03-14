@@ -21,7 +21,7 @@ export const isZoneAHoliday = (date: Date) => {
   d.setHours(12, 0, 0, 0);
   const time = d.getTime();
   
-  // Vacances Zone A 2026 - Dates ajustées pour finir le dimanche (évite la 3ème semaine fantôme)
+  // Vacances Zone A 2026 - Correction des index de mois (Octobre = 9, Novembre = 10)
   const holidays = [
     // Fin de saison 2025-2026
     { name: 'Hiver', start: new Date(2026, 1, 7), end: new Date(2026, 1, 22) },
@@ -30,11 +30,11 @@ export const isZoneAHoliday = (date: Date) => {
     { name: 'Grandes Vacances', start: new Date(2026, 6, 4), end: new Date(2026, 8, 31) },
     
     // Début de saison 2026-2027
-    { name: 'Toussaint', start: new Date(2026, 9, 17), end: new Date(2026, 11, 1) },
+    { name: 'Toussaint', start: new Date(2026, 9, 17), end: new Date(2026, 10, 1) },
     { name: 'Noël', start: new Date(2026, 11, 19), end: new Date(2027, 0, 3) },
     
     // Rappel 2025
-    { name: 'Toussaint 25', start: new Date(2025, 9, 18), end: new Date(2025, 11, 2) },
+    { name: 'Toussaint 25', start: new Date(2025, 9, 18), end: new Date(2025, 10, 2) },
     { name: 'Noël 25', start: new Date(2025, 11, 20), end: new Date(2026, 0, 4) },
   ];
 
