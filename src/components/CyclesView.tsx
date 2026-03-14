@@ -96,6 +96,16 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
     }
   };
 
+  const formatWeekRange = (startDate: Date) => {
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    
+    const startStr = startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    const endStr = endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    
+    return `${startStr} - ${endStr}`;
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-20">
       {!currentCycle ? (
@@ -138,7 +148,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                       {cycle.weeks.map((week: any, idx: number) => {
                           const weekDate = new Date(week.date || new Date(new Date(cycle.startDate).getTime() + idx * 7 * 24 * 60 * 60 * 1000));
                           const holiday = isZoneAHoliday(weekDate);
@@ -157,7 +167,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                                       {holiday ? holiday.name.toUpperCase() : week?.theme || 'Libre'}
                                   </div>
                                   <div className="text-[8px] font-bold text-slate-400 uppercase mt-1">
-                                    {weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                    {formatWeekRange(weekDate)}
                                   </div>
                               </div>
                           );
@@ -231,7 +241,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-black shadow-sm text-xs ${holiday ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-900 text-accent'}`}>S{week.weekNumber}</div>
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{formatWeekRange(weekDate)}</span>
                             <span className="text-[8px] font-black text-slate-500 uppercase">{getMonthName(weekDate)}</span>
                           </div>
                         </div>
@@ -291,7 +301,7 @@ export const CyclesView: React.FC<CyclesViewProps> = ({
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900 font-black shadow-lg">S{quickEditWeek.weekIdx + 1}</div>
                       <div>
-                        <h3 className="text-lg font-black uppercase italic tracking-tighter dark:text-white">{weekDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</h3>
+                        <h3 className="text-lg font-black uppercase italic tracking-tighter dark:text-white">{formatWeekRange(weekDate)}</h3>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cycle?.name}</p>
                       </div>
                     </div>
