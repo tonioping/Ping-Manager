@@ -72,14 +72,16 @@ export default function App() {
         { data: cyclesData },
         { data: evalsData },
         { data: profileData },
-        { data: attendanceData }
+        { data: attendanceData },
+        { data: customExercisesData }
       ] = await Promise.all([
         supabase.from('players').select('*').eq('user_id', userId),
         supabase.from('sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('cycles').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         supabase.from('player_evaluations').select('*').eq('user_id', userId),
         supabase.from('profiles').select('*').eq('id', userId).single(),
-        supabase.from('attendance').select('*').eq('user_id', userId)
+        supabase.from('attendance').select('*').eq('user_id', userId),
+        supabase.from('exercises').select('*').eq('user_id', userId)
       ]);
 
       if (playersData) setPlayers(playersData);
@@ -87,6 +89,12 @@ export default function App() {
       if (cyclesData) setCycles(cyclesData.map(c => ({ ...c, startDate: c.start_date })));
       if (evalsData) setPlayerEvals(evalsData);
       if (attendanceData) setAttendance(attendanceData);
+      if (customExercisesData) {
+        setExercises(prev => {
+          const system = prev.filter(e => !e.user_id);
+          return [...system, ...customExercisesData];
+        });
+      }
       if (profileData) setCoachProfile({ 
         name: profileData.full_name || '', 
         club: profileData.club_name || '', 
@@ -119,6 +127,7 @@ export default function App() {
         setCycles([]);
         setPlayerEvals([]);
         setAttendance([]);
+        setExercises(INITIAL_EXERCISES);
       }
     });
 
@@ -136,6 +145,48 @@ export default function App() {
     setShowAuth(false);
     showToast("Mode Démo activé !");
   }, [showToast]);
+
+  const saveExercise = useCallback(async (exercise: Exercise) => {
+    if (session && !isDemoMode) {
+      const { data, error } = await supabase
+        .from('exercises')
+        .upsert({ ...exercise, user_id: session.user.id })
+        .select()
+        .single();
+      
+      if (error) {
+        showToast(`Erreur : ${error.message}`, "error");
+        return;
+      }
+
+      if (data) {
+        setExercises(prev => {
+          const exists = prev.find(e => e.id === data.id);
+          if (exists) return prev.map(e => e.id === data.id ? data : e);
+          return [...prev, data];
+        });
+      }
+    } else {
+      setExercises(prev => {
+        const exists = prev.find(e => e.id === exercise.id);
+        if (exists) return prev.map(e => e.id === exercise.id ? exercise : e);
+        return [...prev, exercise];
+      });
+    }
+    showToast("Exercice enregistré !");
+  }, [session, isDemoMode, showToast]);
+
+  const deleteExercise = useCallback(async (id: string) => {
+    if (session && !isDemoMode) {
+      const { error } = await supabase.from('exercises').delete().eq('id', id);
+      if (error) {
+        showToast("Erreur lors de la suppression", "error");
+        return;
+      }
+    }
+    setExercises(prev => prev.filter(e => e.id !== id));
+    showToast("Exercice supprimé");
+  }, [session, isDemoMode, showToast]);
 
   const saveSession = useCallback(async () => {
     if (!currentSession.name.trim()) {
@@ -510,7 +561,13 @@ export default function App() {
                 />
               )}
 
-              {view === 'library' && <LibraryView exercises={exercises} />}
+              {view === 'library' && (
+                <LibraryView 
+                  exercises={exercises} 
+                  onSaveExercise={saveExercise}
+                  onDeleteExercise={deleteExercise}
+                />
+              )}
 
               {view === 'sessions' && (
                   <div className="space-y-4">
