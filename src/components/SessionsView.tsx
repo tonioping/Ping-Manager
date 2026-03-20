@@ -37,6 +37,7 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
   const [showAttendance, setShowAttendance] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPhase, setFilterPhase] = useState<string>('all');
+  const [filterLevel, setFilterLevel] = useState<string>('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
   const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
 
@@ -45,9 +46,10 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
       const matchesSearch = ex.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            ex.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPhase = filterPhase === 'all' || ex.phase === filterPhase;
-      return matchesSearch && matchesPhase;
+      const matchesLevel = filterLevel === 'all' || ex.level === filterLevel;
+      return matchesSearch && matchesPhase && matchesLevel;
     });
-  }, [exercises, searchTerm, filterPhase]);
+  }, [exercises, searchTerm, filterPhase, filterLevel]);
 
   const sessionPlayers = useMemo(() => {
     if (!currentSession.group) return players;
@@ -129,14 +131,24 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-accent/20 dark:text-white"
             />
           </div>
-          <select 
-            value={filterPhase} 
-            onChange={(e) => setFilterPhase(e.target.value)}
-            className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[10px] font-black uppercase tracking-widest outline-none dark:text-white"
-          >
-            <option value="all">Toutes les phases</option>
-            {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-          </select>
+          <div className="grid grid-cols-2 gap-2">
+            <select 
+              value={filterPhase} 
+              onChange={(e) => setFilterPhase(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-widest outline-none dark:text-white"
+            >
+              <option value="all">Phases</option>
+              {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+            <select 
+              value={filterLevel} 
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-widest outline-none dark:text-white"
+            >
+              <option value="all">Niveaux</option>
+              {LEVELS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
