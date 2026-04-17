@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { 
   Plus, Target, Calendar as CalendarIcon, 
   Clock, Zap, ChevronRight, PlayCircle, Lightbulb,
-  Rocket, TrendingUp as ProgressIcon, GraduationCap, Globe, Activity, Trophy, ListChecks, BookOpen, Users, CheckCircle
+  Rocket, TrendingUp as ProgressIcon, GraduationCap, Globe, Activity, Trophy, ListChecks, BookOpen, Users, CheckCircle, Copy
 } from 'lucide-react';
 import { Session, Cycle, Player, CoachProfile, View, Attendance } from '../types';
 import { GROUPS, INITIAL_EXERCISES, PHASES } from '../constants';
@@ -34,7 +34,8 @@ export const DashboardView: React.FC<any> = React.memo(({
   setCurrentPlayer,
   onSelectGroup,
   attendance,
-  onSaveAttendance
+  onSaveAttendance,
+  onDuplicateSession
 }) => {
   const [selectedSessionForModal, setSelectedSessionForModal] = useState<Session | null>(null);
 
@@ -43,14 +44,12 @@ export const DashboardView: React.FC<any> = React.memo(({
       now.setHours(0, 0, 0, 0);
       
       return GROUPS.map(group => {
-          // Trouver la prochaine séance pour ce groupe
           const groupSessions = savedSessions
             .filter(s => s.group === group.id && new Date(s.date) >= now)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           
           const nextGroupSession = groupSessions[0];
 
-          // Trouver le cycle actif
           const activeCycle = [...cycles]
             .filter(c => c.group === group.id && c.startDate)
             .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
@@ -80,7 +79,6 @@ export const DashboardView: React.FC<any> = React.memo(({
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12 px-2 md:px-0">
-      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-visible relative">
         <div className="flex items-center gap-6">
           <FashionLogo />
@@ -98,7 +96,6 @@ export const DashboardView: React.FC<any> = React.memo(({
         </div>
       </div>
 
-      {/* SECTION GROUPES & PROCHAINES SÉANCES */}
       <div className="space-y-6">
           <div className="flex items-center justify-between px-4">
               <div className="flex items-center gap-3">
@@ -123,7 +120,6 @@ export const DashboardView: React.FC<any> = React.memo(({
                       </div>
                       
                       <div className="flex-1 space-y-6">
-                        {/* PROCHAINE SÉANCE DU GROUPE */}
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700">
                             <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
                                 <CalendarIcon size={12} className="text-accent" /> Prochaine séance
@@ -151,7 +147,6 @@ export const DashboardView: React.FC<any> = React.memo(({
                             )}
                         </div>
 
-                        {/* PROGRESSION DU CYCLE */}
                         {group.activeData && (
                             <div className="px-2 space-y-2">
                                 <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
@@ -169,7 +164,6 @@ export const DashboardView: React.FC<any> = React.memo(({
           </div>
       </div>
 
-      {/* RACCOURCIS RAPIDES */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Bibliothèque', sub: `${INITIAL_EXERCISES.length} fiches`, icon: Lightbulb, view: 'library', color: 'indigo' },
@@ -184,7 +178,6 @@ export const DashboardView: React.FC<any> = React.memo(({
         ))}
       </div>
 
-      {/* MODAL RÉSUMÉ & APPEL (RÉUTILISABLE) */}
       {selectedSessionForModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col">
@@ -198,11 +191,19 @@ export const DashboardView: React.FC<any> = React.memo(({
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{new Date(selectedSessionForModal.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedSessionForModal(null)} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm"><Plus className="rotate-45 text-slate-400" size={24}/></button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { onDuplicateSession(selectedSessionForModal); setSelectedSessionForModal(null); }} 
+                  className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm text-slate-400 hover:text-accent"
+                  title="Dupliquer cette séance"
+                >
+                  <Copy size={24}/>
+                </button>
+                <button onClick={() => setSelectedSessionForModal(null)} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm"><Plus className="rotate-45 text-slate-400" size={24}/></button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-12 custom-scrollbar">
-              {/* Résumé Technique */}
               <div className="space-y-8">
                 <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
                   <Target size={14} className="text-accent" /> Contenu de la séance
@@ -231,7 +232,6 @@ export const DashboardView: React.FC<any> = React.memo(({
                 </div>
               </div>
 
-              {/* Appel des joueurs */}
               <div className="space-y-8">
                 <h4 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
                   <CheckCircle size={14} className="text-emerald-500" /> Faire l'appel

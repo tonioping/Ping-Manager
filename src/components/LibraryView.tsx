@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, Clock, Box, Info, ChevronRight, Tag, Wrench, BarChart, Plus, Edit3, Trash2, X, Save } from 'lucide-react';
 import { Exercise, PhaseId, ExerciseLevel } from '../types';
 import { PHASES, THEMES, LEVELS } from '../constants';
@@ -14,13 +14,23 @@ interface LibraryViewProps {
 
 export const LibraryView: React.FC<LibraryViewProps> = ({ exercises, onSaveExercise, onDeleteExercise }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPhase, setSelectedPhase] = useState<string>('all');
-  const [selectedTheme, setSelectedTheme] = useState<string>('all');
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('all');
+  
+  // Chargement initial des filtres depuis le localStorage
+  const [selectedPhase, setSelectedPhase] = useState<string>(() => localStorage.getItem('lib_filter_phase') || 'all');
+  const [selectedTheme, setSelectedTheme] = useState<string>(() => localStorage.getItem('lib_filter_theme') || 'all');
+  const [selectedLevel, setSelectedLevel] = useState<string>(() => localStorage.getItem('lib_filter_level') || 'all');
+  const [selectedMaterial, setSelectedMaterial] = useState<string>(() => localStorage.getItem('lib_filter_material') || 'all');
   
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Sauvegarde des filtres lors de chaque changement
+  useEffect(() => {
+    localStorage.setItem('lib_filter_phase', selectedPhase);
+    localStorage.setItem('lib_filter_theme', selectedTheme);
+    localStorage.setItem('lib_filter_level', selectedLevel);
+    localStorage.setItem('lib_filter_material', selectedMaterial);
+  }, [selectedPhase, selectedTheme, selectedLevel, selectedMaterial]);
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => {
@@ -70,6 +80,14 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises, onSaveExerc
     }
   };
 
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedPhase('all');
+    setSelectedTheme('all');
+    setSelectedLevel('all');
+    setSelectedMaterial('all');
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -89,7 +107,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises, onSaveExerc
         </button>
       </div>
 
-      {/* FILTRES AVANCÉS */}
       <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -154,7 +171,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises, onSaveExerc
         </div>
       </div>
 
-      {/* GRILLE D'EXERCICES */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {filteredExercises.map(ex => (
           <div key={ex.id} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all group flex flex-col relative">
@@ -207,7 +223,6 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises, onSaveExerc
         ))}
       </div>
 
-      {/* MODAL D'ÉDITION */}
       {showModal && editingExercise && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 dark:border-slate-800">
@@ -314,7 +329,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({ exercises, onSaveExerc
           <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Aucun exercice trouvé</h3>
           <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">Ajustez vos filtres ou créez un nouvel exercice.</p>
           <button 
-            onClick={() => { setSearchTerm(''); setSelectedPhase('all'); setSelectedTheme('all'); setSelectedLevel('all'); setSelectedMaterial('all'); }}
+            onClick={resetFilters}
             className="mt-8 px-8 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:scale-105 transition-all shadow-xl"
           >
             Réinitialiser les filtres

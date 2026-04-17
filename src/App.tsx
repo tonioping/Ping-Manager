@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { X, CheckCircle, AlertCircle, Loader2, Menu, Target, Printer } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader2, Menu, Target, Printer, Download, Copy } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { SessionsView } from './components/SessionsView';
@@ -12,6 +12,7 @@ import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
 import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance } from './types';
 import { suggestExercises, generateCyclePlan } from './services/geminiService';
+import { exportSessionsToCSV, exportCyclesToCSV, exportEvaluationsToCSV } from './utils/csvHelper';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
   <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
@@ -236,6 +237,18 @@ export default function App() {
     
     showToast("Séance enregistrée avec succès !");
   }, [currentSession, session, isDemoMode, showToast]);
+
+  const duplicateSession = useCallback((sessionToDuplicate: Session) => {
+    const duplicated: Session = {
+      ...sessionToDuplicate,
+      id: 0, // Reset ID to trigger a new save
+      name: `${sessionToDuplicate.name} (Copie)`,
+      date: new Date().toISOString().split('T')[0]
+    };
+    setCurrentSession(duplicated);
+    setView('sessions');
+    showToast("Séance dupliquée ! N'oubliez pas de l'enregistrer.");
+  }, [showToast]);
 
   const saveAttendance = useCallback(async (playerId: string, status: 'present' | 'absent' | 'late', sessionId?: number) => {
     const targetSessionId = sessionId || currentSession.id;
@@ -492,7 +505,6 @@ export default function App() {
     if (sessionId) {
       const sess = savedSessions.find(s => s.id === sessionId);
       if (sess) {
-        // On force le lien avec le groupe si manquant
         setCurrentSession({
           ...sess,
           group: sess.group || selectedGroupId || undefined
@@ -546,6 +558,7 @@ export default function App() {
                   onSelectGroup={handleSelectGroup}
                   attendance={attendance}
                   onSaveAttendance={saveAttendance}
+                  onDuplicateSession={duplicateSession}
                 />
               )}
               
@@ -574,7 +587,12 @@ export default function App() {
                       <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-4">
                           <div className="flex items-center gap-4">
                               <h2 className="text-xl font-black italic uppercase dark:text-white">Mode Édition</h2>
-                              {currentSession.id && currentSession.id !== 0 && <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Printer size={14}/> Imprimer</button>}
+                              {currentSession.id && currentSession.id !== 0 && (
+                                <div className="flex gap-2">
+                                  <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Printer size={14}/> Imprimer</button>
+                                  <button onClick={() => duplicateSession(currentSession)} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Copy size={14}/> Dupliquer</button>
+                                </div>
+                              )}
                           </div>
                           <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
                       </div>
@@ -594,40 +612,59 @@ export default function App() {
                   </div>
               )}
               {view === 'calendar' && (
-                <CyclesView 
-                  cycles={cycles} 
-                  currentCycle={currentCycle} 
-                  setCurrentCycle={setCurrentCycle} 
-                  saveCycle={saveCycle} 
-                  setCycleToDelete={deleteCycle} 
-                  handleGenerateCycle={handleGenerateCycle} 
-                  isLoadingAI={isLoadingAI} 
-                  dateInputRef={dateInputRef} 
-                  showCalendarPicker={() => dateInputRef.current?.showPicker()} 
-                  savedSessions={savedSessions} 
-                  onUpdateCycle={updateCycle} 
-                />
+                <div className="space-y-6">
+                  <div className="flex justify-end px-4">
+                    <button onClick={() => exportCyclesToCSV(cycles)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-all">
+                      <Download size={14} className="text-accent" /> Exporter Cycles (CSV)
+                    </button>
+                  </div>
+                  <CyclesView 
+                    cycles={cycles} 
+                    currentCycle={currentCycle} 
+                    setCurrentCycle={setCurrentCycle} 
+                    saveCycle={saveCycle} 
+                    setCycleToDelete={deleteCycle} 
+                    handleGenerateCycle={handleGenerateCycle} 
+                    isLoadingAI={isLoadingAI} 
+                    dateInputRef={dateInputRef} 
+                    showCalendarPicker={() => dateInputRef.current?.showPicker()} 
+                    savedSessions={savedSessions} 
+                    onUpdateCycle={updateCycle} 
+                  />
+                </div>
               )}
               {view === 'players' && (
-                <PlayersView 
-                  players={players} 
-                  currentPlayer={currentPlayer} 
-                  setCurrentPlayer={setCurrentPlayer} 
-                  newPlayerMode={newPlayerMode} 
-                  setNewPlayerMode={setNewPlayerMode} 
-                  savePlayer={savePlayer} 
-                  deletePlayer={deletePlayer} 
-                  playerEvals={playerEvals} 
-                  saveEvaluation={saveEvaluation} 
-                  loadPlayerEvaluations={() => {}} 
-                  attendance={attendance}
-                  sessions={savedSessions}
-                />
+                <div className="space-y-6">
+                  <div className="flex justify-end px-4">
+                    <button onClick={() => exportEvaluationsToCSV(playerEvals, players)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-all">
+                      <Download size={14} className="text-accent" /> Exporter Évaluations (CSV)
+                    </button>
+                  </div>
+                  <PlayersView 
+                    players={players} 
+                    currentPlayer={currentPlayer} 
+                    setCurrentPlayer={setCurrentPlayer} 
+                    newPlayerMode={newPlayerMode} 
+                    setNewPlayerMode={setNewPlayerMode} 
+                    savePlayer={savePlayer} 
+                    deletePlayer={deletePlayer} 
+                    playerEvals={playerEvals} 
+                    saveEvaluation={saveEvaluation} 
+                    loadPlayerEvaluations={() => {}} 
+                    attendance={attendance}
+                    sessions={savedSessions}
+                  />
+                </div>
               )}
               
               {view === 'history' && (
                   <div className="max-w-4xl mx-auto space-y-6">
-                      <h2 className="text-3xl font-black italic uppercase tracking-tighter dark:text-white">Historique des séances</h2>
+                      <div className="flex justify-between items-center">
+                        <h2 className="text-3xl font-black italic uppercase tracking-tighter dark:text-white">Historique des séances</h2>
+                        <button onClick={() => exportSessionsToCSV(savedSessions)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-all">
+                          <Download size={14} className="text-accent" /> Exporter Historique (CSV)
+                        </button>
+                      </div>
                       <div className="grid gap-4">
                           {savedSessions.length === 0 ? (
                               <div className="bg-white dark:bg-slate-900 p-12 rounded-[2.5rem] text-center border-2 border-dashed border-slate-100 dark:border-slate-800">
@@ -640,7 +677,10 @@ export default function App() {
                                           <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-lg group-hover:text-accent transition-colors">{s.name}</h3>
                                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</p>
                                       </div>
-                                      <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all">Charger</button>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => duplicateSession(s)} className="p-2 text-slate-400 hover:text-accent transition-all" title="Dupliquer"><Copy size={18}/></button>
+                                        <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all">Charger</button>
+                                      </div>
                                   </div>
                               ))
                           )}
