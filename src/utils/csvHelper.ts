@@ -5,7 +5,7 @@ export const exportPlayersToCSV = (players: Player[]) => {
   const headers = ['Prénom', 'Nom', 'Niveau', 'Groupe', 'Main', 'Prise', 'Bois', 'Dernier Changement Matériel'];
   const rows = players.map(p => [p.first_name, p.last_name, p.level, p.group || '', p.hand || '', p.grip || '', p.blade || '', p.last_equipment_change || '']);
   const csvContent = [headers.join(';'), ...rows.map(row => row.map(cell => `"${cell}"`).join(';'))].join('\n');
-  const downloadCSV(csvContent, `export_joueurs_${new Date().toISOString().split('T')[0]}.csv`);
+  downloadCSV(csvContent, `export_joueurs_${new Date().toISOString().split('T')[0]}.csv`);
 };
 
 export const exportSessionsToCSV = (sessions: Session[]) => {
