@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Key, Save, ShieldCheck, Sparkles, ExternalLink, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Key, Save, ShieldCheck, Sparkles, ExternalLink, CheckCircle2, AlertCircle, Loader2, RefreshCcw, HelpCircle } from 'lucide-react';
 import { suggestExercises } from '../services/geminiService';
 
 interface SettingsViewProps {
@@ -23,24 +23,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
 
     setTestStatus('loading');
     try {
-      // On fait un test simple avec un nom de séance bidon
       await suggestExercises(tempKey, "Test de connexion", []);
       setTestStatus('success');
-      onSaveApiKey(tempKey); // On sauvegarde automatiquement si ça marche
+      onSaveApiKey(tempKey);
     } catch (err: any) {
       setTestStatus('error');
       setErrorMessage(err.message || 'Clé invalide ou erreur réseau.');
     }
   };
 
+  const handleReset = () => {
+    setTempKey('');
+    setTestStatus('idle');
+    onSaveApiKey('');
+  };
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+    <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-12">
       <div>
         <h2 className="text-4xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">
           Paramètres <span className="text-accent">IA</span>
         </h2>
         <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
-          Configurez votre assistant personnel
+          Gestion de votre assistant Gemini
         </p>
       </div>
 
@@ -66,9 +71,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center gap-2 px-2">
-            <Key size={16} className="text-accent" />
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clé API Google Gemini</label>
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <Key size={16} className="text-accent" />
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clé API Google Gemini</label>
+            </div>
+            {apiKey && (
+              <button onClick={handleReset} className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:underline flex items-center gap-1">
+                <RefreshCcw size={10} /> Effacer la clé
+              </button>
+            )}
           </div>
           <div className="relative">
             <input 
@@ -97,8 +109,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
           )}
 
           {testStatus === 'error' && (
-            <div className="flex items-center gap-2 text-rose-500 text-[10px] font-black uppercase tracking-widest px-2 animate-fade-in">
-              <AlertCircle size={14} /> {errorMessage}
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2 text-rose-500 text-[10px] font-black uppercase tracking-widest px-2">
+                <AlertCircle size={14} /> {errorMessage}
+              </div>
+              <div className="p-4 bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/20">
+                <h4 className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <HelpCircle size={12} /> Pourquoi ma clé est rejetée ?
+                </h4>
+                <ul className="text-[10px] text-rose-500/80 space-y-1 list-disc ml-4 font-bold uppercase tracking-tight">
+                  <li>La clé a été mal copiée (vérifiez les espaces)</li>
+                  <li>La clé est trop récente (attendez 1 minute)</li>
+                  <li>Votre compte Google Cloud a des restrictions</li>
+                </ul>
+              </div>
             </div>
           )}
 
