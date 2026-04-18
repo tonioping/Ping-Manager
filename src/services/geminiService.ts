@@ -1,16 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { Exercise } from "../types";
 
-// Récupération de la clé API injectée par Vite
-const getApiKey = () => {
-  const key = process.env.API_KEY;
-  if (!key || key === "undefined") {
-    console.warn("[Gemini] Clé API manquante dans l'environnement.");
-    return null;
-  }
-  return key;
-};
-
 const cleanJSONResponse = (text: string) => {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
@@ -24,8 +14,7 @@ const cleanJSONResponse = (text: string) => {
   }
 };
 
-export const suggestExercises = async (sessionName: string, existingExercises: string[]): Promise<any[]> => {
-  const apiKey = getApiKey();
+export const suggestExercises = async (apiKey: string, sessionName: string, existingExercises: string[]): Promise<any[]> => {
   if (!apiKey) throw new Error("Clé API manquante");
 
   const genAI = new GoogleGenAI(apiKey);
@@ -45,8 +34,7 @@ export const suggestExercises = async (sessionName: string, existingExercises: s
   }
 };
 
-export const autoFillSessionFromLibrary = async (description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
-  const apiKey = getApiKey();
+export const autoFillSessionFromLibrary = async (apiKey: string, description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
   if (!apiKey) throw new Error("Clé API manquante");
 
   if (library.length === 0) {
@@ -75,8 +63,7 @@ export const autoFillSessionFromLibrary = async (description: string, library: E
   }
 };
 
-export const generateCyclePlan = async (promptText: string, numWeeks: number): Promise<any> => {
-  const apiKey = getApiKey();
+export const generateCyclePlan = async (apiKey: string, promptText: string, numWeeks: number): Promise<any> => {
   if (!apiKey) throw new Error("Clé API manquante");
 
   const genAI = new GoogleGenAI(apiKey);

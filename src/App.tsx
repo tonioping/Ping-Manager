@@ -7,6 +7,7 @@ import { CyclesView } from './components/CyclesView';
 import { PlayersView } from './components/PlayersView';
 import { GroupDetailView } from './components/GroupDetailView';
 import { LibraryView } from './components/LibraryView';
+import { SettingsView } from './components/SettingsView';
 import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
@@ -47,7 +48,10 @@ export default function App() {
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [newPlayerMode, setNewPlayerMode] = useState(false);
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
-  const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: '', model: 'gemini-3-flash-preview' });
+  
+  const [aiApiKey, setAiApiKey] = useState(() => localStorage.getItem('pingmanager_gemini_key') || '');
+  const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: aiApiKey, model: 'gemini-3-flash-preview' });
+  
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +60,12 @@ export default function App() {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   }, []);
+
+  const handleSaveApiKey = (key: string) => {
+    setAiApiKey(key);
+    localStorage.setItem('pingmanager_gemini_key', key);
+    showToast("Configuration IA enregistrée !");
+  };
 
   const toggleDarkMode = useCallback(() => {
     setDarkMode(prev => {
@@ -427,6 +437,11 @@ export default function App() {
   }, [session, isDemoMode, showToast]);
 
   const handleSuggestExercises = useCallback(async () => {
+    if (!aiApiKey) {
+      showToast("Veuillez configurer votre clé API dans les Paramètres", "error");
+      setView('settings');
+      return;
+    }
     if (!currentSession.name) {
       showToast("Donnez un titre à la séance pour guider l'IA", "error");
       return;
@@ -434,7 +449,7 @@ export default function App() {
     setIsLoadingAI(true);
     try {
       const existing = (Object.values(currentSession.exercises) as Exercise[][]).flat().map((e: Exercise) => e.name);
-      const suggestions = await suggestExercises(currentSession.name, existing);
+      const suggestions = await suggestExercises(aiApiKey, currentSession.name, existing);
       
       if (suggestions.length > 0) {
         const firstSuggested = suggestions[0];
@@ -464,9 +479,14 @@ export default function App() {
     } finally {
       setIsLoadingAI(false);
     }
-  }, [currentSession.name, currentSession.exercises, showToast]);
+  }, [aiApiKey, currentSession.name, currentSession.exercises, showToast]);
 
   const handleAutoFillSession = useCallback(async (description: string) => {
+    if (!aiApiKey) {
+      showToast("Veuillez configurer votre clé API dans les Paramètres", "error");
+      setView('settings');
+      return;
+    }
     if (!description.trim()) return;
     
     if (exercises.length === 0) {
@@ -476,7 +496,7 @@ export default function App() {
 
     setIsLoadingAI(true);
     try {
-      const result = await autoFillSessionFromLibrary(description, exercises);
+      const result = await autoFillSessionFromLibrary(aiApiKey, description, exercises);
       
       if (Object.keys(result).length === 0) {
         showToast("L'IA n'a pas trouvé d'exercices correspondants dans votre bibliothèque.", "error");
@@ -512,16 +532,21 @@ export default function App() {
     } finally {
       setIsLoadingAI(false);
     }
-  }, [exercises, showToast]);
+  }, [aiApiKey, exercises, showToast]);
 
   const handleGenerateCycle = useCallback(async () => {
+    if (!aiApiKey) {
+      showToast("Veuillez configurer votre clé API dans les Paramètres", "error");
+      setView('settings');
+      return;
+    }
     if (!currentCycle || !currentCycle.name) {
         showToast("L'IA a besoin d'un objectif de cycle (Nom du cycle)", "error");
         return;
     }
     setIsLoadingAI(true);
     try {
-        const plan = await generateCyclePlan(currentCycle.name, currentCycle.weeks.length);
+        const plan = await generateCyclePlan(aiApiKey, currentCycle.name, currentCycle.weeks.length);
         if (plan && plan.weeks) {
             const updatedWeeks = currentCycle.weeks.map((w, i) => {
                 const aiWeek = plan.weeks.find(aw => aw.weekNumber === w.weekNumber);
@@ -535,7 +560,7 @@ export default function App() {
     } finally {
         setIsLoadingAI(false);
     }
-  }, [currentCycle, showToast]);
+  }, [aiApiKey, currentCycle, showToast]);
 
   const totalDuration = useMemo(() => {
     const flattenedExercises = Object.values(currentSession.exercises).flat() as Exercise[];
@@ -627,6 +652,13 @@ export default function App() {
                   exercises={exercises} 
                   onSaveExercise={saveExercise}
                   onDeleteExercise={deleteExercise}
+                />
+              )}
+
+              {view === 'settings' && (
+                <SettingsView 
+                  apiKey={aiApiKey}
+                  onSaveApiKey={handleSaveApiKey}
                 />
               )}
 
