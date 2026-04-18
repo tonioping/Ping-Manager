@@ -1,6 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 import { Exercise } from "../types";
 
+// Fonction de validation stricte de la clé
+const validateKey = (key: string | undefined | null): string | null => {
+  if (!key || key === "undefined" || key.trim() === "") return null;
+  return key.trim();
+};
+
 const cleanJSONResponse = (text: string) => {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
@@ -15,9 +21,10 @@ const cleanJSONResponse = (text: string) => {
 };
 
 export const suggestExercises = async (apiKey: string, sessionName: string, existingExercises: string[]): Promise<any[]> => {
-  if (!apiKey) throw new Error("Clé API manquante");
+  const validKey = validateKey(apiKey);
+  if (!validKey) throw new Error("Clé API non configurée ou invalide");
 
-  const genAI = new GoogleGenAI(apiKey);
+  const genAI = new GoogleGenAI(validKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `Tu es un expert en tennis de table. Suggère 3 exercices pour la séance "${sessionName}". 
@@ -28,21 +35,19 @@ export const suggestExercises = async (apiKey: string, sessionName: string, exis
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return cleanJSONResponse(response.text()) || [];
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Gemini] Erreur suggestion:", error);
-    throw error;
+    throw new Error(error.message || "Erreur de communication avec l'IA");
   }
 };
 
 export const autoFillSessionFromLibrary = async (apiKey: string, description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
-  if (!apiKey) throw new Error("Clé API manquante");
+  const validKey = validateKey(apiKey);
+  if (!validKey) throw new Error("Clé API non configurée");
 
-  if (library.length === 0) {
-    console.warn("[Gemini] La bibliothèque est vide.");
-    return {};
-  }
+  if (library.length === 0) return {};
 
-  const genAI = new GoogleGenAI(apiKey);
+  const genAI = new GoogleGenAI(validKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   
   const simplifiedLibrary = library.map(ex => ({ id: ex.id, name: ex.name, phase: ex.phase }));
@@ -57,16 +62,17 @@ export const autoFillSessionFromLibrary = async (apiKey: string, description: st
     const response = await result.response;
     const data = cleanJSONResponse(response.text());
     return data || {};
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Gemini] Erreur auto-fill:", error);
-    throw error;
+    throw new Error(error.message || "Erreur de communication avec l'IA");
   }
 };
 
 export const generateCyclePlan = async (apiKey: string, promptText: string, numWeeks: number): Promise<any> => {
-  if (!apiKey) throw new Error("Clé API manquante");
+  const validKey = validateKey(apiKey);
+  if (!validKey) throw new Error("Clé API non configurée");
 
-  const genAI = new GoogleGenAI(apiKey);
+  const genAI = new GoogleGenAI(validKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
   const prompt = `Crée un plan de ${numWeeks} semaines pour: "${promptText}".
@@ -76,8 +82,8 @@ export const generateCyclePlan = async (apiKey: string, promptText: string, numW
     const result = await model.generateContent(prompt);
     const response = await result.response;
     return cleanJSONResponse(response.text()) || { weeks: [] };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Gemini] Erreur cycle:", error);
-    throw error;
+    throw new Error(error.message || "Erreur de communication avec l'IA");
   }
 };
