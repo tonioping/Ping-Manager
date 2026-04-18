@@ -103,7 +103,6 @@ export const suggestExercises = async (sessionName: string, existingExercises: s
 export const autoFillSessionFromLibrary = async (description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
   const config = getAIConfig();
   
-  // On simplifie la bibliothèque pour ne pas saturer le contexte
   const simplifiedLibrary = library.map(ex => ({
     id: ex.id,
     name: ex.name,
@@ -119,13 +118,28 @@ export const autoFillSessionFromLibrary = async (description: string, library: E
     L'utilisateur veut créer une séance avec cette description : "${description}"
     
     Sélectionne les exercices les plus pertinents de la bibliothèque pour remplir les différentes phases de la séance.
-    Tu dois retourner un objet JSON où les clés sont les identifiants de phase (echauffement, regularite, technique, panier, deplacement, schema, matchs, cognitif, retour-au-calme) et les valeurs sont des TABLEAUX d'identifiants (ID) d'exercices issus de la bibliothèque fournie.
+    Tu dois retourner un objet JSON où les clés sont les identifiants de phase et les valeurs sont des TABLEAUX d'identifiants (ID) d'exercices issus de la bibliothèque fournie.
     
     N'utilise QUE les IDs présents dans la liste fournie. Ne crée pas de nouveaux exercices.
   `;
 
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      echauffement: { type: Type.ARRAY, items: { type: Type.STRING } },
+      regularite: { type: Type.ARRAY, items: { type: Type.STRING } },
+      technique: { type: Type.ARRAY, items: { type: Type.STRING } },
+      panier: { type: Type.ARRAY, items: { type: Type.STRING } },
+      deplacement: { type: Type.ARRAY, items: { type: Type.STRING } },
+      schema: { type: Type.ARRAY, items: { type: Type.STRING } },
+      matchs: { type: Type.ARRAY, items: { type: Type.STRING } },
+      cognitif: { type: Type.ARRAY, items: { type: Type.STRING } },
+      'retour-au-calme': { type: Type.ARRAY, items: { type: Type.STRING } },
+    }
+  };
+
   try {
-    const text = await callGoogle(config, prompt, undefined, DEFAULT_GOOGLE_MODEL);
+    const text = await callGoogle(config, prompt, schema, DEFAULT_GOOGLE_MODEL);
     const jsonString = cleanJSON(text);
     return JSON.parse(jsonString);
   } catch (error) {
