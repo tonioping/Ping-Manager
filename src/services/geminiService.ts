@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIConfig } from "../types";
+import { AIConfig, Exercise, PhaseId } from "../types";
 
 const DEFAULT_GOOGLE_MODEL = 'gemini-3-flash-preview';
 const COMPLEX_GOOGLE_MODEL = 'gemini-3-pro-preview';
@@ -97,6 +97,40 @@ export const suggestExercises = async (sessionName: string, existingExercises: s
   } catch (error) {
     console.error("Error suggesting exercises:", error);
     return [];
+  }
+};
+
+export const autoFillSessionFromLibrary = async (description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
+  const config = getAIConfig();
+  
+  // On simplifie la bibliothèque pour ne pas saturer le contexte
+  const simplifiedLibrary = library.map(ex => ({
+    id: ex.id,
+    name: ex.name,
+    phase: ex.phase,
+    theme: ex.theme,
+    level: ex.level
+  }));
+
+  const prompt = `
+    Tu es un expert entraîneur de tennis de table. 
+    Voici ma bibliothèque d'exercices disponibles : ${JSON.stringify(simplifiedLibrary)}
+    
+    L'utilisateur veut créer une séance avec cette description : "${description}"
+    
+    Sélectionne les exercices les plus pertinents de la bibliothèque pour remplir les différentes phases de la séance.
+    Tu dois retourner un objet JSON où les clés sont les identifiants de phase (echauffement, regularite, technique, panier, deplacement, schema, matchs, cognitif, retour-au-calme) et les valeurs sont des TABLEAUX d'identifiants (ID) d'exercices issus de la bibliothèque fournie.
+    
+    N'utilise QUE les IDs présents dans la liste fournie. Ne crée pas de nouveaux exercices.
+  `;
+
+  try {
+    const text = await callGoogle(config, prompt, undefined, DEFAULT_GOOGLE_MODEL);
+    const jsonString = cleanJSON(text);
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error auto-filling session:", error);
+    return {};
   }
 };
 

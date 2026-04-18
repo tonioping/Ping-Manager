@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Plus, Trash2, Clock, Sparkles, Users, Calendar, Target, 
-  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart, List, CheckCircle
+  Search, Filter, GripVertical, ChevronRight, Info, X, BookOpen, BarChart, List, CheckCircle, Wand2
 } from 'lucide-react';
 import { Exercise, Session, PhaseId, Player, Attendance } from '../types';
 import { PHASES, THEMES, LEVELS, GROUPS } from '../constants';
@@ -13,6 +13,7 @@ interface SessionsViewProps {
   setCurrentSession: React.Dispatch<React.SetStateAction<Session>>;
   saveSession: () => void;
   handleSuggestExercises: () => void;
+  handleAutoFill: (description: string) => void;
   isLoadingAI: boolean;
   totalDuration: number;
   players: Player[];
@@ -27,6 +28,7 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
   setCurrentSession,
   saveSession,
   handleSuggestExercises,
+  handleAutoFill,
   isLoadingAI,
   totalDuration,
   players,
@@ -39,7 +41,8 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
   const [filterPhase, setFilterPhase] = useState<string>('all');
   const [filterLevel, setFilterLevel] = useState<string>('all');
   const [draggedExercise, setDraggedExercise] = useState<Exercise | null>(null);
-  const [activeTab, setActiveTab] = useState<'library' | 'session'>('session');
+  const [activeTab, setActiveTab] = useState<'library' | 'session' | 'ai'>('session');
+  const [aiDescription, setAiDescription] = useState('');
 
   const filteredExercises = useMemo(() => {
     return exercises.filter(ex => {
@@ -114,81 +117,132 @@ export const SessionsView: React.FC<SessionsViewProps> = ({
         >
           <BookOpen size={16} /> Bibliothèque
         </button>
+        <button 
+          onClick={() => setActiveTab('ai')}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ai' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}
+        >
+          <Wand2 size={16} /> Assistant
+        </button>
       </div>
 
-      <div className={`${activeTab === 'library' ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 xl:w-96 flex-col bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden h-[60vh] lg:h-full`}>
-        <div className="p-6 border-b border-slate-50 dark:border-slate-800 space-y-4">
-          <h3 className="text-lg font-black uppercase italic tracking-tighter dark:text-white flex items-center gap-2">
-            <BookOpen size={18} className="text-accent"/> Bibliothèque
-          </h3>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input 
-              type="text" 
-              placeholder="Rechercher..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-accent/20 dark:text-white"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <select 
-              value={filterPhase} 
-              onChange={(e) => setFilterPhase(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-widest outline-none dark:text-white"
-            >
-              <option value="all">Phases</option>
-              {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
-            <select 
-              value={filterLevel} 
-              onChange={(e) => setFilterLevel(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-widest outline-none dark:text-white"
-            >
-              <option value="all">Niveaux</option>
-              {LEVELS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-          {filteredExercises.map(ex => (
-            <div 
-              key={ex.id}
-              draggable
-              onDragStart={(e) => onDragStart(e, ex)}
-              className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 cursor-grab active:cursor-grabbing hover:border-accent/30 hover:shadow-md transition-all group"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-black text-[11px] uppercase tracking-tight dark:text-white group-hover:text-accent transition-colors">{ex.name}</span>
-                <button onClick={() => addExercise(ex.phase, ex)} className="p-1 text-slate-300 hover:text-accent transition-colors">
-                  <Plus size={18} />
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 font-medium leading-relaxed">
-                {ex.description}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                <div className={`px-2 py-0.5 rounded-md flex items-center gap-1 ${LEVELS.find(l => l.id === ex.level)?.color || 'bg-slate-100'}`}>
-                  <BarChart size={8} /> {LEVELS.find(l => l.id === ex.level)?.label}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock size={10} /> {ex.duration} min
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+      <div className={`${activeTab !== 'session' ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 xl:w-96 flex-col bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden h-[60vh] lg:h-full`}>
+        <div className="flex border-b border-slate-50 dark:border-slate-800">
           <button 
-            onClick={handleSuggestExercises} 
-            disabled={isLoadingAI}
-            className="w-full py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all disabled:opacity-50"
+            onClick={() => setActiveTab('library')}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'library' ? 'border-accent text-slate-900 dark:text-white' : 'border-transparent text-slate-400'}`}
           >
-            <Sparkles size={14} className={isLoadingAI ? 'animate-spin' : ''}/> {isLoadingAI ? 'Génération...' : 'Suggérer avec IA'}
+            Bibliothèque
+          </button>
+          <button 
+            onClick={() => setActiveTab('ai')}
+            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'ai' ? 'border-accent text-slate-900 dark:text-white' : 'border-transparent text-slate-400'}`}
+          >
+            Assistant IA
           </button>
         </div>
+
+        {activeTab === 'library' ? (
+          <>
+            <div className="p-6 border-b border-slate-50 dark:border-slate-800 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input 
+                  type="text" 
+                  placeholder="Rechercher..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-accent/20 dark:text-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <select 
+                  value={filterPhase} 
+                  onChange={(e) => setFilterPhase(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-widest outline-none dark:text-white"
+                >
+                  <option value="all">Phases</option>
+                  {PHASES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+                <select 
+                  value={filterLevel} 
+                  onChange={(e) => setFilterLevel(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-[9px] font-black uppercase tracking-widest outline-none dark:text-white"
+                >
+                  <option value="all">Niveaux</option>
+                  {LEVELS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              {filteredExercises.map(ex => (
+                <div 
+                  key={ex.id}
+                  draggable
+                  onDragStart={(e) => onDragStart(e, ex)}
+                  className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 cursor-grab active:cursor-grabbing hover:border-accent/30 hover:shadow-md transition-all group"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-black text-[11px] uppercase tracking-tight dark:text-white group-hover:text-accent transition-colors">{ex.name}</span>
+                    <button onClick={() => addExercise(ex.phase, ex)} className="p-1 text-slate-300 hover:text-accent transition-colors">
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 font-medium leading-relaxed">
+                    {ex.description}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    <div className={`px-2 py-0.5 rounded-md flex items-center gap-1 ${LEVELS.find(l => l.id === ex.level)?.color || 'bg-slate-100'}`}>
+                      <BarChart size={8} /> {LEVELS.find(l => l.id === ex.level)?.label}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={10} /> {ex.duration} min
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-accent">
+                <Wand2 size={20} />
+                <h4 className="text-sm font-black uppercase italic tracking-tighter">Assistant Magique</h4>
+              </div>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                Décrivez votre séance, l'IA piochera les meilleurs exercices dans votre bibliothèque.
+              </p>
+              <textarea 
+                value={aiDescription}
+                onChange={(e) => setAiDescription(e.target.value)}
+                placeholder="Ex: Une séance pour des jeunes compétiteurs focus sur le pivot et le topspin revers..."
+                className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-accent/20 dark:text-white min-h-[150px] resize-none"
+              />
+              <button 
+                onClick={() => handleAutoFill(aiDescription)}
+                disabled={isLoadingAI || !aiDescription.trim()}
+                className="w-full py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-xl disabled:opacity-50"
+              >
+                {isLoadingAI ? <Clock className="animate-spin" size={16}/> : <Sparkles size={16}/>}
+                {isLoadingAI ? 'Analyse...' : 'Remplir la séance'}
+              </button>
+            </div>
+
+            <div className="pt-6 border-t border-slate-50 dark:border-slate-800">
+              <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Suggestions rapides</h5>
+              <div className="space-y-2">
+                <button 
+                  onClick={handleSuggestExercises} 
+                  disabled={isLoadingAI}
+                  className="w-full py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all disabled:opacity-50"
+                >
+                  <Sparkles size={14} className={isLoadingAI ? 'animate-spin' : ''}/> {isLoadingAI ? 'Génération...' : 'Inventer avec IA'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={`${activeTab === 'session' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col gap-6 overflow-hidden h-full`}>

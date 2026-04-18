@@ -11,7 +11,7 @@ import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
 import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance } from './types';
-import { suggestExercises, generateCyclePlan } from './services/geminiService';
+import { suggestExercises, generateCyclePlan, autoFillSessionFromLibrary } from './services/geminiService';
 import { exportSessionsToCSV, exportCyclesToCSV, exportEvaluationsToCSV } from './utils/csvHelper';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
@@ -466,6 +466,38 @@ export default function App() {
     }
   }, [currentSession.name, currentSession.exercises, showToast]);
 
+  const handleAutoFillSession = useCallback(async (description: string) => {
+    if (!description.trim()) return;
+    setIsLoadingAI(true);
+    try {
+      const result = await autoFillSessionFromLibrary(description, exercises);
+      
+      const newExercises: Record<PhaseId, Exercise[]> = { ...EMPTY_SESSION.exercises };
+      
+      Object.entries(result).forEach(([phaseId, ids]) => {
+        if (Array.isArray(ids)) {
+          const phaseKey = phaseId as PhaseId;
+          ids.forEach(id => {
+            const found = exercises.find(ex => ex.id === id);
+            if (found) {
+              newExercises[phaseKey] = [...(newExercises[phaseKey] || []), { ...found, instanceId: Date.now() + Math.random() }];
+            }
+          });
+        }
+      });
+
+      setCurrentSession(prev => ({
+        ...prev,
+        exercises: newExercises
+      }));
+      showToast("L'assistant a rempli votre séance !");
+    } catch (err) {
+      showToast("Erreur lors de l'analyse IA", "error");
+    } finally {
+      setIsLoadingAI(false);
+    }
+  }, [exercises, showToast]);
+
   const handleGenerateCycle = useCallback(async () => {
     if (!currentCycle || !currentCycle.name) {
         showToast("L'IA a besoin d'un objectif de cycle (Nom du cycle)", "error");
@@ -602,6 +634,7 @@ export default function App() {
                         setCurrentSession={setCurrentSession} 
                         saveSession={saveSession} 
                         handleSuggestExercises={handleSuggestExercises} 
+                        handleAutoFill={handleAutoFillSession}
                         isLoadingAI={isLoadingAI} 
                         totalDuration={totalDuration}
                         players={players}
