@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-  LayoutDashboard, CalendarDays, Plus, BookOpen, GraduationCap, Filter, CreditCard, Settings, 
-  LogOut, LogIn, CloudOff, User, Sparkles, Target, PlayCircle, Moon, Sun
+  LayoutDashboard, CalendarDays, Plus, BookOpen, GraduationCap, Filter, Settings, 
+  LogOut, LogIn, CloudOff, User, Sparkles, Target, PlayCircle, Moon, Sun, AlertCircle
 } from 'lucide-react';
 import { View, AIConfig } from '../types';
 
@@ -31,9 +31,14 @@ interface SidebarProps {
     isDemoMode?: boolean;
     darkMode: boolean;
     toggleDarkMode: () => void;
+    hasAiKey: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobileMenuOpen, setMobileMenuOpen, session, handleLogout, setShowAuth, aiConfig, isDemoMode, darkMode, toggleDarkMode }) => {
+export const Sidebar: React.FC<SidebarProps> = React.memo(({ 
+  view, setView, mobileMenuOpen, setMobileMenuOpen, session, 
+  handleLogout, setShowAuth, aiConfig, isDemoMode, darkMode, 
+  toggleDarkMode, hasAiKey 
+}) => {
     const handleNavigation = (targetView: View) => {
         setView(targetView);
         if (mobileMenuOpen) setMobileMenuOpen(false);
@@ -74,9 +79,14 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ view, setView, mobi
              ) : (
                 <button onClick={() => { setShowAuth(true); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover transition-colors rounded-lg mb-4 shadow-lg"><LogIn size={16} /> Connexion Cloud</button>
              )}
-             <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-                <div className="flex items-center gap-2 mb-2 text-accent"><Sparkles size={16} /><span className="text-xs font-bold uppercase tracking-wider">AI Powered</span></div>
-                <p className="text-[10px] text-slate-400 leading-relaxed font-medium uppercase tracking-tight">Boosté par Gemini.</p>
+             <div className={`p-4 rounded-xl border ${hasAiKey ? 'bg-emerald-900/10 border-emerald-900/30' : 'bg-amber-900/10 border-amber-900/30'}`}>
+                <div className={`flex items-center gap-2 mb-1 ${hasAiKey ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  {hasAiKey ? <Sparkles size={14} /> : <AlertCircle size={14} />}
+                  <span className="text-[10px] font-black uppercase tracking-wider">Assistant IA</span>
+                </div>
+                <p className="text-[9px] text-slate-400 leading-relaxed font-medium uppercase tracking-tight">
+                  {hasAiKey ? 'Prêt à vous aider.' : 'Clé API à configurer.'}
+                </p>
              </div>
           </div>
         </div>

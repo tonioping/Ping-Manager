@@ -49,7 +49,11 @@ export default function App() {
   const [newPlayerMode, setNewPlayerMode] = useState(false);
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
   
-  const [aiApiKey, setAiApiKey] = useState(() => localStorage.getItem('pingmanager_gemini_key') || '');
+  const [aiApiKey, setAiApiKey] = useState(() => {
+    const saved = localStorage.getItem('pingmanager_gemini_key');
+    return (saved && saved !== "undefined") ? saved : '';
+  });
+  
   const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: aiApiKey, model: 'gemini-3-flash-preview' });
   
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
@@ -62,8 +66,9 @@ export default function App() {
   }, []);
 
   const handleSaveApiKey = (key: string) => {
-    setAiApiKey(key);
-    localStorage.setItem('pingmanager_gemini_key', key);
+    const cleanKey = key.trim();
+    setAiApiKey(cleanKey);
+    localStorage.setItem('pingmanager_gemini_key', cleanKey);
     showToast("Configuration IA enregistrée !");
   };
 
@@ -608,6 +613,7 @@ export default function App() {
             view={view} setView={setView} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen}
             session={session} handleLogout={() => { setIsDemoMode(false); setShowAuth(true); }} setShowAuth={setShowAuth} aiConfig={aiConfig}
             isDemoMode={isDemoMode} darkMode={darkMode} toggleDarkMode={toggleDarkMode}
+            hasAiKey={!!aiApiKey && aiApiKey !== "undefined"}
           />
           <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <header className="lg:hidden bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-4 flex items-center justify-between">
