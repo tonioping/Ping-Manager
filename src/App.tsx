@@ -474,15 +474,23 @@ export default function App() {
       
       const newExercises: Record<PhaseId, Exercise[]> = { ...EMPTY_SESSION.exercises };
       
+      // Mappage flexible des phases (gestion des accents et majuscules)
+      const normalizeKey = (key: string) => key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
       Object.entries(result).forEach(([phaseId, ids]) => {
         if (Array.isArray(ids)) {
-          const phaseKey = phaseId as PhaseId;
-          ids.forEach(id => {
-            const found = exercises.find(ex => ex.id === id);
-            if (found) {
-              newExercises[phaseKey] = [...(newExercises[phaseKey] || []), { ...found, instanceId: Date.now() + Math.random() }];
-            }
-          });
+          const normalizedPhaseId = normalizeKey(phaseId);
+          // On cherche la clé correspondante dans nos PhaseId
+          const phaseKey = Object.keys(EMPTY_SESSION.exercises).find(k => normalizeKey(k) === normalizedPhaseId) as PhaseId;
+          
+          if (phaseKey) {
+            ids.forEach(id => {
+              const found = exercises.find(ex => ex.id === id);
+              if (found) {
+                newExercises[phaseKey] = [...(newExercises[phaseKey] || []), { ...found, instanceId: Date.now() + Math.random() }];
+              }
+            });
+          }
         }
       });
 
