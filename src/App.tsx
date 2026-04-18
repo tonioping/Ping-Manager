@@ -51,10 +51,13 @@ export default function App() {
   
   const [aiApiKey, setAiApiKey] = useState(() => {
     const saved = localStorage.getItem('pingmanager_gemini_key');
-    return (saved && saved !== "undefined") ? saved : '';
+    // Nettoyage immédiat au chargement
+    if (saved === "undefined" || saved === "null") return '';
+    return saved || '';
   });
   
-  const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: aiApiKey, model: 'gemini-3-flash-preview' });
+  // Utilisation de gemini-1.5-flash par défaut
+  const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: aiApiKey, model: 'gemini-1.5-flash' });
   
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -66,7 +69,7 @@ export default function App() {
   }, []);
 
   const handleSaveApiKey = (key: string) => {
-    const cleanKey = key.trim();
+    const cleanKey = key.trim().replace(/["']/g, "");
     setAiApiKey(cleanKey);
     localStorage.setItem('pingmanager_gemini_key', cleanKey);
     showToast("Configuration IA enregistrée !");

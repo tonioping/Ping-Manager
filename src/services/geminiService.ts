@@ -2,15 +2,14 @@ import { GoogleGenAI } from "@google/genai";
 import { Exercise } from "../types";
 
 /**
- * Valide strictement la clé API.
- * Retourne la clé nettoyée ou null si elle est invalide/manquante.
+ * Nettoyage ultra-strict de la clé API
  */
 const getValidKey = (key: string | undefined | null): string | null => {
   if (!key) return null;
-  const trimmed = key.trim();
-  // On ignore les valeurs par défaut ou corrompues
-  if (trimmed === "" || trimmed === "undefined" || trimmed === "null") return null;
-  return trimmed;
+  // Supprime les espaces, les retours à la ligne et les guillemets accidentels
+  const cleaned = key.toString().trim().replace(/["']/g, "");
+  if (cleaned === "" || cleaned === "undefined" || cleaned === "null") return null;
+  return cleaned;
 };
 
 const cleanJSONResponse = (text: string) => {
@@ -21,19 +20,17 @@ const cleanJSONResponse = (text: string) => {
     }
     return JSON.parse(text);
   } catch (e) {
-    console.error("[Gemini] Erreur de parsing JSON. Texte brut:", text);
     return null;
   }
 };
 
 export const suggestExercises = async (apiKey: string, sessionName: string, existingExercises: string[]): Promise<any[]> => {
   const validKey = getValidKey(apiKey);
-  if (!validKey) {
-    throw new Error("Clé API manquante. Allez dans 'Paramètres' pour la configurer.");
-  }
+  if (!validKey) throw new Error("Clé API vide ou invalide.");
 
   try {
     const genAI = new GoogleGenAI(validKey);
+    // Utilisation du modèle le plus stable
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Tu es un expert en tennis de table. Suggère 3 exercices pour la séance "${sessionName}". 
@@ -44,12 +41,10 @@ export const suggestExercises = async (apiKey: string, sessionName: string, exis
     const response = await result.response;
     return cleanJSONResponse(response.text()) || [];
   } catch (error: any) {
-    console.error("[Gemini] Erreur suggestion:", error);
-    // On attrape l'erreur spécifique du SDK pour la rendre plus lisible
-    if (error.message?.includes("API Key")) {
-      throw new Error("La clé API fournie est rejetée par Google. Vérifiez-la dans les Paramètres.");
-    }
-    throw new Error(error.message || "Erreur de communication avec l'IA");
+    // On renvoie l'erreur brute de Google pour comprendre le vrai problème
+    const msg = error.message || "Erreur inconnue";
+    console.error("[Gemini Error]", error);
+    throw new Error(`Google dit : ${msg}`);
   }
 };
 
@@ -57,12 +52,9 @@ export const autoFillSessionFromLibrary = async (apiKey: string, description: st
   const validKey = getValidKey(apiKey);
   if (!validKey) throw new Error("Clé API manquante");
 
-  if (library.length === 0) return {};
-
   try {
     const genAI = new GoogleGenAI(validKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
     const simplifiedLibrary = library.map(ex => ({ id: ex.id, name: ex.name, phase: ex.phase }));
 
     const prompt = `Voici ma bibliothèque d'exercices: ${JSON.stringify(simplifiedLibrary)}
@@ -72,11 +64,9 @@ export const autoFillSessionFromLibrary = async (apiKey: string, description: st
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const data = cleanJSONResponse(response.text());
-    return data || {};
+    return cleanJSONResponse(response.text()) || {};
   } catch (error: any) {
-    console.error("[Gemini] Erreur auto-fill:", error);
-    throw new Error("Impossible d'analyser la bibliothèque avec cette clé API.");
+    throw new Error(`Google dit : ${error.message}`);
   }
 };
 
@@ -86,7 +76,7 @@ export const generateCyclePlan = async (apiKey: string, promptText: string, numW
 
   try {
     const genAI = new GoogleGenAI(validKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Crée un plan de ${numWeeks} semaines pour: "${promptText}".
     Réponds UNIQUEMENT en JSON: {"weeks": [{"weekNumber": 1, "theme": "...", "notes": "..."}]}`;
@@ -95,7 +85,6 @@ export const generateCyclePlan = async (apiKey: string, promptText: string, numW
     const response = await result.response;
     return cleanJSONResponse(response.text()) || { weeks: [] };
   } catch (error: any) {
-    console.error("[Gemini] Erreur cycle:", error);
-    throw new Error("Erreur lors de la génération du cycle. Vérifiez votre clé API.");
+    throw new Error(`Google dit : ${error.message}`);
   }
 };
