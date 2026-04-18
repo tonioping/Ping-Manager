@@ -1,184 +1,108 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, SchemaType } from "@google/genai";
 import { AIConfig, Exercise, PhaseId } from "../types";
 
-const DEFAULT_GOOGLE_MODEL = 'gemini-3-flash-preview';
-const COMPLEX_GOOGLE_MODEL = 'gemini-3-pro-preview';
+const DEFAULT_GOOGLE_MODEL = 'gemini-1.5-flash';
+const COMPLEX_GOOGLE_MODEL = 'gemini-1.5-pro';
 
-const getAIConfig = (): AIConfig => {
-  try {
-    const stored = localStorage.getItem('pingmanager_ai_config');
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error("Error reading AI config", e);
-  }
-  
-  return {
-    provider: 'google',
-    apiKey: process.env.API_KEY || '',
-    model: DEFAULT_GOOGLE_MODEL
-  };
-};
-
-const cleanJSON = (text: string) => {
-  let cleaned = text.trim();
-  cleaned = cleaned.replace(/```json/g, '').replace(/```/g, '');
-  
-  const firstBrace = cleaned.indexOf('{');
-  const firstBracket = cleaned.indexOf('[');
-  
-  let start = -1;
-  if (firstBrace !== -1 && firstBracket !== -1) {
-      start = Math.min(firstBrace, firstBracket);
-  } else if (firstBrace !== -1) {
-      start = firstBrace;
-  } else if (firstBracket !== -1) {
-      start = firstBracket;
-  }
-
-  if (start !== -1) {
-      cleaned = cleaned.substring(start);
-      const lastBrace = cleaned.lastIndexOf('}');
-      const lastBracket = cleaned.lastIndexOf(']');
-      const end = Math.max(lastBrace, lastBracket);
-      if (end !== -1) {
-          cleaned = cleaned.substring(0, end + 1);
-      }
-  }
-  
-  return cleaned;
-};
-
-const callGoogle = async (config: AIConfig, prompt: string, schemaConfig?: any, modelName?: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const model = modelName || config.model || DEFAULT_GOOGLE_MODEL;
-
-  const generateConfig: any = {};
-  if (schemaConfig) {
-    generateConfig.responseMimeType = "application/json";
-    generateConfig.responseSchema = schemaConfig;
-  }
-
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: prompt,
-    config: generateConfig
-  });
-
-  return response.text || "";
+const getApiKey = () => {
+  // Priorité à la clé en variable d'environnement injectée par Vite
+  return (process.env.API_KEY) || "";
 };
 
 export const suggestExercises = async (sessionName: string, existingExercises: string[]): Promise<any[]> => {
-  const config = getAIConfig();
+  const apiKey = getApiKey();
+  if (!apiKey) return [];
+
+  const genAI = new GoogleGenAI(apiKey);
+  const model = genAI.getGenerativeModel({ 
+    model: COMPLEX_GOOGLE_MODEL,
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
+
   const prompt = `
     En te basant sur le titre de la séance d'entraînement "${sessionName}" et les exercices déjà inclus (${existingExercises.join(', ')}), suggère 3 nouveaux exercices de tennis de table créatifs. 
-    Retourne la réponse sous forme de tableau JSON. Chaque objet du tableau doit avoir : "name" (chaîne), "duration" (nombre en minutes), "description" (chaîne), "material" (chaîne), et "theme" (chaîne).
-    `;
+    Retourne un tableau JSON d'objets avec: "name", "duration" (nombre), "description", "material", "theme".
+  `;
 
   try {
-    const schema = {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          duration: { type: Type.INTEGER },
-          description: { type: Type.STRING },
-          material: { type: Type.STRING },
-          theme: { type: Type.STRING },
-        },
-        required: ["name", "duration", "description", "material", "theme"]
-      }
-    };
-    const text = await callGoogle(config, prompt, schema, COMPLEX_GOOGLE_MODEL);
-    const jsonString = cleanJSON(text);
-    return JSON.parse(jsonString);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Error suggesting exercises:", error);
+    console.error("[Gemini] Error suggesting exercises:", error);
     return [];
   }
 };
 
 export const autoFillSessionFromLibrary = async (description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
-  const config = getAIConfig();
+  const apiKey = getApiKey();
+  if (!apiKey) return {};
+
+  const genAI = new GoogleGenAI(apiKey);
+  const model = genAI.getGenerativeModel({ 
+    model: DEFAULT_GOOGLE_MODEL,
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
   
   const simplifiedLibrary = library.map(ex => ({
     id: ex.id,
     name: ex.name,
     phase: ex.phase,
-    theme: ex.theme,
-    level: ex.level
+    theme: ex.theme
   }));
 
   const prompt = `
     Tu es un expert entraîneur de tennis de table. 
-    Voici ma bibliothèque d'exercices disponibles : ${JSON.stringify(simplifiedLibrary)}
+    Voici ma bibliothèque d'exercices : ${JSON.stringify(simplifiedLibrary)}
     
-    L'utilisateur veut créer une séance avec cette description : "${description}"
+    L'utilisateur veut créer une séance : "${description}"
     
-    Sélectionne les exercices les plus pertinents de la bibliothèque pour remplir les différentes phases de la séance.
-    Tu dois retourner un objet JSON où les clés sont les identifiants de phase et les valeurs sont des TABLEAUX d'identifiants (ID) d'exercices issus de la bibliothèque fournie.
+    Sélectionne les exercices les plus pertinents de la bibliothèque pour remplir les phases.
+    Retourne un objet JSON où les clés sont les phases (echauffement, regularite, technique, panier, deplacement, schema, matchs, cognitif, retour-au-calme) et les valeurs sont des tableaux d'IDs d'exercices.
     
-    N'utilise QUE les IDs présents dans la liste fournie. Ne crée pas de nouveaux exercices.
+    IMPORTANT: N'utilise QUE les IDs de la liste fournie.
   `;
 
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      echauffement: { type: Type.ARRAY, items: { type: Type.STRING } },
-      regularite: { type: Type.ARRAY, items: { type: Type.STRING } },
-      technique: { type: Type.ARRAY, items: { type: Type.STRING } },
-      panier: { type: Type.ARRAY, items: { type: Type.STRING } },
-      deplacement: { type: Type.ARRAY, items: { type: Type.STRING } },
-      schema: { type: Type.ARRAY, items: { type: Type.STRING } },
-      matchs: { type: Type.ARRAY, items: { type: Type.STRING } },
-      cognitif: { type: Type.ARRAY, items: { type: Type.STRING } },
-      'retour-au-calme': { type: Type.ARRAY, items: { type: Type.STRING } },
-    }
-  };
-
   try {
-    const text = await callGoogle(config, prompt, schema, DEFAULT_GOOGLE_MODEL);
-    const jsonString = cleanJSON(text);
-    return JSON.parse(jsonString);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Error auto-filling session:", error);
+    console.error("[Gemini] Error auto-filling session:", error);
     return {};
   }
 };
 
 export const generateCyclePlan = async (promptText: string, numWeeks: number): Promise<any> => {
-  const config = getAIConfig();
+  const apiKey = getApiKey();
+  if (!apiKey) return { weeks: [] };
+
+  const genAI = new GoogleGenAI(apiKey);
+  const model = genAI.getGenerativeModel({ 
+    model: COMPLEX_GOOGLE_MODEL,
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
+
   const prompt = `
-        En te basant sur l'objectif suivant pour un cycle d'entraînement de tennis de table : "${promptText}", crée un plan structuré pour ${numWeeks} semaines.
-        Retourne le résultat sous forme d'objet JSON avec une seule clé "weeks", qui est un tableau d'objects. Chaque objet doit avoir "weekNumber", "theme", et "notes".
-    `;
+    Objectif cycle : "${promptText}". Crée un plan pour ${numWeeks} semaines.
+    Retourne un objet JSON avec une clé "weeks" (tableau d'objets avec weekNumber, theme, notes).
+  `;
 
   try {
-    const schema = {
-        type: Type.OBJECT,
-        properties: {
-            weeks: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        weekNumber: { type: Type.INTEGER },
-                        theme: { type: Type.STRING },
-                        notes: { type: Type.STRING }
-                    },
-                    required: ["weekNumber", "theme", "notes"]
-                }
-            }
-        },
-        required: ["weeks"]
-    };
-    const text = await callGoogle(config, prompt, schema, COMPLEX_GOOGLE_MODEL);
-    const jsonString = cleanJSON(text);
-    return JSON.parse(jsonString);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Error generating cycle plan:", error);
+    console.error("[Gemini] Error generating cycle plan:", error);
     return { weeks: [] };
   }
 };
