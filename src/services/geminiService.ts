@@ -1,46 +1,58 @@
 import { GoogleGenAI } from "@google/genai";
 import { Exercise } from "../types";
 
-const getApiKey = () => process.env.API_KEY || "";
+// Récupération de la clé API injectée par Vite
+const getApiKey = () => {
+  const key = process.env.API_KEY;
+  if (!key || key === "undefined") {
+    console.warn("[Gemini] Clé API manquante dans l'environnement.");
+    return null;
+  }
+  return key;
+};
 
-// Fonction utilitaire pour extraire proprement le JSON d'une réponse texte
 const cleanJSONResponse = (text: string) => {
   try {
-    // Supprime les blocs de code markdown si présents
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
     return JSON.parse(text);
   } catch (e) {
-    console.error("[Gemini] Erreur de parsing JSON. Texte reçu:", text);
-    throw new Error("Format de réponse IA invalide");
+    console.error("[Gemini] Erreur de parsing JSON. Texte brut:", text);
+    return null;
   }
 };
 
 export const suggestExercises = async (sessionName: string, existingExercises: string[]): Promise<any[]> => {
   const apiKey = getApiKey();
-  if (!apiKey) return [];
+  if (!apiKey) throw new Error("Clé API manquante");
 
   const genAI = new GoogleGenAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const prompt = `Suggère 3 exercices de tennis de table pour la séance "${sessionName}". 
-  Exercices déjà présents: ${existingExercises.join(', ')}.
-  Réponds UNIQUEMENT avec un tableau JSON d'objets: [{"name": "...", "duration": 15, "description": "...", "material": "...", "theme": "..."}]`;
+  const prompt = `Tu es un expert en tennis de table. Suggère 3 exercices pour la séance "${sessionName}". 
+  Déjà présents: ${existingExercises.join(', ')}.
+  Réponds UNIQUEMENT en JSON: [{"name": "...", "duration": 15, "description": "...", "material": "...", "theme": "..."}]`;
 
   try {
     const result = await model.generateContent(prompt);
-    return cleanJSONResponse(result.response.text());
+    const response = await result.response;
+    return cleanJSONResponse(response.text()) || [];
   } catch (error) {
-    console.error("[Gemini] Error:", error);
-    return [];
+    console.error("[Gemini] Erreur suggestion:", error);
+    throw error;
   }
 };
 
 export const autoFillSessionFromLibrary = async (description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
   const apiKey = getApiKey();
-  if (!apiKey) return {};
+  if (!apiKey) throw new Error("Clé API manquante");
+
+  if (library.length === 0) {
+    console.warn("[Gemini] La bibliothèque est vide.");
+    return {};
+  }
 
   const genAI = new GoogleGenAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -50,35 +62,35 @@ export const autoFillSessionFromLibrary = async (description: string, library: E
   const prompt = `Voici ma bibliothèque d'exercices: ${JSON.stringify(simplifiedLibrary)}
   L'utilisateur veut: "${description}"
   Sélectionne les meilleurs exercices (IDs) pour chaque phase.
-  Réponds UNIQUEMENT avec un objet JSON où les clés sont les phases (echauffement, regularite, technique, panier, deplacement, schema, matchs, cognitif, retour-au-calme) et les valeurs sont des tableaux d'IDs.
-  Exemple: {"technique": ["id1", "id2"], "matchs": ["id3"]}`;
+  Réponds UNIQUEMENT en JSON: {"technique": ["id1"], "matchs": ["id2"]}`;
 
   try {
     const result = await model.generateContent(prompt);
-    const data = cleanJSONResponse(result.response.text());
-    console.log("[Gemini] Plan de séance généré:", data);
-    return data;
+    const response = await result.response;
+    const data = cleanJSONResponse(response.text());
+    return data || {};
   } catch (error) {
-    console.error("[Gemini] Error auto-fill:", error);
-    return {};
+    console.error("[Gemini] Erreur auto-fill:", error);
+    throw error;
   }
 };
 
 export const generateCyclePlan = async (promptText: string, numWeeks: number): Promise<any> => {
   const apiKey = getApiKey();
-  if (!apiKey) return { weeks: [] };
+  if (!apiKey) throw new Error("Clé API manquante");
 
   const genAI = new GoogleGenAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
-  const prompt = `Crée un plan de ${numWeeks} semaines pour l'objectif: "${promptText}".
+  const prompt = `Crée un plan de ${numWeeks} semaines pour: "${promptText}".
   Réponds UNIQUEMENT en JSON: {"weeks": [{"weekNumber": 1, "theme": "...", "notes": "..."}]}`;
 
   try {
     const result = await model.generateContent(prompt);
-    return cleanJSONResponse(result.response.text());
+    const response = await result.response;
+    return cleanJSONResponse(response.text()) || { weeks: [] };
   } catch (error) {
-    console.error("[Gemini] Error cycle:", error);
-    return { weeks: [] };
+    console.error("[Gemini] Erreur cycle:", error);
+    throw error;
   }
 };

@@ -459,8 +459,8 @@ export default function App() {
         }));
         showToast("L'IA a ajouté un exercice à votre séance !");
       }
-    } catch (err) {
-      showToast("Erreur lors de la génération IA", "error");
+    } catch (err: any) {
+      showToast(err.message || "Erreur lors de la génération IA", "error");
     } finally {
       setIsLoadingAI(false);
     }
@@ -468,19 +468,27 @@ export default function App() {
 
   const handleAutoFillSession = useCallback(async (description: string) => {
     if (!description.trim()) return;
+    
+    if (exercises.length === 0) {
+      showToast("Votre bibliothèque est vide. Ajoutez des exercices ou passez en mode Démo.", "error");
+      return;
+    }
+
     setIsLoadingAI(true);
     try {
       const result = await autoFillSessionFromLibrary(description, exercises);
       
+      if (Object.keys(result).length === 0) {
+        showToast("L'IA n'a pas trouvé d'exercices correspondants dans votre bibliothèque.", "error");
+        return;
+      }
+
       const newExercises: Record<PhaseId, Exercise[]> = { ...EMPTY_SESSION.exercises };
-      
-      // Mappage flexible des phases (gestion des accents et majuscules)
       const normalizeKey = (key: string) => key.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
       Object.entries(result).forEach(([phaseId, ids]) => {
         if (Array.isArray(ids)) {
           const normalizedPhaseId = normalizeKey(phaseId);
-          // On cherche la clé correspondante dans nos PhaseId
           const phaseKey = Object.keys(EMPTY_SESSION.exercises).find(k => normalizeKey(k) === normalizedPhaseId) as PhaseId;
           
           if (phaseKey) {
@@ -499,8 +507,8 @@ export default function App() {
         exercises: newExercises
       }));
       showToast("L'assistant a rempli votre séance !");
-    } catch (err) {
-      showToast("Erreur lors de l'analyse IA", "error");
+    } catch (err: any) {
+      showToast(err.message || "Erreur lors de l'analyse IA", "error");
     } finally {
       setIsLoadingAI(false);
     }
@@ -522,8 +530,8 @@ export default function App() {
             setCurrentCycle({ ...currentCycle, weeks: updatedWeeks });
             showToast("Plan de cycle généré par Gemini !");
         }
-    } catch (e) {
-        showToast("Erreur IA Cycle", "error");
+    } catch (e: any) {
+        showToast(e.message || "Erreur IA Cycle", "error");
     } finally {
         setIsLoadingAI(false);
     }
