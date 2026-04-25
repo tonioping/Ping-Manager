@@ -51,12 +51,10 @@ export default function App() {
   
   const [aiApiKey, setAiApiKey] = useState(() => {
     const saved = localStorage.getItem('pingmanager_gemini_key');
-    // Nettoyage immédiat au chargement
     if (saved === "undefined" || saved === "null") return '';
     return saved || '';
   });
   
-  // Utilisation de gemini-1.5-flash par défaut
   const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: aiApiKey, model: 'gemini-1.5-flash' });
   
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
@@ -108,12 +106,25 @@ export default function App() {
       if (cyclesData) setCycles(cyclesData.map(c => ({ ...c, startDate: c.start_date })));
       if (evalsData) setPlayerEvals(evalsData);
       if (attendanceData) setAttendance(attendanceData);
+      
       if (customExercisesData) {
+        const mappedExercises = customExercisesData.map((dbEx: any) => ({
+          id: dbEx.id,
+          name: dbEx.title || dbEx.name,
+          description: dbEx.description,
+          phase: dbEx.category || dbEx.phase,
+          level: dbEx.difficulty || dbEx.level,
+          duration: dbEx.duration,
+          theme: dbEx.focus || dbEx.theme,
+          material: dbEx.material || 'Balles',
+          user_id: dbEx.user_id
+        }));
         setExercises(prev => {
           const system = prev.filter(e => !e.user_id);
-          return [...system, ...customExercisesData];
+          return [...system, ...mappedExercises];
         });
       }
+
       if (profileData) setCoachProfile({ 
         name: profileData.full_name || '', 
         club: profileData.club_name || '', 
@@ -167,9 +178,23 @@ export default function App() {
 
   const saveExercise = useCallback(async (exercise: Exercise) => {
     if (session && !isDemoMode) {
+      // Mapping des champs vers les colonnes réelles de la base de données
+      const dbExercise = {
+        id: exercise.id,
+        user_id: session.user.id,
+        title: exercise.name,
+        description: exercise.description,
+        category: exercise.phase,
+        difficulty: exercise.level,
+        duration: exercise.duration,
+        focus: exercise.theme,
+        // On ne peut pas envoyer 'material' si la colonne n'existe pas encore
+        // mais on envoie les colonnes confirmées par le schéma
+      };
+
       const { data, error } = await supabase
         .from('exercises')
-        .upsert({ ...exercise, user_id: session.user.id })
+        .upsert(dbExercise)
         .select()
         .single();
       
@@ -179,10 +204,21 @@ export default function App() {
       }
 
       if (data) {
+        const mapped = {
+          id: data.id,
+          name: data.title,
+          description: data.description,
+          phase: data.category,
+          level: data.difficulty,
+          duration: data.duration,
+          theme: data.focus,
+          material: exercise.material, // On garde la valeur locale
+          user_id: data.user_id
+        };
         setExercises(prev => {
-          const exists = prev.find(e => e.id === data.id);
-          if (exists) return prev.map(e => e.id === data.id ? data : e);
-          return [...prev, data];
+          const exists = prev.find(e => e.id === mapped.id);
+          if (exists) return prev.map(e => e.id === mapped.id ? mapped : e);
+          return [...prev, mapped];
         });
       }
     } else {
