@@ -86,6 +86,12 @@ const generateExercises = (): Exercise[] => {
     { id: 'tech_beg_game8', name: "Le Défi de la Ligne Blanche", phase: "technique", theme: "Topspin", duration: 15, description: "Le joueur doit toucher la ligne blanche du fond de table. 5 pts par impact direct sur la ligne. Jeu en 20 pts.", material: "Balles", level: 'debutant' },
     { id: 'tech_beg_game9', name: "Le Top-Chrono 30s", phase: "technique", theme: "Topspin", duration: 10, description: "Combien de Top CD réussis sur la table en 30 secondes ? Record du club à battre. Focus sur la régularité rapide.", material: "Chronomètre", level: 'debutant' },
     { id: 'tech_beg_game10', name: "Le Net-Top (Frôlement)", phase: "technique", theme: "Topspin", duration: 15, description: "La balle doit toucher le filet et tomber juste derrière. Apprend à 'frotter' finement la balle. 5 réussites.", material: "Balles", level: 'debutant' },
+    
+    // --- NOUVEAUX EXERCICES TECHNIQUE COUP DROIT ---
+    { id: 'tech_cd1', name: "Rotation de Hanche CD - Shadow", phase: "technique", theme: "Coup Droit (CD)", duration: 15, description: "Sans balle, reproduire le mouvement de rotation de hanche pour le top CD avec un élastique autour de la taille pour sentir la résistance.", material: "Élastique", level: 'intermediaire' },
+    { id: 'tech_cd2', name: "Top CD Progressif", phase: "technique", theme: "Coup Droit (CD)", duration: 20, description: "Commencer par des remises de poussette courtes, puis augmenter la longueur et la vitesse pour obliger le joueur à armer son poignet et à transférer le poids du corps.", material: "Balles", level: 'debutant' },
+    { id: 'tech_cd3', name: "Rotation du Bras et du Poignet", phase: "technique", theme: "Coup Droit (CD)", duration: 15, description: "Travail isolé du poignet : face au miroir, le joueur effectue des rotations du poignet sans bouger le bras pour sentir le frottement. Puis intégration avec le mouvement complet.", material: "Miroir", level: 'intermediaire' },
+    { id: 'tech_cd4', name: "Top CD sur Balle Molle", phase: "technique", theme: "Coup Droit (CD)", duration: 20, description: "L'entraîneur envoie des balles très molles (hautes et sans rotation). Le joueur doit générer toute la rotation avec son top CD, ce qui force une gestuelle très frotée.", material: "Balles", level: 'avance' },
 
     // --- DÉPLACEMENT ---
     { id: 'ch_d_beg1', name: "Le Roi du Milieu", phase: "deplacement", theme: "Jeu de jambes", duration: 10, description: "Après CHAQUE coup joué, le joueur doit toucher la ligne centrale avec sa main libre avant de rejouer. Objectif : 20 coups sans oublier le retour.", material: "Aucun", level: 'debutant' },
@@ -217,7 +223,7 @@ export const DEMO_CYCLES: Cycle[] = [
         startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         type: 'competition',
         group: 'competition',
-        objectives: 'Gagner en régularité on les premières balles d\'attaque.',
+        objectives: 'Gagner en régularité on les premières balles d'attaque.',
         weeks: [
             { weekNumber: 1, theme: 'Volume de jeu', notes: 'Beaucoup de régularité diagonale', sessionId: 9991, sessionName: "Séance Vol. 1" },
             { weekNumber: 2, theme: 'Jeu de jambes', notes: 'Déplacements latéraux rapides', sessionId: 9991, sessionName: "Séance Vol. 2" },
