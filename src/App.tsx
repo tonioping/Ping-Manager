@@ -651,14 +651,14 @@ export default function App() {
             hasAiKey={!!aiConfig.apiKey}
           />
           <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            <header className="lg:hidden bg-[#02040a] border-b border-white/5 p-6 flex items-center justify-between">
+            <header className="lg:hidden bg-[#02040a] border-b border-white/5 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3 font-black text-white uppercase italic tracking-tighter">
                  <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shadow-neon-purple">P</div>
                  PingManager
               </div>
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-400"><Menu /></button>
             </header>
-            <div className="flex-1 overflow-y-auto p-6 sm:p-12 relative custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar">
               {view === 'dashboard' && (
                 <DashboardView 
                   coachProfile={coachProfile} 
