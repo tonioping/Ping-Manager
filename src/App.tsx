@@ -16,10 +16,10 @@ import { suggestExercises, generateCyclePlan, autoFillSessionFromLibrary } from 
 import { exportSessionsToCSV, exportCyclesToCSV, exportEvaluationsToCSV } from './utils/csvHelper';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
-  <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+  <div className={`fixed top-4 right-4 z-[100] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 transition-all animate-fade-in ${type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
     {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-    <span className="font-medium text-sm">{message}</span>
-    <button onClick={onClose}><X size={16} className="opacity-50 hover:opacity-100" /></button>
+    <span className="font-black text-[11px] uppercase tracking-widest">{message}</span>
+    <button onClick={onClose} className="ml-2 opacity-50 hover:opacity-100"><X size={16} /></button>
   </div>
 );
 
@@ -30,12 +30,7 @@ export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('pingmanager_theme') === 'dark';
-    }
-    return false;
-  });
+  const [darkMode, setDarkMode] = useState(true); // Forcé à true par défaut pour le nouveau design
   
   const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
@@ -58,7 +53,6 @@ export default function App() {
         console.error("Erreur parsing config IA", e);
       }
     }
-    // Fallback vers l'ancienne clé si elle existe
     const oldKey = localStorage.getItem('pingmanager_gemini_key');
     return { 
       provider: 'google' as AIProvider, 
@@ -83,11 +77,7 @@ export default function App() {
   };
 
   const toggleDarkMode = useCallback(() => {
-    setDarkMode(prev => {
-      const newVal = !prev;
-      localStorage.setItem('pingmanager_theme', newVal ? 'dark' : 'light');
-      return newVal;
-    });
+    setDarkMode(prev => !prev);
   }, []);
 
   const loadUserData = useCallback(async (userId: string) => {
@@ -650,7 +640,7 @@ export default function App() {
 
   return (
     <div className={`${darkMode ? 'dark' : ''} h-screen font-sans overflow-hidden`}>
-      <div className="flex h-full bg-slate-200 dark:bg-slate-950 transition-colors duration-300">
+      <div className="flex h-full bg-[#050816] transition-colors duration-300">
         {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
         
         <div className="no-print h-full flex w-full">
@@ -661,13 +651,14 @@ export default function App() {
             hasAiKey={!!aiConfig.apiKey}
           />
           <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            <header className="lg:hidden bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
-                 <Target className="text-accent" /> PingManager
+            <header className="lg:hidden bg-[#02040a] border-b border-white/5 p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3 font-black text-white uppercase italic tracking-tighter">
+                 <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shadow-neon-purple">P</div>
+                 PingManager
               </div>
-              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 dark:text-slate-400"><Menu /></button>
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-400"><Menu /></button>
             </header>
-            <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative">
+            <div className="flex-1 overflow-y-auto p-6 sm:p-12 relative custom-scrollbar">
               {view === 'dashboard' && (
                 <DashboardView 
                   coachProfile={coachProfile} 
@@ -675,10 +666,8 @@ export default function App() {
                   savedSessions={savedSessions} 
                   players={players} 
                   cycles={cycles} 
-                  activeCycleData={null} 
                   setView={setView} 
                   setCurrentSession={setCurrentSession} 
-                  setCurrentPlayer={setCurrentPlayer} 
                   onSelectGroup={handleSelectGroup}
                   attendance={attendance}
                   onSaveAttendance={saveAttendance}
@@ -714,18 +703,18 @@ export default function App() {
               )}
 
               {view === 'sessions' && (
-                  <div className="space-y-4">
-                      <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-4">
-                          <div className="flex items-center gap-4">
-                              <h2 className="text-xl font-black italic uppercase dark:text-white">Mode Édition</h2>
+                  <div className="space-y-6">
+                      <div className="flex justify-between items-center bg-[#0a0f24] p-6 rounded-[2rem] border border-white/5 shadow-xl mb-6">
+                          <div className="flex items-center gap-6">
+                              <h2 className="text-2xl font-black italic uppercase text-white tracking-tighter">Mode Édition</h2>
                               {currentSession.id && currentSession.id !== 0 && (
-                                <div className="flex gap-2">
-                                  <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Printer size={14}/> Imprimer</button>
-                                  <button onClick={() => duplicateSession(currentSession)} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><Copy size={14}/> Dupliquer</button>
+                                <div className="flex gap-3">
+                                  <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-white/5 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"><Printer size={14}/> Imprimer</button>
+                                  <button onClick={() => duplicateSession(currentSession)} className="flex items-center gap-2 px-4 py-2 bg-white/5 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"><Copy size={14}/> Dupliquer</button>
                                 </div>
                               )}
                           </div>
-                          <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="text-slate-400 hover:text-red-500"><X/></button>
+                          <button onClick={() => { setCurrentSession({...EMPTY_SESSION}); setView('dashboard'); }} className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all"><X/></button>
                       </div>
                       <SessionsView 
                         exercises={exercises} 
@@ -744,10 +733,10 @@ export default function App() {
                   </div>
               )}
               {view === 'calendar' && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div className="flex justify-end px-4">
-                    <button onClick={() => exportCyclesToCSV(cycles)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-all">
-                      <Download size={14} className="text-accent" /> Exporter Cycles (CSV)
+                    <button onClick={() => exportCyclesToCSV(cycles)} className="flex items-center gap-2 px-6 py-3 bg-[#0a0f24] text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl border border-white/5 hover:bg-white/5 transition-all">
+                      <Download size={16} className="text-accent" /> Exporter Cycles (CSV)
                     </button>
                   </div>
                   <CyclesView 
@@ -766,10 +755,10 @@ export default function App() {
                 </div>
               )}
               {view === 'players' && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div className="flex justify-end px-4">
-                    <button onClick={() => exportEvaluationsToCSV(playerEvals, players)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-all">
-                      <Download size={14} className="text-accent" /> Exporter Évaluations (CSV)
+                    <button onClick={() => exportEvaluationsToCSV(playerEvals, players)} className="flex items-center gap-2 px-6 py-3 bg-[#0a0f24] text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl border border-white/5 hover:bg-white/5 transition-all">
+                      <Download size={16} className="text-accent" /> Exporter Évaluations (CSV)
                     </button>
                   </div>
                   <PlayersView 
@@ -790,28 +779,28 @@ export default function App() {
               )}
               
               {view === 'history' && (
-                  <div className="max-w-4xl mx-auto space-y-6">
+                  <div className="max-w-4xl mx-auto space-y-10">
                       <div className="flex justify-between items-center">
-                        <h2 className="text-3xl font-black italic uppercase tracking-tighter dark:text-white">Historique des séances</h2>
-                        <button onClick={() => exportSessionsToCSV(savedSessions)} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold shadow-sm border border-slate-100 dark:border-slate-800 hover:bg-slate-50 transition-all">
-                          <Download size={14} className="text-accent" /> Exporter Historique (CSV)
+                        <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Historique des séances</h2>
+                        <button onClick={() => exportSessionsToCSV(savedSessions)} className="flex items-center gap-2 px-6 py-3 bg-[#0a0f24] text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl border border-white/5 hover:bg-white/5 transition-all">
+                          <Download size={16} className="text-accent" /> Exporter Historique (CSV)
                         </button>
                       </div>
-                      <div className="grid gap-4">
+                      <div className="grid gap-6">
                           {savedSessions.length === 0 ? (
-                              <div className="bg-white dark:bg-slate-900 p-12 rounded-[2.5rem] text-center border-2 border-dashed border-slate-100 dark:border-slate-800">
-                                  <p className="text-slate-400 font-bold uppercase tracking-widest text-sm">Aucune séance archivée</p>
+                              <div className="bg-[#0a0f24] p-20 rounded-[3rem] text-center border-2 border-dashed border-white/5">
+                                  <p className="text-slate-600 font-black uppercase tracking-[0.2em] text-sm">Aucune séance archivée</p>
                               </div>
                           ) : (
                               savedSessions.map(s => (
-                                  <div key={s.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                                  <div key={s.id} className="bg-[#0a0f24] p-8 rounded-[2.5rem] border border-white/5 shadow-xl hover:border-accent/30 transition-all flex items-center justify-between group">
                                       <div>
-                                          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tighter text-lg group-hover:text-accent transition-colors">{s.name}</h3>
-                                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(s.date).toLocaleDateString()}</p>
+                                          <h3 className="font-black text-white uppercase tracking-tighter text-2xl italic group-hover:text-accent transition-colors">{s.name}</h3>
+                                          <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-1">{new Date(s.date).toLocaleDateString()}</p>
                                       </div>
-                                      <div className="flex gap-2">
-                                        <button onClick={() => duplicateSession(s)} className="p-2 text-slate-400 hover:text-accent transition-all" title="Dupliquer"><Copy size={18}/></button>
-                                        <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-900 hover:text-white transition-all">Charger</button>
+                                      <div className="flex gap-3">
+                                        <button onClick={() => duplicateSession(s)} className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-500 hover:text-accent transition-all" title="Dupliquer"><Copy size={20}/></button>
+                                        <button onClick={() => { setCurrentSession(s); setView('sessions'); }} className="px-8 py-3 bg-white text-black rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 transition-all">Charger</button>
                                       </div>
                                   </div>
                               ))

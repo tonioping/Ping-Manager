@@ -12,13 +12,19 @@ export default {
       },
       colors: {
         primary: {
-          DEFAULT: '#0f172a', // Slate 900
-          light: '#334155',
+          DEFAULT: '#050816', // Fond ultra sombre
+          card: '#0a0f24',    // Fond des cartes
+          sidebar: '#02040a', // Fond sidebar
         },
         accent: {
-          DEFAULT: '#f97316', // Orange 500
-          hover: '#ea580c',
+          DEFAULT: '#d946ef', // Magenta/Fuchsia
+          neon: '#22d3ee',    // Cyan
+          orange: '#f97316',  // Orange historique (pour compatibilité)
         }
+      },
+      boxShadow: {
+        'neon-purple': '0 0 20px rgba(217, 70, 239, 0.2)',
+        'neon-cyan': '0 0 20px rgba(34, 211, 238, 0.2)',
       }
     },
   },

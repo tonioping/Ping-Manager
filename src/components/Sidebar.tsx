@@ -8,35 +8,23 @@ import { View, AIConfig } from '../types';
 const SidebarItem = ({ view, currentView, setView, icon: Icon, label }: any) => (
   <button
     onClick={() => setView(view)}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+    className={`w-full flex items-center gap-4 px-6 py-4 transition-all duration-200 group relative ${
       currentView === view 
-        ? 'bg-accent text-white shadow-lg shadow-orange-500/20 font-semibold' 
-        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        ? 'text-white font-bold' 
+        : 'text-slate-500 hover:text-slate-200'
     }`}
   >
-    <Icon size={20} className={currentView === view ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
-    <span className="text-sm tracking-wide">{label}</span>
+    {currentView === view && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full shadow-neon-purple"></div>
+    )}
+    <Icon size={22} className={currentView === view ? 'text-accent' : 'group-hover:scale-110 transition-transform'} />
+    <span className="text-[13px] tracking-wide uppercase font-bold">{label}</span>
   </button>
 );
 
-interface SidebarProps {
-    view: View;
-    setView: (view: View) => void;
-    mobileMenuOpen: boolean;
-    setMobileMenuOpen: (open: boolean) => void;
-    session: any;
-    handleLogout: () => void;
-    setShowAuth: (show: boolean) => void;
-    aiConfig: AIConfig;
-    isDemoMode?: boolean;
-    darkMode: boolean;
-    toggleDarkMode: () => void;
-    hasAiKey: boolean;
-}
-
-export const Sidebar: React.FC<SidebarProps> = React.memo(({ 
+export const Sidebar: React.FC<any> = React.memo(({ 
   view, setView, mobileMenuOpen, setMobileMenuOpen, session, 
-  handleLogout, setShowAuth, aiConfig, isDemoMode, darkMode, 
+  handleLogout, setShowAuth, isDemoMode, darkMode, 
   toggleDarkMode, hasAiKey 
 }) => {
     const handleNavigation = (targetView: View) => {
@@ -45,22 +33,21 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     };
 
     return (
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-primary text-slate-300 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#02040a] border-r border-white/5 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col">
-          <div onClick={() => handleNavigation('dashboard')} className="p-6 border-b border-slate-800 flex items-center gap-3 cursor-pointer hover:bg-slate-800 transition-colors">
-            <div className="bg-accent p-2 rounded-lg"><Target className="text-white" size={24} /></div>
+          <div onClick={() => handleNavigation('dashboard')} className="p-8 mb-4 flex items-center gap-3 cursor-pointer">
+            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-neon-purple">
+                <span className="text-white font-black text-xl">P</span>
+            </div>
             <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-white tracking-tight italic uppercase">Ping<span className="text-accent">Manager</span></h1>
-                <div className="flex items-center gap-1 text-[10px] font-black mt-1 truncate uppercase tracking-widest">
-                    {isDemoMode ? (
-                        <span className="text-orange-400 animate-pulse flex items-center gap-1"><PlayCircle size={10}/> Mode Démo</span>
-                    ) : (
-                        session ? <><User size={10} className="text-emerald-400"/> <span className="text-emerald-400 truncate">{session.user.email}</span></> : <><CloudOff size={10} className="text-slate-500"/> <span className="text-slate-500">Local</span></>
-                    )}
-                </div>
+                <h1 className="text-xl font-black text-white tracking-tighter italic uppercase">Ping<span className="text-slate-400">Manager</span></h1>
+                <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] truncate">
+                    {session?.user?.email || 'JSADSARL@GMAIL.COM'}
+                </p>
             </div>
           </div>
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+
+          <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
             <SidebarItem view="dashboard" currentView={view} setView={handleNavigation} icon={LayoutDashboard} label="Tableau de bord" />
             <SidebarItem view="calendar" currentView={view} setView={handleNavigation} icon={CalendarDays} label="Planification Annuelle" />
             <SidebarItem view="sessions" currentView={view} setView={handleNavigation} icon={Plus} label="Créer une séance" />
@@ -69,23 +56,27 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             <SidebarItem view="players" currentView={view} setView={handleNavigation} icon={GraduationCap} label="Joueurs & Progression" />
             <SidebarItem view="settings" currentView={view} setView={handleNavigation} icon={Settings} label="Paramètres" />
           </nav>
-          <div className="p-4 border-t border-slate-800 bg-slate-900/20">
-             <button onClick={toggleDarkMode} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all mb-2">
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-                <span className="text-sm tracking-wide">{darkMode ? 'Mode Clair' : 'Mode Sombre'}</span>
-             </button>
-             {isDemoMode || session ? (
-                <button onClick={() => { handleLogout(); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-slate-800 mb-4"><LogOut size={16} /> {isDemoMode ? 'Quitter Démo' : 'Déconnexion'}</button>
-             ) : (
-                <button onClick={() => { setShowAuth(true); if(mobileMenuOpen) setMobileMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-accent hover:bg-accent-hover transition-colors rounded-lg mb-4 shadow-lg"><LogIn size={16} /> Connexion Cloud</button>
-             )}
-             <div className={`p-4 rounded-xl border ${hasAiKey ? 'bg-emerald-900/10 border-emerald-900/30' : 'bg-amber-900/10 border-amber-900/30'}`}>
-                <div className={`flex items-center gap-2 mb-1 ${hasAiKey ? 'text-emerald-500' : 'text-amber-500'}`}>
-                  {hasAiKey ? <Sparkles size={14} /> : <AlertCircle size={14} />}
-                  <span className="text-[10px] font-black uppercase tracking-wider">Assistant IA</span>
+
+          <div className="p-6 space-y-4">
+             <div className="flex flex-col gap-2">
+                <button onClick={toggleDarkMode} className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-white transition-all text-[11px] font-bold uppercase tracking-widest">
+                    {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                    <span>{darkMode ? 'Mode Clair' : 'Mode Sombre'}</span>
+                </button>
+                <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-white transition-all text-[11px] font-bold uppercase tracking-widest">
+                    <LogOut size={18} />
+                    <span>Déconnexion</span>
+                </button>
+             </div>
+
+             <div className="p-5 rounded-[1.5rem] bg-[#0a0f24] border border-white/5 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-accent/50"></div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-2 h-2 rounded-full ${hasAiKey ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 animate-pulse'}`}></div>
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Assistant IA</span>
                 </div>
-                <p className="text-[9px] text-slate-400 leading-relaxed font-medium uppercase tracking-tight">
-                  {hasAiKey ? 'Prêt à vous aider.' : 'Clé API à configurer.'}
+                <p className="text-[9px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
+                  {hasAiKey ? 'Prêt à vous aider.' : 'Clé API à configurer dans les paramètres.'}
                 </p>
              </div>
           </div>
