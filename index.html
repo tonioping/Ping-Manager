@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Ccircle cx='12' cy='12' r='6'%3E%3C/circle%3E%3Ccircle cx='12' cy='12' r='2'%3E%3C/circle%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d946ef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Ccircle cx='12' cy='12' r='6'%3E%3C/circle%3E%3Ccircle cx='12' cy='12' r='2'%3E%3C/circle%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ping-Manager | Assistant Entraîneur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,13 +20,19 @@
             },
             colors: {
               primary: {
-                DEFAULT: '#0f172a',
-                light: '#334155',
+                DEFAULT: '#050816',
+                card: '#0a0f24',
+                sidebar: '#02040a',
               },
               accent: {
-                DEFAULT: '#f97316',
-                hover: '#ea580c',
+                DEFAULT: '#d946ef',
+                neon: '#22d3ee',
+                orange: '#f97316',
               }
+            },
+            boxShadow: {
+              'neon-purple': '0 0 20px rgba(217, 70, 239, 0.3)',
+              'neon-cyan': '0 0 20px rgba(34, 211, 238, 0.3)',
             },
             animation: {
               'fade-in': 'fadeIn 0.3s ease-out forwards',
@@ -68,7 +74,7 @@
       @media print {
         .no-print { display: none !important; }
         .print-only { display: block !important; }
-        body { background: white !important; }
+        body { background: white !important; color: black !important; }
         .session-card { border: 1px solid #eee !important; box-shadow: none !important; }
       }
       .print-only { display: none; }
