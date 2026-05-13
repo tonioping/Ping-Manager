@@ -1,21 +1,26 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Key, Save, ShieldCheck, Sparkles, ExternalLink, CheckCircle2, AlertCircle, Loader2, RefreshCcw, HelpCircle } from 'lucide-react';
-import { suggestExercises } from '../services/geminiService';
+import React, { useState, useEffect } from 'react';
+import { Key, Save, ShieldCheck, Sparkles, ExternalLink, CheckCircle2, AlertCircle, Loader2, RefreshCcw, HelpCircle, Globe, Cpu } from 'lucide-react';
+import { suggestExercises } from '../services/aiService';
+import { AIConfig, AIProvider } from '../types';
 
 interface SettingsViewProps {
-  apiKey: string;
-  onSaveApiKey: (key: string) => void;
+  aiConfig: AIConfig;
+  onSaveConfig: (config: AIConfig) => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey }) => {
-  const [tempKey, setTempKey] = useState(apiKey);
+export const SettingsView: React.FC<SettingsViewProps> = ({ aiConfig, onSaveConfig }) => {
+  const [config, setConfig] = useState<AIConfig>(aiConfig);
   const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
+  useEffect(() => {
+    setConfig(aiConfig);
+  }, [aiConfig]);
+
   const handleTestKey = async () => {
-    if (!tempKey.trim()) {
+    if (!config.apiKey.trim()) {
       setTestStatus('error');
       setErrorMessage('Veuillez saisir une clé avant de tester.');
       return;
@@ -23,9 +28,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
 
     setTestStatus('loading');
     try {
-      await suggestExercises(tempKey, "Test de connexion", []);
+      await suggestExercises(config, "Test de connexion", []);
       setTestStatus('success');
-      onSaveApiKey(tempKey);
+      onSaveConfig(config);
     } catch (err: any) {
       setTestStatus('error');
       setErrorMessage(err.message || 'Clé invalide ou erreur réseau.');
@@ -33,9 +38,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
   };
 
   const handleReset = () => {
-    setTempKey('');
+    const newConfig = { provider: 'google' as AIProvider, apiKey: '', model: 'gemini-1.5-flash' };
+    setConfig(newConfig);
     setTestStatus('idle');
-    onSaveApiKey('');
+    onSaveConfig(newConfig);
   };
 
   return (
@@ -45,27 +51,60 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
           Paramètres <span className="text-accent">IA</span>
         </h2>
         <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
-          Gestion de votre assistant Gemini
+          Gestion de votre assistant intelligent
         </p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+              <Globe size={12} /> Fournisseur
+            </label>
+            <select 
+              value={config.provider}
+              onChange={(e) => setConfig({ ...config, provider: e.target.value as AIProvider, model: e.target.value === 'google' ? 'gemini-1.5-flash' : 'google/gemini-flash-1.5' })}
+              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-accent/20"
+            >
+              <option value="google">Google AI Studio (Direct)</option>
+              <option value="openrouter">OpenRouter (Multi-modèles)</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+              <Cpu size={12} /> Modèle
+            </label>
+            <input 
+              type="text"
+              value={config.model}
+              onChange={(e) => setConfig({ ...config, model: e.target.value })}
+              placeholder={config.provider === 'google' ? 'gemini-1.5-flash' : 'google/gemini-flash-1.5'}
+              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-accent/20"
+            />
+          </div>
+        </div>
+
         <div className="flex items-start gap-4 p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-[2rem] border border-indigo-100 dark:border-indigo-800">
           <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl text-indigo-600 shadow-sm">
             <Sparkles size={24} />
           </div>
           <div className="space-y-2">
-            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tight">Obtenir une clé gratuite</h3>
+            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              {config.provider === 'google' ? 'Clé Google AI Studio' : 'Clé OpenRouter'}
+            </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              PingManager utilise Google Gemini. Obtenez une clé API gratuite sur Google AI Studio.
+              {config.provider === 'google' 
+                ? "Obtenez une clé gratuite pour Gemini 1.5 Flash." 
+                : "Accédez à tous les modèles (Gemini, Claude, GPT) via une seule clé."}
             </p>
             <a 
-              href="https://aistudio.google.com/app/apikey" 
+              href={config.provider === 'google' ? "https://aistudio.google.com/app/apikey" : "https://openrouter.ai/keys"} 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline"
             >
-              Générer ma clé Gemini <ExternalLink size={12} />
+              Générer ma clé {config.provider === 'google' ? 'Gemini' : 'OpenRouter'} <ExternalLink size={12} />
             </a>
           </div>
         </div>
@@ -74,23 +113,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <Key size={16} className="text-accent" />
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clé API Google Gemini</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clé API</label>
             </div>
-            {apiKey && (
+            {config.apiKey && (
               <button onClick={handleReset} className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:underline flex items-center gap-1">
-                <RefreshCcw size={10} /> Effacer la clé
+                <RefreshCcw size={10} /> Réinitialiser
               </button>
             )}
           </div>
           <div className="relative">
             <input 
               type="password" 
-              value={tempKey}
+              value={config.apiKey}
               onChange={(e) => {
-                setTempKey(e.target.value);
+                setConfig({ ...config, apiKey: e.target.value });
                 setTestStatus('idle');
               }}
-              placeholder="AIzaSy..."
+              placeholder="sk-or-v1-..."
               className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-accent/20 pr-32"
             />
             <button 
@@ -104,7 +143,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
 
           {testStatus === 'success' && (
             <div className="flex items-center gap-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest px-2 animate-fade-in">
-              <CheckCircle2 size={14} /> Clé valide et enregistrée !
+              <CheckCircle2 size={14} /> Configuration valide et enregistrée !
             </div>
           )}
 
@@ -112,16 +151,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center gap-2 text-rose-500 text-[10px] font-black uppercase tracking-widest px-2">
                 <AlertCircle size={14} /> {errorMessage}
-              </div>
-              <div className="p-4 bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/20">
-                <h4 className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <HelpCircle size={12} /> Pourquoi ma clé est rejetée ?
-                </h4>
-                <ul className="text-[10px] text-rose-500/80 space-y-1 list-disc ml-4 font-bold uppercase tracking-tight">
-                  <li>La clé a été mal copiée (vérifiez les espaces)</li>
-                  <li>La clé est trop récente (attendez 1 minute)</li>
-                  <li>Votre compte Google Cloud a des restrictions</li>
-                </ul>
               </div>
             </div>
           )}
@@ -133,7 +162,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ apiKey, onSaveApiKey
 
         <div className="pt-4 flex justify-center">
           <button 
-            onClick={() => onSaveApiKey(tempKey)}
+            onClick={() => onSaveConfig(config)}
             className="px-12 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl hover:scale-105 transition-all flex items-center gap-2"
           >
             <Save size={18}/> Enregistrer

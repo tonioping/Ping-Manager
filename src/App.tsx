@@ -11,8 +11,8 @@ import { SettingsView } from './components/SettingsView';
 import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
-import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance } from './types';
-import { suggestExercises, generateCyclePlan, autoFillSessionFromLibrary } from './services/geminiService';
+import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance, AIProvider } from './types';
+import { suggestExercises, generateCyclePlan, autoFillSessionFromLibrary } from './services/aiService';
 import { exportSessionsToCSV, exportCyclesToCSV, exportEvaluationsToCSV } from './utils/csvHelper';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
@@ -49,13 +49,23 @@ export default function App() {
   const [newPlayerMode, setNewPlayerMode] = useState(false);
   const [coachProfile, setCoachProfile] = useState<CoachProfile>({ name: '', club: '', license: '', is_pro: false, subscription_status: 'free' });
   
-  const [aiApiKey, setAiApiKey] = useState(() => {
-    const saved = localStorage.getItem('pingmanager_gemini_key');
-    if (saved === "undefined" || saved === "null") return '';
-    return saved || '';
+  const [aiConfig, setAiConfig] = useState<AIConfig>(() => {
+    const saved = localStorage.getItem('pingmanager_ai_config');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Erreur parsing config IA", e);
+      }
+    }
+    // Fallback vers l'ancienne clé si elle existe
+    const oldKey = localStorage.getItem('pingmanager_gemini_key');
+    return { 
+      provider: 'google' as AIProvider, 
+      apiKey: oldKey && oldKey !== "undefined" ? oldKey : '', 
+      model: 'gemini-1.5-flash' 
+    };
   });
-  
-  const [aiConfig] = useState<AIConfig>({ provider: 'google', apiKey: aiApiKey, model: 'gemini-1.5-flash' });
   
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'} | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -66,10 +76,9 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   }, []);
 
-  const handleSaveApiKey = (key: string) => {
-    const cleanKey = key.trim().replace(/["']/g, "");
-    setAiApiKey(cleanKey);
-    localStorage.setItem('pingmanager_gemini_key', cleanKey);
+  const handleSaveAIConfig = (config: AIConfig) => {
+    setAiConfig(config);
+    localStorage.setItem('pingmanager_ai_config', JSON.stringify(config));
     showToast("Configuration IA enregistrée !");
   };
 
@@ -178,7 +187,6 @@ export default function App() {
 
   const saveExercise = useCallback(async (exercise: Exercise) => {
     if (session && !isDemoMode) {
-      // Mapping des champs vers les colonnes réelles de la base de données
       const dbExercise = {
         id: exercise.id,
         user_id: session.user.id,
@@ -188,8 +196,6 @@ export default function App() {
         difficulty: exercise.level,
         duration: exercise.duration,
         focus: exercise.theme,
-        // On ne peut pas envoyer 'material' si la colonne n'existe pas encore
-        // mais on envoie les colonnes confirmées par le schéma
       };
 
       const { data, error } = await supabase
@@ -212,7 +218,7 @@ export default function App() {
           level: data.difficulty,
           duration: data.duration,
           theme: data.focus,
-          material: exercise.material, // On garde la valeur locale
+          material: exercise.material,
           user_id: data.user_id
         };
         setExercises(prev => {
@@ -295,7 +301,7 @@ export default function App() {
   const duplicateSession = useCallback((sessionToDuplicate: Session) => {
     const duplicated: Session = {
       ...sessionToDuplicate,
-      id: 0, // Reset ID to trigger a new save
+      id: 0,
       name: `${sessionToDuplicate.name} (Copie)`,
       date: new Date().toISOString().split('T')[0]
     };
@@ -481,7 +487,7 @@ export default function App() {
   }, [session, isDemoMode, showToast]);
 
   const handleSuggestExercises = useCallback(async () => {
-    if (!aiApiKey) {
+    if (!aiConfig.apiKey) {
       showToast("Veuillez configurer votre clé API dans les Paramètres", "error");
       setView('settings');
       return;
@@ -493,7 +499,7 @@ export default function App() {
     setIsLoadingAI(true);
     try {
       const existing = (Object.values(currentSession.exercises) as Exercise[][]).flat().map((e: Exercise) => e.name);
-      const suggestions = await suggestExercises(aiApiKey, currentSession.name, existing);
+      const suggestions = await suggestExercises(aiConfig, currentSession.name, existing);
       
       if (suggestions.length > 0) {
         const firstSuggested = suggestions[0];
@@ -523,10 +529,10 @@ export default function App() {
     } finally {
       setIsLoadingAI(false);
     }
-  }, [aiApiKey, currentSession.name, currentSession.exercises, showToast]);
+  }, [aiConfig, currentSession.name, currentSession.exercises, showToast]);
 
   const handleAutoFillSession = useCallback(async (description: string) => {
-    if (!aiApiKey) {
+    if (!aiConfig.apiKey) {
       showToast("Veuillez configurer votre clé API dans les Paramètres", "error");
       setView('settings');
       return;
@@ -540,7 +546,7 @@ export default function App() {
 
     setIsLoadingAI(true);
     try {
-      const result = await autoFillSessionFromLibrary(aiApiKey, description, exercises);
+      const result = await autoFillSessionFromLibrary(aiConfig, description, exercises);
       
       if (Object.keys(result).length === 0) {
         showToast("L'IA n'a pas trouvé d'exercices correspondants dans votre bibliothèque.", "error");
@@ -576,10 +582,10 @@ export default function App() {
     } finally {
       setIsLoadingAI(false);
     }
-  }, [aiApiKey, exercises, showToast]);
+  }, [aiConfig, exercises, showToast]);
 
   const handleGenerateCycle = useCallback(async () => {
-    if (!aiApiKey) {
+    if (!aiConfig.apiKey) {
       showToast("Veuillez configurer votre clé API dans les Paramètres", "error");
       setView('settings');
       return;
@@ -590,21 +596,21 @@ export default function App() {
     }
     setIsLoadingAI(true);
     try {
-        const plan = await generateCyclePlan(aiApiKey, currentCycle.name, currentCycle.weeks.length);
+        const plan = await generateCyclePlan(aiConfig, currentCycle.name, currentCycle.weeks.length);
         if (plan && plan.weeks) {
             const updatedWeeks = currentCycle.weeks.map((w, i) => {
                 const aiWeek = plan.weeks.find(aw => aw.weekNumber === w.weekNumber);
                 return aiWeek ? { ...w, theme: aiWeek.theme, notes: aiWeek.notes } : w;
             });
             setCurrentCycle({ ...currentCycle, weeks: updatedWeeks });
-            showToast("Plan de cycle généré par Gemini !");
+            showToast("Plan de cycle généré par l'IA !");
         }
     } catch (e: any) {
         showToast(e.message || "Erreur IA Cycle", "error");
     } finally {
         setIsLoadingAI(false);
     }
-  }, [aiApiKey, currentCycle, showToast]);
+  }, [aiConfig, currentCycle, showToast]);
 
   const totalDuration = useMemo(() => {
     const flattenedExercises = Object.values(currentSession.exercises).flat() as Exercise[];
@@ -652,7 +658,7 @@ export default function App() {
             view={view} setView={setView} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen}
             session={session} handleLogout={() => { setIsDemoMode(false); setShowAuth(true); }} setShowAuth={setShowAuth} aiConfig={aiConfig}
             isDemoMode={isDemoMode} darkMode={darkMode} toggleDarkMode={toggleDarkMode}
-            hasAiKey={!!aiApiKey && aiApiKey !== "undefined"}
+            hasAiKey={!!aiConfig.apiKey}
           />
           <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <header className="lg:hidden bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-4 flex items-center justify-between">
@@ -702,8 +708,8 @@ export default function App() {
 
               {view === 'settings' && (
                 <SettingsView 
-                  apiKey={aiApiKey}
-                  onSaveApiKey={handleSaveApiKey}
+                  aiConfig={aiConfig}
+                  onSaveConfig={handleSaveAIConfig}
                 />
               )}
 
