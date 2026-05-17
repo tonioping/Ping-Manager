@@ -45,6 +45,22 @@ const callGemini = async (config: AIConfig, prompt: string) => {
   return response.text();
 };
 
+/**
+ * Fonction générique pour tester la clé ou suggérer des exercices isolés
+ */
+export const suggestExercises = async (config: AIConfig, promptText: string, library: Exercise[]): Promise<any> => {
+  if (!config.apiKey) throw new Error("Clé API manquante");
+  
+  const prompt = `Expert Tennis de Table. Basé sur : "${promptText}". 
+  Réponds en JSON : {"exercises": [{"name": "...", "description": "..."}]}`;
+
+  const text = config.provider === 'openrouter' 
+    ? await callOpenRouter(config, prompt)
+    : await callGemini(config, prompt);
+
+  return cleanJSONResponse(text);
+};
+
 export const generateFullSession = async (config: AIConfig, sessionName: string): Promise<Record<string, any[]>> => {
   if (!config.apiKey) throw new Error("Clé API manquante");
 
@@ -56,7 +72,7 @@ export const generateFullSession = async (config: AIConfig, sessionName: string)
   Contraintes:
   - Durée totale = 60 minutes.
   - Pour chaque exercice, fournis: name, duration (en min), description, material, theme.
-  - Sois précis techniquement (ex: placement de balle, type d'effet).
+  - Sois précis techniquement.
   
   Réponds UNIQUEMENT en JSON avec cette structure:
   {
@@ -91,4 +107,17 @@ export const autoFillSessionFromLibrary = async (config: AIConfig, description: 
     : await callGemini(config, prompt);
 
   return cleanJSONResponse(text) || {};
+};
+
+export const generateCyclePlan = async (config: AIConfig, cycleName: string, numWeeks: number): Promise<any> => {
+  if (!config.apiKey) throw new Error("Clé API manquante");
+
+  const prompt = `Crée un plan de progression de tennis de table pour un cycle nommé "${cycleName}" sur ${numWeeks} semaines.
+  Réponds UNIQUEMENT en JSON: {"weeks": [{"weekNumber": 1, "theme": "...", "notes": "..."}]}`;
+
+  const text = config.provider === 'openrouter' 
+    ? await callOpenRouter(config, prompt)
+    : await callGemini(config, prompt);
+
+  return cleanJSONResponse(text);
 };
