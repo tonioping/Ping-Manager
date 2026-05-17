@@ -45,28 +45,29 @@ const callGemini = async (config: AIConfig, prompt: string) => {
   return response.text();
 };
 
-export const suggestExercises = async (config: AIConfig, sessionName: string, existingExercises: string[]): Promise<any[]> => {
+export const generateFullSession = async (config: AIConfig, sessionName: string): Promise<Record<string, any[]>> => {
   if (!config.apiKey) throw new Error("Clé API manquante");
 
-  const prompt = `Tu es un expert en tennis de table. Suggère 3 exercices pour la séance "${sessionName}". 
-  Déjà présents: ${existingExercises.join(', ')}.
-  Réponds UNIQUEMENT en JSON: [{"name": "...", "duration": 15, "description": "...", "material": "...", "theme": "..."}]`;
-
-  const text = config.provider === 'openrouter' 
-    ? await callOpenRouter(config, prompt)
-    : await callGemini(config, prompt);
-
-  return cleanJSONResponse(text) || [];
-};
-
-export const autoFillSessionFromLibrary = async (config: AIConfig, description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
-  if (!config.apiKey) throw new Error("Clé API manquante");
-
-  const simplifiedLibrary = library.map(ex => ({ id: ex.id, name: ex.name, phase: ex.phase }));
-  const prompt = `Voici ma bibliothèque d'exercices: ${JSON.stringify(simplifiedLibrary)}
-  L'utilisateur veut: "${description}"
-  Sélectionne les meilleurs exercices (IDs) pour chaque phase.
-  Réponds UNIQUEMENT en JSON: {"technique": ["id1"], "matchs": ["id2"]}`;
+  const prompt = `Tu es un expert en tennis de table. Crée une séance d'entraînement COMPLÈTE de 60 minutes environ intitulée "${sessionName}".
+  La séance doit être équilibrée et structurée.
+  
+  Répartis les exercices dans ces phases (PhaseId): echauffement, regularite, technique, deplacement, schema, matchs, retour-au-calme.
+  
+  Contraintes:
+  - Durée totale = 60 minutes.
+  - Pour chaque exercice, fournis: name, duration (en min), description, material, theme.
+  - Sois précis techniquement (ex: placement de balle, type d'effet).
+  
+  Réponds UNIQUEMENT en JSON avec cette structure:
+  {
+    "echauffement": [{"name": "...", "duration": 10, "description": "...", "material": "...", "theme": "..."}],
+    "regularite": [...],
+    "technique": [...],
+    "deplacement": [...],
+    "schema": [...],
+    "matchs": [...],
+    "retour-au-calme": [...]
+  }`;
 
   const text = config.provider === 'openrouter' 
     ? await callOpenRouter(config, prompt)
@@ -75,15 +76,19 @@ export const autoFillSessionFromLibrary = async (config: AIConfig, description: 
   return cleanJSONResponse(text) || {};
 };
 
-export const generateCyclePlan = async (config: AIConfig, promptText: string, numWeeks: number): Promise<any> => {
+export const autoFillSessionFromLibrary = async (config: AIConfig, description: string, library: Exercise[]): Promise<Record<string, string[]>> => {
   if (!config.apiKey) throw new Error("Clé API manquante");
 
-  const prompt = `Crée un plan de ${numWeeks} semaines pour: "${promptText}".
-  Réponds UNIQUEMENT en JSON: {"weeks": [{"weekNumber": 1, "theme": "...", "notes": "..."}]}`;
+  const simplifiedLibrary = library.map(ex => ({ id: ex.id, name: ex.name, phase: ex.phase, duration: ex.duration }));
+  const prompt = `Voici ma bibliothèque d'exercices: ${JSON.stringify(simplifiedLibrary)}
+  L'utilisateur veut une séance de 60 minutes sur le thème: "${description}"
+  
+  Sélectionne les meilleurs exercices (IDs) pour remplir environ 60 minutes au total, répartis logiquement par phase.
+  Réponds UNIQUEMENT en JSON: {"echauffement": ["id1"], "technique": ["id2", "id3"], "matchs": ["id4"]}`;
 
   const text = config.provider === 'openrouter' 
     ? await callOpenRouter(config, prompt)
     : await callGemini(config, prompt);
 
-  return cleanJSONResponse(text) || { weeks: [] };
+  return cleanJSONResponse(text) || {};
 };

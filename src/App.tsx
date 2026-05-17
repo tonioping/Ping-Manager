@@ -12,7 +12,7 @@ import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
 import { PHASES, INITIAL_EXERCISES, EMPTY_SESSION, DEFAULT_SKILLS, DEMO_PLAYERS, DEMO_SESSIONS, DEMO_CYCLES, DEMO_EVALS, GROUPS } from './constants';
 import { Session, Cycle, View, AIConfig, CoachProfile, Player, PlayerEvaluation, Exercise, PhaseId, Attendance, AIProvider } from './types';
-import { suggestExercises, generateCyclePlan, autoFillSessionFromLibrary } from './services/aiService';
+import { generateFullSession, generateCyclePlan, autoFillSessionFromLibrary } from './services/aiService';
 import { exportSessionsToCSV, exportCyclesToCSV, exportEvaluationsToCSV } from './utils/csvHelper';
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => (
@@ -30,7 +30,7 @@ export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true); // Forcé à true par défaut pour le nouveau design
+  const [darkMode, setDarkMode] = useState(true); 
   
   const [exercises, setExercises] = useState<Exercise[]>(INITIAL_EXERCISES);
   const [currentSession, setCurrentSession] = useState<Session>({...EMPTY_SESSION});
@@ -488,38 +488,34 @@ export default function App() {
     }
     setIsLoadingAI(true);
     try {
-      const existing = (Object.values(currentSession.exercises) as Exercise[][]).flat().map((e: Exercise) => e.name);
-      const suggestions = await suggestExercises(aiConfig, currentSession.name, existing);
+      const fullSessionData = await generateFullSession(aiConfig, currentSession.name);
       
-      if (suggestions.length > 0) {
-        const firstSuggested = suggestions[0];
-        const phaseId: PhaseId = 'technique';
-        const newEx: Exercise = {
-          id: `ai-${Date.now()}`,
-          name: firstSuggested.name,
-          duration: firstSuggested.duration,
-          description: firstSuggested.description,
-          material: firstSuggested.material,
-          theme: firstSuggested.theme,
-          phase: phaseId,
-          instanceId: Date.now()
-        };
+      if (Object.keys(fullSessionData).length > 0) {
+        const newExercises: Record<PhaseId, Exercise[]> = { ...EMPTY_SESSION.exercises };
         
+        Object.entries(fullSessionData).forEach(([phaseId, exos]) => {
+          if (Array.isArray(exos)) {
+            newExercises[phaseId as PhaseId] = exos.map((e: any) => ({
+              ...e,
+              id: `ai-${Date.now()}-${Math.random()}`,
+              phase: phaseId as PhaseId,
+              instanceId: Date.now() + Math.random()
+            }));
+          }
+        });
+
         setCurrentSession(prev => ({
           ...prev,
-          exercises: {
-            ...prev.exercises,
-            [phaseId]: [...(prev.exercises[phaseId] || []), newEx]
-          }
+          exercises: newExercises
         }));
-        showToast("L'IA a ajouté un exercice à votre séance !");
+        showToast("L'IA a généré un programme complet de 60 minutes !");
       }
     } catch (err: any) {
       showToast(err.message || "Erreur lors de la génération IA", "error");
     } finally {
       setIsLoadingAI(false);
     }
-  }, [aiConfig, currentSession.name, currentSession.exercises, showToast]);
+  }, [aiConfig, currentSession.name, showToast]);
 
   const handleAutoFillSession = useCallback(async (description: string) => {
     if (!aiConfig.apiKey) {
@@ -566,7 +562,7 @@ export default function App() {
         ...prev,
         exercises: newExercises
       }));
-      showToast("L'assistant a rempli votre séance !");
+      showToast("L'assistant a rempli votre séance (60 min) !");
     } catch (err: any) {
       showToast(err.message || "Erreur lors de l'analyse IA", "error");
     } finally {
